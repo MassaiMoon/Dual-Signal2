@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ interface ObjectData {
   metadata?: { name?: string };
 }
 
-export default function BadgeFacePage() {
+function BadgeFaceInner() {
   const params = useSearchParams();
   const objectId = params.get('id');
 
@@ -356,6 +356,20 @@ export default function BadgeFacePage() {
         memberSince={since}
       />
     </div>
+  );
+}
+
+export default function BadgeFacePage() {
+  return (
+    <Suspense fallback={
+      <div style={pageStyle}>
+        <div style={{ color: COLORS.electric, fontFamily: 'Orbitron, monospace', fontSize: 13, letterSpacing: 3 }}>
+          LOADING...
+        </div>
+      </div>
+    }>
+      <BadgeFaceInner />
+    </Suspense>
   );
 }
 
