@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+// One user can own one badge (1:1 for v1).
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  badge            Badge?
+  externalAccounts ExternalAccount[]
+
+  @@map("users")
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+// The on-chain DUAL object that lives in the member's wallet.
+// All mutable state is mirrored here so we can make decisions
+// without round-tripping to DUAL on every event.
+model Badge {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // DUAL platform references
+  dualObjectId   String @map("dual_object_id")   // DUAL object id
+  dualTemplateId String @map("dual_template_id") // DUAL template id
+
+  // Identity layer (mirrors object custom.identity_tier)
+  identityTier IdentityTier @default(INITIATE) @map("identity_tier")
+
+  // Status flags (mirrors object custom.*)
+  isGenesis    Boolean @default(false) @map("is_genesis")
+  isStakeholder Boolean @default(false) @map("is_stakeholder")
+  isGovernor   Boolean @default(false) @map("is_governor")
+
+  // Latest known integrity hash — used to confirm DUAL writes landed
+  lastIntegrityHash String @default("") @map("last_integrity_hash")
+
+  // Social handles stored at mint time (informational)
+  discordHandle  String @default("") @map("discord_handle")
+  telegramHandle String @default("") @map("telegram_handle")
+  walletAddress  String @default("") @map("wallet_address")
+  memberSince    String @default("") @map("member_since")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  achievementProgress AchievementProgress[]
+  badgeUpdates        BadgeUpdate[]
+
+  @@map("badges")
+}
+
+// ─── External Accounts ────────────────────────────────────────────────────────
+// Links a social identity (Discord user ID, Telegram user ID, etc.)
+// to a badge owner. One user can have multiple external accounts.
+model ExternalAccount {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  source         EventSource @map("source")
+  externalUserId String      @map("external_user_id") // platform's user ID
+  handle         String      // human-readable handle (@username)
+  verifiedAt     DateTime?   @map("verified_at")
+
+  events Event[]
+
+  @@unique([source, externalUserId])
+  @@map("external_accounts")
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+// Every inbound activity event (from a webhook or simulation).
+// source_event_id is the idempotency key: same event delivered twice → skip.
+// content_id prevents the same post being counted across retries.
+model Event {
+  id String @id @default(cuid())
+
+  source        EventSource @map("source")
+  sourceEventId String      @map("source_event_id") // idempotency key
+  contentId     String      @default("") @map("content_id") // e.g. post ID
+
+  // Nullable: we may receive events before identity is linked
+  externalAccountId String?          @map("external_account_id")
+  externalAccount   ExternalAccount? @relation(fields: [externalAccountId], references: [id])
+
+  type   String      // POST_CREATED, REPLY, SHARE, etc.
+  status EventStatus @default(PENDING)
+
+  rejectionReason String? @map("rejection_reason")
+
+  // Raw payload stored for audit / replay
+  payload Json @default("{}")
+
+  occurredAt  DateTime  @map("occurred_at")
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([source, sourceEventId])
+  @@map("events")
+}
+
+// ─── Achievement Progress ─────────────────────────────────────────────────────
+// Per-badge, per-achievement-type progress counter.
+// The rules engine reads this to decide when to fire a badge update.
+model AchievementProgress {
+  id      String @id @default(cuid())
+  badgeId String @map("badge_id")
+  badge   Badge  @relation(fields: [badgeId], references: [id])
+
+  achievementType AchievementType @map("achievement_type")
+  progress        Int             @default(0) // current count toward threshold
+  level           Int             @default(0) // 0 = locked, 1+ = unlocked
+
+  unlockedAt DateTime? @map("unlocked_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@unique([badgeId, achievementType])
+  @@map("achievement_progress")
+}
+
+// ─── Badge Updates ────────────────────────────────────────────────────────────
+// Queue of DUAL API write operations (PATCH /objects/:id).
+// Pending rows are retried by the update worker.
+model BadgeUpdate {
+  id      String @id @default(cuid())
+  badgeId String @map("badge_id")
+  badge   Badge  @relation(fields: [badgeId], references: [id])
+
+  // What to write to the DUAL object's custom properties
+  requestedState Json @map("requested_state")
+
+  status         UpdateStatus @default(PENDING)
+  attempts       Int          @default(0)
+  dualActionId   String?      @map("dual_action_id")   // from DUAL API response
+  errorMessage   String?      @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("badge_updates")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum IdentityTier {
+  INITIATE
+  EXPLORER
+  CONTRIBUTOR
+  BUILDER
+  VALIDATOR
+}
+
+enum EventSource {
+  MOCK        // simulated via admin endpoint
+  DISCORD
+  TELEGRAM
+  TWITTER
+  LINKEDIN
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+  DUPLICATE
+}
+
+enum AchievementType {
+  FIRST_SIGNAL
+  AMPLIFIER_I
+  AMPLIFIER_II
+  BROADCASTER
+  ADVOCATE
+  EDUCATOR
+  RESEARCHER
+  BUG_HUNTER
+  EVENT_PASS
+}
+
+enum UpdateStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}

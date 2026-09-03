@@ -1,0 +1,17 @@
+.env
+.env.local
+.next/
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Source design assets in root (too large for git, keep locally)
+/ChatGPT*.png
+/initiate.png
+/explorer.png
+/builder.png
+/stakeholder.png
+/genesis.png
+/Legend.png
+/M1_RESEARCH.md
