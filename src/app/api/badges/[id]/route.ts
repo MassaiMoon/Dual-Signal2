@@ -12,10 +12,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const badge = await db.badge.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { achievementProgress: { orderBy: { achievementType: 'asc' } } },
   });
 
