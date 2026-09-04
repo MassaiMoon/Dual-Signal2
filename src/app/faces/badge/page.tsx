@@ -39,37 +39,37 @@ const C = {
 
 const L = {
   // Left circular HUD — tier artwork fills this zone
-  tier: { l: 4.5, t: 9, w: 45, h: 76 },
+  tier: { l: 7, t: 6, w: 42, h: 74 },
 
   // OG prestige pin — upper-right corner of tier zone
-  og:   { l: 43.5, t: 10, w: 10 },
+  og:   { l: 44, t: 9, w: 10 },
 
-  // Tier name — inside left panel, above bottom crystal decorations (~82% from top)
-  tierName: { l: 7, t: 82, w: 43 },
+  // Tier name — above bottom crystal decorations
+  tierName: { l: 8, t: 73, w: 41 },
 
   // Wallet value — inside the wallet field box
-  wallet: { l: 57.8, t: 26.5, w: 31, h: 6 },
+  wallet: { l: 59.5, t: 24.5, w: 29, h: 6 },
 
   // Signal score — large number, covers background placeholder
   signal: { l: 57.5, t: 36.5, w: 32, h: 9 },
 
-  // Progress bar fill — inside the existing bar frame (just below score)
+  // Progress bar fill — inside the existing bar frame
   bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
 
-  // Achievement icon slots — centered over the octagonal sockets
+  // Achievement icon slots — over the octagonal sockets, 5.5% wide
   icons: [
-    { l: 56.5, t: 53.5 },  // X SIGNAL
-    { l: 56.5, t: 62.2 },  // TELEGRAM
-    { l: 56.5, t: 70.8 },  // GOVERNANCE
-    { l: 56.5, t: 79.4 },  // HOLDER / STAKING
+    { l: 56.5, t: 51.5 },  // X SIGNAL
+    { l: 56.5, t: 60.2 },  // TELEGRAM
+    { l: 56.5, t: 68.8 },  // GOVERNANCE
+    { l: 56.5, t: 77.4 },  // HOLDER / STAKING
   ],
 
   // Roman numeral level — aligned with background "—" dash position
   levels: [
-    { r: 7.5, t: 56.5 },
-    { r: 7.5, t: 65.2 },
-    { r: 7.5, t: 73.8 },
-    { r: 7.5, t: 82.4 },
+    { r: 7.5, t: 55.0 },
+    { r: 7.5, t: 63.7 },
+    { r: 7.5, t: 72.3 },
+    { r: 7.5, t: 80.9 },
   ],
 } as const;
 
@@ -220,9 +220,9 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         <span style={{
           color:         C.tealLt,
           fontFamily:    'Rajdhani, monospace',
-          fontSize:      'clamp(8px, 1.8%, 16px)',
-          fontWeight:    600,
-          letterSpacing: '0.05em',
+          fontSize:      'clamp(11px, 2.3%, 20px)',
+          fontWeight:    700,
+          letterSpacing: '0.04em',
         }}>
           {shortWallet}
         </span>
@@ -270,7 +270,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
       {tracks.map(({ src, level }, i) => (
         <Slot
           key={i}
-          cfg={{ l: L.icons[i].l, t: L.icons[i].t, w: 6.5 }}
+          cfg={{ l: L.icons[i].l, t: L.icons[i].t, w: 5.5 }}
           debug={debug}
           debugColor="#9f9"
           style={{ zIndex: 3, aspectRatio: '1', opacity: level > 0 ? 1 : 0.35 }}
