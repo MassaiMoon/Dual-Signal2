@@ -39,19 +39,22 @@ const C = {
 
 const L = {
   // Left circular HUD — tier artwork fills this zone
-  tier: { l: 7, t: 6, w: 42, h: 74 },
+  tier: { l: 10, t: 6, w: 42, h: 74 },
 
   // OG prestige pin — upper-right corner of tier zone
   og:   { l: 44, t: 9, w: 10 },
 
   // Tier name — above bottom crystal decorations
-  tierName: { l: 8, t: 73, w: 41 },
+  tierName: { l: 11, t: 73, w: 41 },
 
   // Wallet value — inside the wallet field box
   wallet: { l: 59.5, t: 24.5, w: 29, h: 6 },
 
   // Signal score — large number, covers background placeholder
   signal: { l: 57.5, t: 36.5, w: 32, h: 9 },
+
+  // Dark cover strip — hides baked-in "0 / 1,000" sub-label from background image
+  signalCover: { l: 57.0, t: 43.5, w: 25, h: 6.5 },
 
   // Progress bar fill — inside the existing bar frame
   bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
@@ -98,7 +101,7 @@ function Slot({
   debug?:      boolean;
   debugColor?: string;
   style?:      React.CSSProperties;
-  children:    React.ReactNode;
+  children?:   React.ReactNode;
 }) {
   const s: React.CSSProperties = {
     position:  'absolute',
@@ -244,6 +247,9 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
           / 1,000
         </span>
       </Slot>
+
+      {/* z=4 — Cover baked-in "0 / 1,000" sub-label from background image */}
+      <Slot cfg={L.signalCover} style={{ zIndex: 4, background: '#00111e' }} />
 
       {/* z=5 — Progress bar fill */}
       <Slot cfg={L.bar} debug={debug} debugColor="#f80" style={{ zIndex: 5, overflow: 'hidden', borderRadius: '999px' }}>
