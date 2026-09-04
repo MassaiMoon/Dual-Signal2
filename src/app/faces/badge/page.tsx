@@ -44,32 +44,32 @@ const L = {
   // OG prestige pin — upper-right corner of tier zone
   og:   { l: 43.5, t: 10, w: 10 },
 
-  // Tier name — bottom of left panel
-  tierName: { l: 7, b: 7.5, w: 43 },
+  // Tier name — inside left panel, above bottom crystal decorations (~82% from top)
+  tierName: { l: 7, t: 82, w: 43 },
 
   // Wallet value — inside the wallet field box
-  wallet: { l: 57.8, t: 27, w: 32, h: 6.5 },
+  wallet: { l: 57.8, t: 26.5, w: 31, h: 6 },
 
-  // Signal score — large number over the built-in "0 / 1,000" area
+  // Signal score — large number, covers background placeholder
   signal: { l: 57.5, t: 36.5, w: 32, h: 9 },
 
-  // Progress bar fill — inside the existing bar frame
-  bar: { l: 57.2, t: 47.6, w: 30.8, h: 2.0 },
+  // Progress bar fill — inside the existing bar frame (just below score)
+  bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
 
-  // Achievement icon slots — one per row, positioned over the octagonal sockets
+  // Achievement icon slots — centered over the octagonal sockets
   icons: [
-    { l: 56.8, t: 52.5 },  // X SIGNAL
-    { l: 56.8, t: 61.2 },  // TELEGRAM
-    { l: 56.8, t: 69.8 },  // GOVERNANCE
-    { l: 56.8, t: 78.4 },  // HOLDER / STAKING
+    { l: 56.5, t: 53.5 },  // X SIGNAL
+    { l: 56.5, t: 62.2 },  // TELEGRAM
+    { l: 56.5, t: 70.8 },  // GOVERNANCE
+    { l: 56.5, t: 79.4 },  // HOLDER / STAKING
   ],
 
-  // Roman numeral level — far right of each achievement row
+  // Roman numeral level — aligned with background "—" dash position
   levels: [
-    { r: 4.8, t: 55.5 },
-    { r: 4.8, t: 64.2 },
-    { r: 4.8, t: 72.8 },
-    { r: 4.8, t: 81.4 },
+    { r: 7.5, t: 56.5 },
+    { r: 7.5, t: 65.2 },
+    { r: 7.5, t: 73.8 },
+    { r: 7.5, t: 82.4 },
   ],
 } as const;
 
