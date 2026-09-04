@@ -9,54 +9,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { EventSource, EventStatus } from '@prisma/client';
-import { achievementConfig, calculateTier } from '@/lib/config';
+import { calculateTier } from '@/lib/config';
+import {
+  resolveXSignalLevel,
+  resolveTelegramLevel,
+  resolveGovernanceLevel,
+  resolveHolderLevel,
+  computeSignalScore,
+  buildRequestedState,
+} from '@/lib/rules-engine';
 import type { SimulateEventBody } from '@/types';
 
 export const dynamic = 'force-dynamic';
-
-// ─── Track level resolvers ─────────────────────────────────────────────────────
-
-function resolveXSignalLevel(impressions: number): number {
-  const levels = achievementConfig.xSignal;
-  let lvl = 0;
-  for (const l of levels) {
-    if ('impressions' in l && impressions >= l.impressions) lvl = l.level;
-    else if ('qualifyingPosts' in l && impressions >= 1) lvl = Math.max(lvl, 1);
-  }
-  return lvl;
-}
-
-function resolveTelegramLevel(activeDays: number): number {
-  let lvl = 0;
-  for (const l of achievementConfig.telegramPresence) {
-    if (activeDays >= l.activeDays) lvl = l.level;
-  }
-  return lvl;
-}
-
-function resolveGovernanceLevel(votes: number): number {
-  let lvl = 0;
-  for (const l of achievementConfig.governance) {
-    if (votes >= l.votes) lvl = l.level;
-  }
-  return lvl;
-}
-
-function resolveHolderLevel(qualDays: number): number {
-  let lvl = 0;
-  for (const l of achievementConfig.holderStaking) {
-    if (qualDays >= l.qualifyingDays) lvl = l.level;
-  }
-  return lvl;
-}
-
-function computeSignalScore(xLvl: number, tgLvl: number, govLvl: number, hldLvl: number): number {
-  const xPts  = achievementConfig.xSignal[xLvl - 1]?.points  ?? 0;
-  const tgPts = achievementConfig.telegramPresence[tgLvl - 1]?.points ?? 0;
-  const govPts= achievementConfig.governance[govLvl - 1]?.points ?? 0;
-  const hldPts= achievementConfig.holderStaking[hldLvl - 1]?.points ?? 0;
-  return xPts + tgPts + govPts + hldPts;
-}
 
 // ─── Handler ───────────────────────────────────────────────────────────────────
 
@@ -147,16 +111,9 @@ export async function POST(req: NextRequest) {
     if (stateChanged) {
       await tx.badgeUpdate.create({
         data: {
-          badgeId: badge.id,
-          requestedState: {
-            signal_score:     String(newScore),
-            identity_tier:    newTier,
-            x_signal_level:   String(newXLvl),
-            telegram_level:   String(newTgLvl),
-            governance_level: String(newGovLvl),
-            holder_level:     String(newHldLvl),
-          },
-          status: 'PENDING',
+          badgeId:        badge.id,
+          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newGovLvl, newHldLvl),
+          status:         'PENDING',
         },
       });
     }

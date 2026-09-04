@@ -143,6 +143,7 @@ enum Tier {
 
 enum EventSource {
   MOCK
+  DUAL
   DISCORD
   TELEGRAM
   TWITTER

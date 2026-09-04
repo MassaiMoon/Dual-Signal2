@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   const sourceEventId = `dual:${objectId}:${eventType}:${payload.occurred_at ?? Date.now()}`;
 
   const existing = await db.event.findUnique({
-    where: { source_sourceEventId: { source: EventSource.MOCK, sourceEventId } },
+    where: { source_sourceEventId: { source: EventSource.DUAL, sourceEventId } },
   });
   if (existing) {
     console.log(`[dual-webhook] Duplicate — already stored as event ${existing.id}`);
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
   // Store raw event; rules engine (M4) processes PENDING rows
   const event = await db.event.create({
     data: {
-      source:        EventSource.MOCK,
+      source:        EventSource.DUAL,
       sourceEventId,
       contentId:     objectId,
       type:          eventType,
