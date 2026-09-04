@@ -325,24 +325,62 @@ function LoadingState() {
   );
 }
 
+// ─── Mock preview profiles ────────────────────────────────────────────────────
+
+const MOCK_PROFILES: Record<string, BadgeData> = {
+  initiate: {
+    signalScore: 0, tier: 'INITIATE',
+    xSignalLevel: 0, telegramLevel: 0, governanceLevel: 0, holderLevel: 0,
+    isOG: false, walletAddress: '0x0000000000000000000000000000000000000000', memberSince: '2025-01',
+  },
+  explorer: {
+    signalScore: 150, tier: 'EXPLORER',
+    xSignalLevel: 1, telegramLevel: 1, governanceLevel: 0, holderLevel: 1,
+    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-03',
+  },
+  builder: {
+    signalScore: 380, tier: 'BUILDER',
+    xSignalLevel: 2, telegramLevel: 2, governanceLevel: 1, holderLevel: 2,
+    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-04',
+  },
+  stakeholder: {
+    signalScore: 750, tier: 'STAKEHOLDER',
+    xSignalLevel: 4, telegramLevel: 4, governanceLevel: 4, holderLevel: 4,
+    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-06',
+  },
+  genesis: {
+    signalScore: 920, tier: 'GENESIS',
+    xSignalLevel: 5, telegramLevel: 4, governanceLevel: 4, holderLevel: 5,
+    isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-11',
+  },
+  legend: {
+    signalScore: 1000, tier: 'LEGEND',
+    xSignalLevel: 5, telegramLevel: 5, governanceLevel: 5, holderLevel: 5,
+    isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-09',
+  },
+};
+
 // ─── Page inner ───────────────────────────────────────────────────────────────
 
 function BadgeFaceInner() {
   const params       = useSearchParams();
   const dualObjectId = params.get('id');
+  const mockKey      = params.get('mock');
   const debug        = params.get('debugLayout') === '1';
 
-  const [data, setData]       = useState<BadgeData | null>(null);
-  const [loading, setLoading] = useState(!!dualObjectId);
+  const mockData = mockKey ? (MOCK_PROFILES[mockKey] ?? null) : null;
+
+  const [data, setData]       = useState<BadgeData | null>(mockData);
+  const [loading, setLoading] = useState(!mockData && !!dualObjectId);
   const [error, setError]     = useState(false);
 
   useEffect(() => {
-    if (!dualObjectId) { setLoading(false); return; }
+    if (mockData || !dualObjectId) { setLoading(false); return; }
     fetch(`/api/faces/${dualObjectId}`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d: BadgeData) => { setData(d); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-  }, [dualObjectId]);
+  }, [dualObjectId, mockData]);
 
   if (loading) return <LoadingState />;
   if (error || !data) {
