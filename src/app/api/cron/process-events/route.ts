@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { processDualEvent } from '@/lib/rules-engine';
+import { runPendingUpdates } from '@/lib/update-worker';
 import { EventSource, EventStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +62,14 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(`[process-events] processed=${processed} rejected=${rejected} errors=${errors}`);
+
+  // Auto-flush badge updates to DUAL if write credentials are present
+  if (processed > 0 && process.env.DUAL_EMAIL && process.env.DUAL_PASSWORD) {
+    runPendingUpdates().catch((err) =>
+      console.error('[process-events] flush-updates error:', err),
+    );
+  }
+
   return NextResponse.json({ processed, rejected, errors, total: pending.length });
 }
 
