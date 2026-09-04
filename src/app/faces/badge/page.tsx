@@ -56,21 +56,8 @@ const L = {
   // Progress bar fill — inside the existing bar frame
   bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
 
-  // Achievement icon slots — over the octagonal sockets, 5.5% wide
-  icons: [
-    { l: 56.5, t: 51.5 },  // X SIGNAL
-    { l: 56.5, t: 60.2 },  // TELEGRAM
-    { l: 56.5, t: 68.8 },  // GOVERNANCE
-    { l: 56.5, t: 77.4 },  // HOLDER / STAKING
-  ],
-
-  // Roman numeral level — aligned with background "—" dash position
-  levels: [
-    { r: 7.5, t: 55.0 },
-    { r: 7.5, t: 63.7 },
-    { r: 7.5, t: 72.3 },
-    { r: 7.5, t: 80.9 },
-  ],
+  // Single achievement zone — icon column left, level column right, 4 equal rows inside
+  achievements: { l: 55.0, t: 51.5, r: 4.5, h: 35 },
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -213,16 +200,19 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
 
       {/* z=5 — Wallet value */}
       <Slot cfg={L.wallet} debug={debug} debugColor="#0f0" style={{
-        zIndex:         5,
-        display:        'flex',
-        alignItems:     'center',
+        zIndex:      5,
+        display:     'flex',
+        alignItems:  'center',
+        paddingTop:  '1.2%',
+        paddingRight: '12%',
       }}>
         <span style={{
           color:         C.tealLt,
           fontFamily:    'Rajdhani, monospace',
-          fontSize:      'clamp(11px, 2.3%, 20px)',
-          fontWeight:    700,
+          fontSize:      'clamp(12px, 2.6%, 22px)',
+          fontWeight:    600,
           letterSpacing: '0.04em',
+          whiteSpace:    'nowrap',
         }}>
           {shortWallet}
         </span>
@@ -266,52 +256,69 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         }} />
       </Slot>
 
-      {/* z=3 — Achievement icons (4 sockets) */}
-      {tracks.map(({ src, level }, i) => (
-        <Slot
-          key={i}
-          cfg={{ l: L.icons[i].l, t: L.icons[i].t, w: 5.5 }}
-          debug={debug}
-          debugColor="#9f9"
-          style={{ zIndex: 3, aspectRatio: '1', opacity: level > 0 ? 1 : 0.35 }}
-        >
-          <img
-            src={src}
-            alt=""
-            draggable={false}
-            style={{
-              width:      '100%',
-              height:     '100%',
-              objectFit:  'contain',
-              display:    'block',
-              background: 'transparent',
-              /* TODO: achievement PNGs lack alpha — replace with RGBA exports */
-            }}
-          />
-        </Slot>
-      ))}
-
-      {/* z=5 — Level roman numerals */}
-      {tracks.map(({ level }, i) => (
-        <Slot
-          key={i}
-          cfg={{ r: L.levels[i].r, t: L.levels[i].t }}
-          debug={debug}
-          debugColor="#f99"
-          style={{ zIndex: 5 }}
-        >
-          <span style={{
-            color:         level > 0 ? C.tealLt : C.dim,
-            fontFamily:    'Rajdhani, Orbitron, monospace',
-            fontSize:      'clamp(8px, 1.8%, 14px)',
-            fontWeight:    700,
-            letterSpacing: '0.05em',
-            whiteSpace:    'nowrap',
+      {/* z=3 — Achievement zone: 4 equal rows, icon left + level right */}
+      <Slot
+        cfg={L.achievements}
+        debug={debug}
+        debugColor="#9f9"
+        style={{
+          zIndex:        3,
+          display:       'flex',
+          flexDirection: 'column',
+          justifyContent:'space-between',
+        }}
+      >
+        {tracks.map(({ src, level }, i) => (
+          <div key={i} style={{
+            flex:        1,
+            display:     'flex',
+            alignItems:  'center',
+            minHeight:   0,
           }}>
-            {level > 0 ? ROMAN[level] : '—'}
-          </span>
-        </Slot>
-      ))}
+            {/* Badge icon — full opacity always; locked = dimmed via brightness only */}
+            <div style={{
+              flexShrink:     0,
+              width:          '16%',
+              aspectRatio:    '1',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+            }}>
+              <img
+                src={src}
+                alt=""
+                draggable={false}
+                style={{
+                  width:      '100%',
+                  height:     '100%',
+                  objectFit:  'contain',
+                  display:    'block',
+                  opacity:    1,
+                  filter:     level > 0
+                    ? 'drop-shadow(0 0 4px rgba(94,211,234,0.45)) drop-shadow(0 0 8px rgba(21,157,184,0.20))'
+                    : 'brightness(0.45)',
+                }}
+              />
+            </div>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* Level indicator */}
+            <span style={{
+              color:         level > 0 ? C.tealLt : C.dim,
+              fontFamily:    'Rajdhani, Orbitron, monospace',
+              fontSize:      'clamp(9px, 1.8%, 15px)',
+              fontWeight:    700,
+              letterSpacing: '0.05em',
+              whiteSpace:    'nowrap',
+              paddingRight:  '2%',
+            }}>
+              {level > 0 ? ROMAN[level] : '—'}
+            </span>
+          </div>
+        ))}
+      </Slot>
     </div>
   );
 }
