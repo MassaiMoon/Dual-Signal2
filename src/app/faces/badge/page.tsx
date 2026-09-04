@@ -2,333 +2,224 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { tierAssets, achievementAssets, specialAssets } from '@/lib/assets';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-const COLORS = {
+const C = {
   navy:    '#002433',
   teal:    '#159DB8',
   electric:'#5ED3EA',
-  darkTeal:'#170E1C',
-  midnight:'#140E1C',
-  silver:  '#E5F0F8',
   gold:    '#F7C873',
-  purple:  '#BB5CF8',
-  white:   '#F4FAF9',
+  silver:  '#E5F0F8',
+  dim:     '#4A7A8A',
 } as const;
 
-type Tier = 'INITIATE' | 'EXPLORER' | 'CONTRIBUTOR' | 'BUILDER' | 'VALIDATOR';
+// ─── Track level display names ─────────────────────────────────────────────────
 
-interface BadgeConfig {
-  frameColor:  string;
-  glowColor:   string;
-  glowRadius:  number;
-  auraOpacity: number;
-  label:       string;
+const LEVEL_NAMES = {
+  xSignal:       ['—', 'FIRST SIGNAL', 'SPARK', 'PULSE', 'WAVE', 'IMPACT'],
+  telegram:      ['—', 'FIRST CONTACT', 'REGULAR', 'CONNECTED', 'CORE MEMBER', 'PILLAR'],
+  governance:    ['—', 'FIRST VOTE', 'VOTER', 'PARTICIPANT', 'GOVERNOR', 'STEWARD'],
+  holderStaking: ['—', 'HOLDER', 'COMMITTED', 'DEDICATED', 'BELIEVER', 'DIAMOND WINGS'],
+} as const;
+
+// ─── Badge data shape ─────────────────────────────────────────────────────────
+
+interface BadgeData {
+  signalScore:     number;
+  tier:            string;
+  xSignalLevel:    number;
+  telegramLevel:   number;
+  governanceLevel: number;
+  holderLevel:     number;
+  isOG:            boolean;
+  walletAddress:   string;
+  memberSince:     string;
 }
 
-const TIER_CONFIG: Record<Tier, BadgeConfig> = {
-  INITIATE:    { frameColor: COLORS.teal,    glowColor: COLORS.teal,    glowRadius: 20, auraOpacity: 0.3,  label: 'INITIATE'    },
-  EXPLORER:    { frameColor: COLORS.electric,glowColor: COLORS.electric,glowRadius: 30, auraOpacity: 0.45, label: 'EXPLORER'    },
-  CONTRIBUTOR: { frameColor: COLORS.electric,glowColor: COLORS.electric,glowRadius: 35, auraOpacity: 0.5,  label: 'CONTRIBUTOR' },
-  BUILDER:     { frameColor: COLORS.electric,glowColor: COLORS.electric,glowRadius: 45, auraOpacity: 0.6,  label: 'BUILDER'     },
-  VALIDATOR:   { frameColor: COLORS.purple,  glowColor: COLORS.purple,  glowRadius: 60, auraOpacity: 0.75, label: 'VALIDATOR'   },
-};
+// ─── Achievement emblem using PNG ─────────────────────────────────────────────
 
-function getBadgeImage(tier: Tier, isGenesis: boolean, isStakeholder: boolean): string {
-  if (isGenesis)    return '/badges/genesis.png';
-  if (isStakeholder) return '/badges/stakeholder.png';
-  if (tier === 'VALIDATOR')                      return '/badges/legend.png';
-  if (tier === 'BUILDER' || tier === 'CONTRIBUTOR') return '/badges/builder.png';
-  if (tier === 'EXPLORER')                       return '/badges/explorer.png';
-  return '/badges/initiate.png';
-}
-
-const ACHIEVEMENT_LABELS: Record<string, string> = {
-  FIRST_SIGNAL: 'FIRST SIGNAL',
-  AMPLIFIER_I:  'AMPLIFIER I',
-  AMPLIFIER_II: 'AMPLIFIER II',
-  BROADCASTER:  'BROADCASTER',
-};
-
-function hexPoints(cx: number, cy: number, r: number): string {
-  return Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 180) * (60 * i - 30);
-    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
-  }).join(' ');
-}
-
-// ─── Aura glow layer ──────────────────────────────────────────────────────────
-
-function Aura({ cx, cy, color, opacity }: { cx: number; cy: number; color: string; opacity: number }) {
-  return (
-    <g>
-      <radialGradient id="aura-grad" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor={color} stopOpacity={opacity * 0.6} />
-        <stop offset="60%" stopColor={color} stopOpacity={opacity * 0.15} />
-        <stop offset="100%" stopColor={color} stopOpacity={0} />
-      </radialGradient>
-      <ellipse cx={cx} cy={cy} rx={160} ry={160} fill="url(#aura-grad)" />
-    </g>
-  );
-}
-
-// ─── Genesis particles ────────────────────────────────────────────────────────
-
-function GenesisParticles({ cx, cy }: { cx: number; cy: number }) {
-  const particles = [
-    { x: -110, y: -60, r: 2.5 }, { x: 115, y: -50, r: 2 },
-    { x: -95, y: 70,  r: 3   }, { x: 100, y: 75,  r: 2.5 },
-    { x: -60, y: -115,r: 2   }, { x: 65,  y: -110,r: 1.5 },
-    { x: -130,y: 15,  r: 1.5 }, { x: 135, y: 20,  r: 2   },
-    { x: -40, y: 120, r: 2   }, { x: 45,  y: 118, r: 1.5 },
-  ];
-  return (
-    <g>
-      {particles.map((p, i) => (
-        <circle key={i} cx={cx + p.x} cy={cy + p.y} r={p.r}
-          fill={COLORS.gold} opacity={0.6 + (i % 3) * 0.1}>
-          <animate attributeName="opacity" values="0.4;0.9;0.4"
-            dur={`${2 + (i % 4) * 0.5}s`} repeatCount="indefinite" />
-        </circle>
-      ))}
-      {/* Crystalline lines */}
-      <line x1={cx - 110} y1={cy - 60} x2={cx - 95} y2={cy + 70}
-        stroke={COLORS.gold} strokeWidth="0.5" opacity={0.2} />
-      <line x1={cx + 115} y1={cy - 50} x2={cx + 100} y2={cy + 75}
-        stroke={COLORS.gold} strokeWidth="0.5" opacity={0.2} />
-    </g>
-  );
-}
-
-// ─── Achievement emblem ───────────────────────────────────────────────────────
-
-function AchievementEmblem({ x, y, label, active }: { x: number; y: number; label: string; active: boolean }) {
-  const pts = hexPoints(x, y, 22);
-  return (
-    <g opacity={active ? 1 : 0.2}>
-      <polygon points={pts} fill={active ? 'rgba(21,157,184,0.15)' : 'rgba(21,157,184,0.05)'}
-        stroke={active ? COLORS.teal : '#2a4a56'} strokeWidth="1.5" />
-      <text x={x} y={y + 4} textAnchor="middle" fill={active ? COLORS.electric : '#2a5a6a'}
-        fontSize="7" fontFamily="'Orbitron', monospace" fontWeight="600" letterSpacing="0">
-        {label.split(' ').map((w, i, arr) => (
-          <tspan key={i} x={x} dy={i === 0 ? (arr.length > 1 ? -5 : 0) : 11}>{w}</tspan>
-        ))}
-      </text>
-    </g>
-  );
-}
-
-// ─── Status chip ──────────────────────────────────────────────────────────────
-
-function StatusChip({ x, y, label, color }: { x: number; y: number; label: string; color: string }) {
-  return (
-    <g>
-      <rect x={x - 32} y={y - 10} width={64} height={20} rx={10}
-        fill={`${color}22`} stroke={color} strokeWidth="1" />
-      <text x={x} y={y + 4} textAnchor="middle" fill={color}
-        fontSize="8" fontFamily="'Orbitron', monospace" fontWeight="700" letterSpacing="1">
-        {label}
-      </text>
-    </g>
-  );
-}
-
-// ─── Main badge SVG ───────────────────────────────────────────────────────────
-
-function BadgeSVG({
-  tier, isGenesis, isStakeholder, isGovernor, signalCount, achievementLevel, walletAddress, memberSince,
+function TrackEmblem({
+  src, label, sublabel, level, active,
 }: {
-  tier:             Tier;
-  isGenesis:        boolean;
-  isStakeholder:    boolean;
-  isGovernor:       boolean;
-  signalCount:      number;
-  achievementLevel: string;
-  walletAddress:    string;
-  memberSince:      string;
+  src:      string;
+  label:    string;
+  sublabel: string;
+  level:    number;
+  active:   boolean;
 }) {
-  const cfg = TIER_CONFIG[tier] ?? TIER_CONFIG.INITIATE;
-  const W = 360, H = 480;
-  const cx = W / 2, cy = 200;
-  const imgSize = 240;
+  return (
+    <div style={{
+      display:       'flex',
+      flexDirection: 'column',
+      alignItems:    'center',
+      gap:           4,
+      opacity:       active ? 1 : 0.22,
+      transition:    'opacity 0.3s',
+    }}>
+      <img src={src} alt={label} width={52} height={52}
+        style={{ objectFit: 'contain', filter: active ? 'drop-shadow(0 0 6px #5ED3EA88)' : 'none' }} />
+      <span style={{ color: active ? C.electric : C.dim, fontSize: 7, fontFamily: 'Orbitron, monospace',
+        fontWeight: 700, letterSpacing: 0.8, textAlign: 'center', lineHeight: 1.2, maxWidth: 58 }}>
+        {active ? sublabel : label}
+      </span>
+    </div>
+  );
+}
 
-  const badgeImage = getBadgeImage(tier, isGenesis, isStakeholder);
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
-  const unlocked = (level: string) => {
-    const order = ['', 'FIRST_SIGNAL', 'AMPLIFIER_I', 'AMPLIFIER_II', 'BROADCASTER'];
-    return order.indexOf(achievementLevel) >= order.indexOf(level);
-  };
+function BadgeCard({ data }: { data: BadgeData }) {
+  const tierSrc = tierAssets[data.tier] ?? tierAssets['INITIATE'];
 
-  const shortWallet = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-    : 'No wallet';
+  const xSrc   = achievementAssets.xSignal[Math.max(1, data.xSignalLevel) as keyof typeof achievementAssets.xSignal];
+  const tgSrc  = achievementAssets.telegram[Math.max(1, data.telegramLevel) as keyof typeof achievementAssets.telegram];
+  const govSrc = achievementAssets.governance[Math.max(1, data.governanceLevel) as keyof typeof achievementAssets.governance];
+  const hldSrc = achievementAssets.holderStaking[Math.max(1, data.holderLevel) as keyof typeof achievementAssets.holderStaking];
 
-  const badgeLevel = isGenesis ? 'GENESIS' : isStakeholder ? 'STAKEHOLDER'
-    : tier === 'VALIDATOR' ? 'RARE' : tier === 'BUILDER' ? 'UNCOMMON' : 'COMMON';
+  const shortWallet = data.walletAddress
+    ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
+    : '';
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '100%', maxWidth: 400, height: 'auto', display: 'block', margin: '0 auto' }}>
+    <div style={{ position: 'relative', width: 360, margin: '0 auto', userSelect: 'none' }}>
 
-      <defs>
-        <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-          <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#0D3A4A" strokeWidth="0.5" />
-        </pattern>
-        <filter id="glow-filter">
-          <feGaussianBlur stdDeviation={cfg.glowRadius / 6} result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-
-      {/* Background */}
-      <rect width={W} height={H} fill={COLORS.navy} rx="12" />
-      <rect width={W} height={H} fill="url(#grid)" rx="12" />
-
-      {/* Top brand strip */}
-      <text x="16" y="24" fill={COLORS.electric} fontSize="10"
-        fontFamily="'Orbitron', monospace" fontWeight="700" letterSpacing="2">
-        DUAL // SIGNAL
-      </text>
-      <line x1="0" y1="34" x2={W} y2="34" stroke={COLORS.teal} strokeWidth="0.5" opacity={0.3} />
-
-      {/* Aura */}
-      <Aura cx={cx} cy={cy} color={cfg.glowColor} opacity={cfg.auraOpacity} />
-
-      {/* Genesis particles */}
-      {isGenesis && <GenesisParticles cx={cx} cy={cy} />}
-
-      {/* Badge image */}
-      <image
-        href={badgeImage}
-        x={cx - imgSize / 2}
-        y={cy - imgSize / 2}
-        width={imgSize}
-        height={imgSize}
-        preserveAspectRatio="xMidYMid meet"
-        filter="url(#glow-filter)"
+      {/* Layer 1: Card background */}
+      <img
+        src={specialAssets.cardBackground}
+        alt=""
+        draggable={false}
+        style={{ width: '100%', display: 'block', borderRadius: 16 }}
       />
 
-      {/* Governor crown */}
-      {isGovernor && (
-        <text x={cx} y={cy - imgSize / 2 - 10} textAnchor="middle"
-          fill={COLORS.gold} fontSize="20">♔</text>
-      )}
+      {/* Layer 2–5: overlays */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display:  'flex', flexDirection: 'column',
+        padding:  '18px 20px 16px',
+      }}>
 
-      {/* Identity label */}
-      <text x={cx} y={cy + imgSize / 2 + 24} textAnchor="middle"
-        fill={cfg.frameColor} fontSize="14" fontFamily="'Orbitron', monospace"
-        fontWeight="900" letterSpacing="4">
-        {cfg.label}
-      </text>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: C.electric, fontFamily: 'Orbitron, monospace', fontSize: 10,
+            fontWeight: 700, letterSpacing: 2 }}>DUAL // SIGNAL</span>
+          {data.memberSince && (
+            <span style={{ color: C.dim, fontFamily: 'monospace', fontSize: 8 }}>
+              SINCE {data.memberSince}
+            </span>
+          )}
+        </div>
 
-      {/* Status chips */}
-      <g transform={`translate(${cx}, ${cy + imgSize / 2 + 46})`}>
-        {isGenesis && isStakeholder ? (
-          <>
-            <StatusChip x={-36} y={0} label="GENESIS" color={COLORS.gold} />
-            <StatusChip x={36} y={0} label="STAKER" color={COLORS.electric} />
-          </>
-        ) : isGenesis ? (
-          <StatusChip x={0} y={0} label="GENESIS" color={COLORS.gold} />
-        ) : isStakeholder ? (
-          <StatusChip x={0} y={0} label="STAKEHOLDER" color={COLORS.electric} />
-        ) : null}
-      </g>
+        {/* Tier butterfly */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', marginTop: 8 }}>
+          <img
+            src={tierSrc}
+            alt={data.tier}
+            draggable={false}
+            style={{
+              width:  220, height: 220,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 24px #5ED3EA66)',
+            }}
+          />
 
-      {/* Achievement emblems row */}
-      <g transform={`translate(${cx}, ${cy + imgSize / 2 + 80})`}>
-        <AchievementEmblem x={-108} y={0} label="1ST SIGNAL" active={unlocked('FIRST_SIGNAL')} />
-        <AchievementEmblem x={-54}  y={0} label="AMP I"      active={unlocked('AMPLIFIER_I')} />
-        <AchievementEmblem x={0}    y={0} label="AMP II"     active={unlocked('AMPLIFIER_II')} />
-        <AchievementEmblem x={54}   y={0} label="BROAD"      active={unlocked('BROADCASTER')} />
-        {isStakeholder && (
-          <AchievementEmblem x={108} y={0} label="STAKER" active={true} />
+          {/* OG emblem — top-right corner of butterfly */}
+          {data.isOG && (
+            <img
+              src={specialAssets.OG}
+              alt="OG"
+              draggable={false}
+              style={{
+                position: 'absolute', top: 0, right: 10,
+                width: 48, height: 48,
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 8px #F7C87388)',
+              }}
+            />
+          )}
+        </div>
+
+        {/* Tier name + Signal Score */}
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+          <div style={{ color: C.electric, fontFamily: 'Orbitron, monospace', fontSize: 18,
+            fontWeight: 900, letterSpacing: 4 }}>
+            {data.tier}
+          </div>
+          <div style={{ color: C.gold, fontFamily: 'Orbitron, monospace', fontSize: 11,
+            fontWeight: 700, letterSpacing: 2, marginTop: 2 }}>
+            ⚡ {data.signalScore} <span style={{ color: C.dim, fontWeight: 400 }}>/ 1000 SIGNAL</span>
+          </div>
+        </div>
+
+        {/* Achievement track emblems */}
+        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start',
+          marginBottom: 10 }}>
+          <TrackEmblem src={xSrc}   label="X"          sublabel={LEVEL_NAMES.xSignal[data.xSignalLevel]}
+            level={data.xSignalLevel}   active={data.xSignalLevel > 0} />
+          <TrackEmblem src={tgSrc}  label="TELEGRAM"   sublabel={LEVEL_NAMES.telegram[data.telegramLevel]}
+            level={data.telegramLevel}  active={data.telegramLevel > 0} />
+          <TrackEmblem src={govSrc} label="GOVERNANCE" sublabel={LEVEL_NAMES.governance[data.governanceLevel]}
+            level={data.governanceLevel} active={data.governanceLevel > 0} />
+          <TrackEmblem src={hldSrc} label="HOLDER"     sublabel={LEVEL_NAMES.holderStaking[data.holderLevel]}
+            level={data.holderLevel}    active={data.holderLevel > 0} />
+        </div>
+
+        {/* Footer: wallet */}
+        {shortWallet && (
+          <div style={{ textAlign: 'center' }}>
+            <span style={{ color: C.dim, fontFamily: 'monospace', fontSize: 8, letterSpacing: 1 }}>
+              {shortWallet}
+            </span>
+          </div>
         )}
-      </g>
-
-      {/* Metadata strip */}
-      <rect x={0} y={H - 54} width={W} height={54} fill={COLORS.midnight} rx="0" />
-      <rect x={0} y={H - 54} width={W} height={54} rx="0"
-        style={{ borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }} />
-      <line x1={0} y1={H - 54} x2={W} y2={H - 54} stroke={cfg.frameColor} strokeWidth="0.8" opacity={0.5} />
-
-      {/* Strip: brand / wallet / level */}
-      <text x={12} y={H - 34} fill={COLORS.electric} fontSize="8"
-        fontFamily="'Orbitron', monospace" fontWeight="700" letterSpacing="1">
-        DUAL // SIGNAL
-      </text>
-      <text x={cx} y={H - 34} textAnchor="middle" fill={COLORS.silver} fontSize="8"
-        fontFamily="monospace" opacity={0.7}>
-        {shortWallet}
-      </text>
-      <text x={W - 12} y={H - 34} textAnchor="end" fill={cfg.frameColor} fontSize="8"
-        fontFamily="'Orbitron', monospace" fontWeight="700" letterSpacing="1">
-        {badgeLevel}
-      </text>
-
-      {/* Strip row 2: signal count / member since */}
-      <text x={12} y={H - 16} fill={COLORS.teal} fontSize="7.5" fontFamily="monospace" opacity={0.8}>
-        ⚡ {signalCount} signals
-      </text>
-      {memberSince && (
-        <text x={W - 12} y={H - 16} textAnchor="end" fill={COLORS.silver} fontSize="7.5"
-          fontFamily="monospace" opacity={0.6}>
-          SINCE {memberSince}
-        </text>
-      )}
-    </svg>
+      </div>
+    </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
 
-interface ObjectData {
-  custom?: {
-    identity_tier?:    string;
-    is_genesis?:       string;
-    is_stakeholder?:   string;
-    is_governor?:      string;
-    signal_count?:     string;
-    achievement_level?:string;
-    wallet_address?:   string;
-    member_since?:     string;
-    discord_handle?:   string;
-  };
-  metadata?: { name?: string };
+function LoadingState() {
+  return (
+    <div style={pageStyle}>
+      <div style={{ color: C.electric, fontFamily: 'Orbitron, monospace', fontSize: 13, letterSpacing: 3 }}>
+        LOADING...
+      </div>
+    </div>
+  );
 }
 
-function BadgeFaceInner() {
-  const params = useSearchParams();
-  const objectId = params.get('id');
+// ─── Page inner (uses search params) ─────────────────────────────────────────
 
-  const [data, setData] = useState<ObjectData | null>(null);
-  const [loading, setLoading] = useState(!!objectId);
+function BadgeFaceInner() {
+  const params      = useSearchParams();
+  const dualObjectId = params.get('id');
+
+  const [data, setData]   = useState<BadgeData | null>(null);
+  const [loading, setLoading] = useState(!!dualObjectId);
+  const [error, setError]   = useState(false);
 
   useEffect(() => {
-    if (!objectId) return;
-    fetch(`https://api.dual.network/public/objects/${objectId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [objectId]);
+    if (!dualObjectId) { setLoading(false); return; }
 
-  const custom = data?.custom ?? {};
+    fetch(`/api/faces/${dualObjectId}`)
+      .then(r => {
+        if (!r.ok) throw new Error('not found');
+        return r.json();
+      })
+      .then((d: BadgeData) => { setData(d); setLoading(false); })
+      .catch(() => { setError(true); setLoading(false); });
+  }, [dualObjectId]);
 
-  const tier       = (custom.identity_tier as Tier | undefined) ?? 'INITIATE';
-  const isGenesis  = custom.is_genesis     === 'true';
-  const isStaker   = custom.is_stakeholder === 'true';
-  const isGovernor = custom.is_governor    === 'true';
-  const signals    = parseInt(custom.signal_count ?? '0', 10);
-  const achLevel   = custom.achievement_level ?? '';
-  const wallet     = custom.wallet_address    ?? '';
-  const since      = custom.member_since      ?? '';
+  if (loading) return <LoadingState />;
 
-  if (loading) {
+  if (error || !data) {
     return (
       <div style={pageStyle}>
-        <div style={{ color: COLORS.electric, fontFamily: 'Orbitron, monospace', fontSize: 13, letterSpacing: 3 }}>
-          LOADING...
+        <div style={{ color: C.teal, fontFamily: 'Orbitron, monospace', fontSize: 11, letterSpacing: 2 }}>
+          BADGE NOT FOUND
         </div>
       </div>
     );
@@ -337,37 +228,18 @@ function BadgeFaceInner() {
   return (
     <div style={pageStyle}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-      <style>{`
-        @keyframes pulse-aura {
-          0%, 100% { opacity: 0.6; }
-          50%       { opacity: 1;   }
-        }
-        body { margin: 0; background: ${COLORS.navy}; }
-      `}</style>
-      <BadgeSVG
-        tier={tier}
-        isGenesis={isGenesis}
-        isStakeholder={isStaker}
-        isGovernor={isGovernor}
-        signalCount={signals}
-        achievementLevel={achLevel}
-        walletAddress={wallet}
-        memberSince={since}
-      />
+      <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+      <style>{`body { margin: 0; background: ${C.navy}; }`}</style>
+      <BadgeCard data={data} />
     </div>
   );
 }
 
+// ─── Exported page ─────────────────────────────────────────────────────────────
+
 export default function BadgeFacePage() {
   return (
-    <Suspense fallback={
-      <div style={pageStyle}>
-        <div style={{ color: COLORS.electric, fontFamily: 'Orbitron, monospace', fontSize: 13, letterSpacing: 3 }}>
-          LOADING...
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingState />}>
       <BadgeFaceInner />
     </Suspense>
   );
@@ -378,6 +250,6 @@ const pageStyle: React.CSSProperties = {
   display:        'flex',
   alignItems:     'center',
   justifyContent: 'center',
-  background:     COLORS.navy,
+  background:     C.navy,
   padding:        '24px',
 };

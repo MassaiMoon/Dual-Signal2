@@ -6,12 +6,34 @@ dist/
 *.log
 .DS_Store
 
-# Source design assets in root (too large for git, keep locally)
-/ChatGPT*.png
-/initiate.png
-/explorer.png
-/builder.png
-/stakeholder.png
-/genesis.png
-/Legend.png
+# Source design assets in root (keep locally, too large for git)
+/card-background.png
+/tier-1-initiate.png
+/tier-2-explorer.png
+/tier-3-builder.png
+/tier-4-stakeholder.png
+/tier-5-genesis.png
+/tier-6-legend.png
+/x-1-first-signal.png
+/x-2-spark.png
+/x-3-pulse.png
+/x-4-wave.png
+/x-5-impact.png
+/telegram-1-first-contact.png
+/telegram-2-regular.png
+/telegram-3-connected.png
+/telegram-4-core-member.png
+/telegram-5-pillar.png
+/governance-1-first-vote.png
+/governance-2-voter.png
+/governance-3-participant.png
+/governance-4-governor.png
+/governance-5-steward.png
+/holder-1-holder.png
+/holder-2-committed.png
+/holder-3-dedicated.png
+/holder-4-believer.png
+/holder-5-diamond-wings.png
+/og.png
 /M1_RESEARCH.md
+/ChatGPT*.png

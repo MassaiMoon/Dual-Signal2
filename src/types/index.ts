@@ -1,34 +1,24 @@
-// Shared request/response types for API routes
-
 export type SimulateEventBody = {
-  // Which badge to send the event to
-  badgeId: string;
-  // Event type (POST_CREATED, REPLY, SHARE, ...)
-  eventType: string;
-  // Unique ID of the content (prevents double-count on retry)
+  badgeId:   string;
+  track:     'xSignal' | 'telegram' | 'governance' | 'holderStaking';
   contentId: string;
-  // Admin secret
-  secret: string;
-};
-
-export type WebhookTestBody = {
-  // Source to simulate
-  source: string;
-  eventType: string;
-  externalUserId: string;
-  contentId: string;
-  payload?: Record<string, unknown>;
-  // Webhook test secret
-  secret: string;
+  secret:    string;
+  // Optional: raw progress value to set directly (overrides +1 increment)
+  progress?: number;
 };
 
 export type BadgeResponse = {
-  id: string;
-  dualObjectId: string;
-  identityTier: string;
-  signalCount: number;
-  achievementLevel: string;
-  achievements: Array<{ type: string; level: number; progress: number }>;
+  id:             string;
+  dualObjectId:   string;
+  signalScore:    number;
+  tier:           string;
+  xSignalLevel:   number;
+  telegramLevel:  number;
+  governanceLevel:number;
+  holderLevel:    number;
+  isOG:           boolean;
+  walletAddress:  string;
+  memberSince:    string;
 };
 
 export type ApiError = {
