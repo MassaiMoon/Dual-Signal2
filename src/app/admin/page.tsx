@@ -95,6 +95,7 @@ export default function AdminPage() {
   const [error,    setError]    = useState('');
   const [tab,      setTab]      = useState<'badges' | 'events' | 'queue'>('badges');
   const [toasting, setToasting] = useState('');
+  const [rightPanel, setRightPanel] = useState<'mint' | 'update'>('mint');
 
   // Mint form state
   const [mintWallet, setMintWallet] = useState('');
@@ -103,6 +104,15 @@ export default function AdminPage() {
   const [mintOG, setMintOG] = useState(false);
   const [minting, setMinting] = useState(false);
   const [mintResult, setMintResult] = useState('');
+
+  // Update score form state
+  const [updWallet, setUpdWallet] = useState('');
+  const [updX,      setUpdX]      = useState('');
+  const [updTg,     setUpdTg]     = useState('');
+  const [updGov,    setUpdGov]    = useState('');
+  const [updHld,    setUpdHld]    = useState('');
+  const [updating,  setUpdating]  = useState(false);
+  const [updResult, setUpdResult] = useState('');
 
   // Restore token from sessionStorage
   useEffect(() => {
@@ -145,6 +155,36 @@ export default function AdminPage() {
       setToasting(`${label}: ${JSON.stringify(json)}`);
     } catch (e) { setToasting(`Error: ${e}`); }
     setTimeout(() => { setToasting(''); load(token); }, 3000);
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    setUpdating(true);
+    setUpdResult('');
+    try {
+      const body: Record<string, unknown> = { walletAddress: updWallet.trim() };
+      if (updX   !== '') body.xImpressions       = Number(updX);
+      if (updTg  !== '') body.telegramActiveDays  = Number(updTg);
+      if (updGov !== '') body.governanceVotes     = Number(updGov);
+      if (updHld !== '') body.holderQualDays      = Number(updHld);
+
+      const res = await fetch('/api/admin/update-score', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) { setUpdResult(`Error: ${json.error}`); return; }
+      const { status, signalScore, tier, dualUpdateQueued } = json;
+      setUpdResult(
+        status === 'no_change'
+          ? 'No change — score already matches.'
+          : `Updated → ${tier} · ${signalScore} SIGNAL${dualUpdateQueued ? ' · DUAL write queued' : ''}`,
+      );
+      setUpdWallet(''); setUpdX(''); setUpdTg(''); setUpdGov(''); setUpdHld('');
+      setTimeout(() => { setUpdResult(''); load(token); }, 3500);
+    } catch (e) { setUpdResult(`Error: ${e}`); }
+    finally { setUpdating(false); }
   }
 
   async function handleMint(e: React.FormEvent) {
@@ -393,56 +433,143 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Right: Mint form */}
+        {/* Right: Mint / Update Score panels */}
         <div style={styles.mintPanel}>
-          <div style={styles.panelTitle}>Quick Mint</div>
-          <form onSubmit={handleMint} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={styles.label}>Wallet Address *</label>
-            <input
-              style={styles.input}
-              placeholder="0x..."
-              value={mintWallet}
-              onChange={e => setMintWallet(e.target.value)}
-              required
-            />
-            <label style={styles.label}>Discord Handle</label>
-            <input
-              style={styles.input}
-              placeholder="@handle"
-              value={mintDiscord}
-              onChange={e => setMintDiscord(e.target.value)}
-            />
-            <label style={styles.label}>Telegram Handle</label>
-            <input
-              style={styles.input}
-              placeholder="@handle"
-              value={mintTg}
-              onChange={e => setMintTg(e.target.value)}
-            />
-            <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          {/* Panel tabs */}
+          <div style={{ display: 'flex', gap: 0, marginBottom: 18, borderBottom: '1px solid rgba(94,211,234,0.1)' }}>
+            {(['mint', 'update'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => setRightPanel(p)}
+                style={{
+                  ...styles.tab,
+                  ...(rightPanel === p ? styles.tabActive : {}),
+                  padding: '7px 14px',
+                  fontSize: 10,
+                }}
+              >
+                {p === 'mint' ? 'Quick Mint' : 'Update Score'}
+              </button>
+            ))}
+          </div>
+
+          {/* Mint form */}
+          {rightPanel === 'mint' && (
+            <form onSubmit={handleMint} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={styles.label}>Wallet Address *</label>
               <input
-                type="checkbox"
-                checked={mintOG}
-                onChange={e => setMintOG(e.target.checked)}
-                style={{ accentColor: '#5ED3EA' }}
+                style={styles.input}
+                placeholder="0x..."
+                value={mintWallet}
+                onChange={e => setMintWallet(e.target.value)}
+                required
               />
-              Genesis OG member
-            </label>
-            {mintResult && (
-              <div style={{
-                fontSize: 12,
-                color: mintResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
-                padding: '8px 10px',
-                background: 'rgba(94,211,234,0.06)',
-                borderRadius: 6,
-              }}>
-                {mintResult}
+              <label style={styles.label}>Discord Handle</label>
+              <input
+                style={styles.input}
+                placeholder="@handle"
+                value={mintDiscord}
+                onChange={e => setMintDiscord(e.target.value)}
+              />
+              <label style={styles.label}>Telegram Handle</label>
+              <input
+                style={styles.input}
+                placeholder="@handle"
+                value={mintTg}
+                onChange={e => setMintTg(e.target.value)}
+              />
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={mintOG}
+                  onChange={e => setMintOG(e.target.checked)}
+                  style={{ accentColor: '#5ED3EA' }}
+                />
+                Genesis OG member
+              </label>
+              {mintResult && (
+                <div style={{
+                  fontSize: 12,
+                  color: mintResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
+                  padding: '8px 10px',
+                  background: 'rgba(94,211,234,0.06)',
+                  borderRadius: 6,
+                }}>
+                  {mintResult}
+                </div>
+              )}
+              <button type="submit" style={styles.btnPrimary} disabled={minting}>
+                {minting ? 'Minting…' : 'Mint Badge'}
+              </button>
+            </form>
+          )}
+
+          {/* Update Score form */}
+          {rightPanel === 'update' && (
+            <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={styles.label}>Wallet Address *</label>
+              <input
+                style={styles.input}
+                placeholder="0x..."
+                value={updWallet}
+                onChange={e => setUpdWallet(e.target.value)}
+                required
+              />
+              <div style={{ fontSize: 11, color: '#3A5060', marginBottom: 2 }}>
+                Leave blank to keep existing value
               </div>
-            )}
-            <button type="submit" style={styles.btnPrimary} disabled={minting}>
-              {minting ? 'Minting…' : 'Mint Badge'}
-            </button>
-          </form>
+              <label style={styles.label}>X Impressions</label>
+              <input
+                style={styles.input}
+                type="number"
+                min={0}
+                placeholder="e.g. 50000"
+                value={updX}
+                onChange={e => setUpdX(e.target.value)}
+              />
+              <label style={styles.label}>Telegram Active Days</label>
+              <input
+                style={styles.input}
+                type="number"
+                min={0}
+                placeholder="e.g. 30"
+                value={updTg}
+                onChange={e => setUpdTg(e.target.value)}
+              />
+              <label style={styles.label}>Governance Votes</label>
+              <input
+                style={styles.input}
+                type="number"
+                min={0}
+                placeholder="e.g. 5"
+                value={updGov}
+                onChange={e => setUpdGov(e.target.value)}
+              />
+              <label style={styles.label}>Holder Qualifying Days</label>
+              <input
+                style={styles.input}
+                type="number"
+                min={0}
+                placeholder="e.g. 90"
+                value={updHld}
+                onChange={e => setUpdHld(e.target.value)}
+              />
+              {updResult && (
+                <div style={{
+                  fontSize: 12,
+                  color: updResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
+                  padding: '8px 10px',
+                  background: 'rgba(94,211,234,0.06)',
+                  borderRadius: 6,
+                }}>
+                  {updResult}
+                </div>
+              )}
+              <button type="submit" style={styles.btnPrimary} disabled={updating}>
+                {updating ? 'Updating…' : 'Update Score'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
