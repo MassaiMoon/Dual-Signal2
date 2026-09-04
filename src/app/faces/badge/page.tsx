@@ -41,17 +41,21 @@ function TrackRow({ src, label, level, gold }: {
 }) {
   const active = level > 0;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7, opacity: active ? 1 : 0.3 }}>
-      <img src={src} alt={label} width={16} height={16} style={{
-        objectFit: 'contain',
-        filter: active
-          ? gold ? 'drop-shadow(0 0 4px #F7C87399)' : 'drop-shadow(0 0 4px #5ED3EA88)'
-          : 'none',
-      }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: active ? 1 : 0.28 }}>
+      <img src={src} alt={label}
+        style={{
+          width: 28, height: 28,
+          objectFit: 'contain',
+          display: 'block',
+          background: 'transparent',
+          filter: active
+            ? gold ? 'drop-shadow(0 0 5px #F7C87399)' : 'drop-shadow(0 0 5px #5ED3EA88)'
+            : 'none',
+        }} />
       <span style={{ flex: 1, color: gold ? C.gold : C.silver, fontFamily: 'Orbitron, monospace',
-        fontSize: 7, letterSpacing: 0.6, whiteSpace: 'nowrap' }}>{label}</span>
+        fontSize: 7.5, letterSpacing: 0.6, whiteSpace: 'nowrap' }}>{label}</span>
       <span style={{ color: active ? (gold ? C.gold : C.electric) : C.dim,
-        fontFamily: 'Orbitron, monospace', fontSize: 9, fontWeight: 700, minWidth: 22, textAlign: 'right' }}>
+        fontFamily: 'Orbitron, monospace', fontSize: 10, fontWeight: 700, minWidth: 24, textAlign: 'right' }}>
         {active ? (gold ? 'YES' : ROMAN[level]) : '—'}
       </span>
     </div>
@@ -97,21 +101,22 @@ function BadgeCard({ data }: { data: BadgeData }) {
         {/* ── Top section: butterfly (left) + stats (right) ── */}
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
 
-          {/* Left: butterfly */}
+          {/* Left: butterfly — sits inside the circular frame of the card background */}
           <div style={{
-            flex:           '0 0 56%',
+            flex:           '0 0 62%',
             display:        'flex',
             alignItems:     'center',
             justifyContent: 'center',
             position:       'relative',
+            paddingLeft:    24,
           }}>
             <img
               src={tierSrc}
               alt={data.tier}
               draggable={false}
               style={{
-                width:     252,
-                height:    252,
+                width:     210,
+                height:    210,
                 objectFit: 'contain',
                 filter:    'drop-shadow(0 0 28px #5ED3EA66)',
               }}
@@ -141,7 +146,7 @@ function BadgeCard({ data }: { data: BadgeData }) {
             flexDirection: 'column',
             justifyContent:'center',
             gap:           10,
-            padding:       '20px 20px 12px 4px',
+            padding:       '20px 22px 12px 0',
           }}>
 
             {/* DUAL // SIGNAL wordmark */}
