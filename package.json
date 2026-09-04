@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "dual:verify": "node scripts/verify-api.mjs",
     "dual:setup": "node scripts/setup.mjs",
-    "dual:mint": "node scripts/mint-badge.mjs"
+    "dual:mint": "node scripts/mint-badge.mjs",
+    "dual:register-webhook": "node scripts/register-webhook.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
