@@ -64,6 +64,15 @@ const L = {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'] as const;
 
+const TIER_BRIGHTNESS: Record<string, number> = {
+  INITIATE:    0.70,
+  EXPLORER:    0.80,
+  BUILDER:     0.90,
+  STAKEHOLDER: 1.00,
+  GENESIS:     1.10,
+  LEGEND:      1.20,
+};
+
 // Returns the correct achievement PNG for the given track and level (1-5).
 // Uses level-1 icon when locked (level 0) so the socket always shows art.
 function iconSrc(
@@ -162,7 +171,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
           alt={data.tier}
           draggable={false}
           style={{ width: '88%', height: '88%', objectFit: 'contain',
-            filter: 'drop-shadow(0 0 2.5% #5ED3EA55)' }}
+            filter: `brightness(${TIER_BRIGHTNESS[data.tier] ?? 0.70}) drop-shadow(0 0 2.5% #5ED3EA55)` }}
         />
       </Slot>
 
