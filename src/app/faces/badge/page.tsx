@@ -50,11 +50,8 @@ const L = {
   // Wallet value — inside the wallet field box
   wallet: { l: 59.5, t: 24.5, w: 29, h: 6 },
 
-  // Signal score — large number, covers background placeholder
-  signal: { l: 57.5, t: 36.5, w: 32, h: 9 },
-
-  // Dark cover strip — hides baked-in "0 / 1,000" sub-label from background image
-  signalCover: { l: 57.0, t: 43.5, w: 25, h: 6.5 },
+  // Signal score number only — "/ 1,000" is static in background artwork
+  signal: { l: 57.5, t: 35.5, w: 24, h: 8 },
 
   // Progress bar fill — inside the existing bar frame
   bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
@@ -221,12 +218,11 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         </span>
       </Slot>
 
-      {/* z=5 — Signal score */}
+      {/* z=5 — Signal score only — "/ 1,000" is already in the background artwork */}
       <Slot cfg={L.signal} debug={debug} debugColor="#ff0" style={{
         zIndex:     5,
         display:    'flex',
-        alignItems: 'flex-end',
-        gap:        '0.3em',
+        alignItems: 'center',
         lineHeight: 1,
       }}>
         <span style={{
@@ -237,19 +233,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         }}>
           {data.signalScore.toLocaleString()}
         </span>
-        <span style={{
-          color:         C.dim,
-          fontFamily:    'Rajdhani, monospace',
-          fontSize:      'clamp(8px, 2%, 16px)',
-          fontWeight:    600,
-          paddingBottom: '0.15em',
-        }}>
-          / 1,000
-        </span>
       </Slot>
-
-      {/* z=4 — Cover baked-in "0 / 1,000" sub-label from background image */}
-      <Slot cfg={L.signalCover} style={{ zIndex: 4, background: '#00111e' }} />
 
       {/* z=5 — Progress bar fill */}
       <Slot cfg={L.bar} debug={debug} debugColor="#f80" style={{ zIndex: 5, overflow: 'hidden', borderRadius: '999px' }}>
