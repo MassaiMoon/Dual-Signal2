@@ -53,9 +53,6 @@ const L = {
   // Signal score number only — "/ 1,000" is static in background artwork
   signal: { l: 57.5, t: 35.5, w: 24, h: 8 },
 
-  // Progress bar fill — inside the existing bar frame
-  bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
-
   // Single achievement zone — icon column left, level column right, 4 equal rows inside
   achievements: { l: 55.0, t: 54.5, r: 4.5, h: 26 },
 } as const;
@@ -130,8 +127,6 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
   const shortWallet = data.walletAddress
     ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
     : '—';
-  const progress   = Math.min(1, data.signalScore / 1000);
-
   const tracks = [
     { src: iconSrc('xSignal',       data.xSignalLevel),   level: data.xSignalLevel   },
     { src: iconSrc('telegram',      data.telegramLevel),   level: data.telegramLevel  },
@@ -242,17 +237,6 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         }}>
           {data.signalScore.toLocaleString()}
         </span>
-      </Slot>
-
-      {/* z=5 — Progress bar fill */}
-      <Slot cfg={L.bar} debug={debug} debugColor="#f80" style={{ zIndex: 5, overflow: 'hidden', borderRadius: '999px' }}>
-        <div style={{
-          height:       '100%',
-          width:        `${progress * 100}%`,
-          background:   `linear-gradient(90deg, ${C.teal}, ${C.tealLt})`,
-          borderRadius: '999px',
-          boxShadow:    `0 0 6px ${C.tealLt}`,
-        }} />
       </Slot>
 
       {/* z=3 — Achievement zone: 4 equal rows, icon left + level right */}
