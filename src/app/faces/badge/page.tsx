@@ -57,7 +57,7 @@ const L = {
   bar: { l: 57.2, t: 49.8, w: 30.5, h: 1.8 },
 
   // Single achievement zone — icon column left, level column right, 4 equal rows inside
-  achievements: { l: 55.0, t: 51.5, r: 4.5, h: 35 },
+  achievements: { l: 55.0, t: 54.5, r: 4.5, h: 26 },
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -295,8 +295,8 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
                   display:    'block',
                   opacity:    1,
                   filter:     level > 0
-                    ? 'brightness(3.0) contrast(1.2) saturate(1.4) drop-shadow(0 0 6px rgba(94,211,234,1.0)) drop-shadow(0 0 16px rgba(21,157,184,0.8)) drop-shadow(0 0 28px rgba(94,211,234,0.45))'
-                    : 'brightness(0.5) saturate(0.4)',
+                    ? 'brightness(8.0) contrast(1.3) saturate(2.5) drop-shadow(0 0 8px rgba(94,211,234,1.0)) drop-shadow(0 0 20px rgba(21,157,184,0.9)) drop-shadow(0 0 35px rgba(94,211,234,0.6))'
+                    : 'brightness(2.5) saturate(0.8) drop-shadow(0 0 3px rgba(94,211,234,0.25))',
                 }}
               />
             </div>
