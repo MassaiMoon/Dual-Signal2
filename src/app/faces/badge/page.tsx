@@ -295,8 +295,8 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
                   display:    'block',
                   opacity:    1,
                   filter:     level > 0
-                    ? 'drop-shadow(0 0 4px rgba(94,211,234,0.45)) drop-shadow(0 0 8px rgba(21,157,184,0.20))'
-                    : 'brightness(0.45)',
+                    ? 'brightness(1.8) contrast(1.15) saturate(1.25) drop-shadow(0 0 4px rgba(94,211,234,0.75)) drop-shadow(0 0 10px rgba(21,157,184,0.45))'
+                    : 'brightness(0.6) saturate(0.5)',
                 }}
               />
             </div>
