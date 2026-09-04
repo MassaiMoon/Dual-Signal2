@@ -13,7 +13,7 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   badge            Badge?
   externalAccounts ExternalAccount[]
@@ -59,7 +59,7 @@ model Badge {
   lastIntegrityHash String @default("") @map("last_integrity_hash")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   badgeUpdates BadgeUpdate[]
 
@@ -125,7 +125,7 @@ model BadgeUpdate {
   errorMessage String?      @map("error_message")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("badge_updates")
 }
