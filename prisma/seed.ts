@@ -3,26 +3,18 @@ import { PrismaClient } from '@prisma/client';
 const db = new PrismaClient();
 
 async function main() {
-  console.log('Seeding badge state...');
+  console.log('Seeding MassaiMoon demo identity...');
 
   const user = await db.user.upsert({
-    where: { id: 'test-user-001' },
-    update: {},
-    create: { id: 'test-user-001' },
-  });
-  console.log('✓ User:            ', user.id);
-
-  const account = await db.externalAccount.upsert({
-    where: { source_externalUserId: { source: 'MOCK', externalUserId: 'mock-tg-001' } },
+    where: { username: 'MassaiMoon' },
     update: {},
     create: {
-      userId:        user.id,
-      source:        'MOCK',
-      externalUserId:'mock-tg-001',
-      handle:        '@test-member',
+      id:                 'massaimoon-001',
+      username:           'MassaiMoon',
+      usernameNormalized: 'massaimoon',
     },
   });
-  console.log('✓ External account:', account.id, account.handle);
+  console.log('✓ User:            ', user.id, `(@${user.username})`);
 
   const badge = await db.badge.upsert({
     where: { userId: user.id },
@@ -35,16 +27,17 @@ async function main() {
       cachedTier:     'INITIATE',
       xSignalLevel:    0,
       telegramLevel:   0,
+      discordLevel:    0,
       governanceLevel: 0,
-      holderLevel:     0,
-      lastIntegrityHash: '0xbdd46aac643bd1a2cc69754e4a7c726acef81908906ff42ad13e56a02f1b64c6',
-      walletAddress: '0x2f86E417a3e225cFa7C4975533CBc3760A86215B',
-      memberSince:   '2026-09-03',
+      xHandle:        'MassaiMoon',
+      telegramHandle: 'MassaiMoon',
+      discordHandle:  'MassaiMoon',
+      memberSince:    '2026-09',
     },
   });
   console.log('✓ Badge:           ', badge.id, `(${badge.cachedTier}, score=${badge.signalScore})`);
-  console.log('\nGenesis #001 badge state ready.');
-  console.log('Signal Score = 0, all tracks locked.');
+  console.log('\nMassaiMoon identity ready.');
+  console.log('Signal Score = 0, all tracks locked. No wallet required.');
   console.log('Use POST /api/admin/simulate-event to begin the demo flow.');
 }
 

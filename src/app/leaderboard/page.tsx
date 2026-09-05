@@ -55,10 +55,10 @@ const TIER_MIN: Record<Tier, number> = {
 };
 
 const TRACK_ICON: Record<string, string> = {
-  xSignal:      'X',
-  telegram:     'TG',
-  governance:   'GOV',
-  holderStaking: 'HLD',
+  xSignal:    'X',
+  telegram:   'TG',
+  governance: 'GOV',
+  discord:    'DC',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ export default async function LeaderboardPage() {
       xSignalLevel:    true,
       telegramLevel:   true,
       governanceLevel: true,
-      holderLevel:     true,
+      discordLevel:    true,
     },
   });
 
@@ -185,10 +185,10 @@ export default async function LeaderboardPage() {
                     <div style={s.tracks}>
                       {(
                         [
-                          ['xSignal',      b.xSignalLevel],
-                          ['telegram',     b.telegramLevel],
-                          ['governance',   b.governanceLevel],
-                          ['holderStaking', b.holderLevel],
+                          ['xSignal',    b.xSignalLevel],
+                          ['telegram',   b.telegramLevel],
+                          ['governance', b.governanceLevel],
+                          ['discord',    b.discordLevel],
                         ] as [string, number][]
                       ).map(([track, lvl]) => (
                         <div key={track} style={{ textAlign: 'center' }}>

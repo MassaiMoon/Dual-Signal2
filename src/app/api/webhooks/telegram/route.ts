@@ -19,8 +19,8 @@ import { EventSource, EventStatus } from '@prisma/client';
 import {
   resolveXSignalLevel,
   resolveTelegramLevel,
+  resolveDiscordLevel,
   resolveGovernanceLevel,
-  resolveHolderLevel,
   computeSignalScore,
   buildRequestedState,
 } from '@/lib/rules-engine';
@@ -29,7 +29,6 @@ import { runPendingUpdates } from '@/lib/update-worker';
 
 export const dynamic = 'force-dynamic';
 
-// Telegram always expects HTTP 200, even on errors — returning non-200 causes retries.
 const ok = () => NextResponse.json({ ok: true }, { status: 200 });
 
 interface TelegramUpdate {
@@ -44,11 +43,10 @@ interface TelegramUpdate {
 }
 
 export async function POST(req: NextRequest) {
-  // ── Verify secret ─────────────────────────────────────────────────────────
   const secret = req.headers.get('x-telegram-bot-api-secret-token');
   if (!process.env.TELEGRAM_WEBHOOK_SECRET || secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
     console.warn('[telegram-webhook] Invalid or missing secret token');
-    return ok(); // always 200 so Telegram doesn't retry
+    return ok();
   }
 
   let update: TelegramUpdate;
@@ -56,45 +54,40 @@ export async function POST(req: NextRequest) {
   catch { return ok(); }
 
   const msg = update.message;
-
-  // Only handle messages from real users with a Telegram username
   if (!msg || !msg.from || !msg.from.username) return ok();
 
   const telegramUserId = msg.from.id;
   const username       = msg.from.username.toLowerCase();
   const msgDate        = new Date(msg.date * 1000);
-  const dateStr        = msgDate.toISOString().slice(0, 10); // YYYY-MM-DD
-  const sourceEventId  = `${telegramUserId}:${dateStr}`;    // one per user per day
+  const dateStr        = msgDate.toISOString().slice(0, 10);
+  const sourceEventId  = `${telegramUserId}:${dateStr}`;
 
-  // ── Idempotency — already counted today ──────────────────────────────────
   const existing = await db.event.findUnique({
     where: { source_sourceEventId: { source: EventSource.TELEGRAM, sourceEventId } },
   });
   if (existing) return ok();
 
-  // ── Find badge by telegram handle ────────────────────────────────────────
   const badge = await db.badge.findFirst({
     where: { telegramHandle: { equals: username, mode: 'insensitive' } },
   });
 
-  // ── Record event (regardless of badge match) ──────────────────────────────
   await db.event.create({
     data: {
-      source:         EventSource.TELEGRAM,
+      source:          EventSource.TELEGRAM,
       sourceEventId,
-      contentId:      username,
-      type:           'MESSAGE_DAY',
-      status:         badge ? EventStatus.PROCESSED : EventStatus.REJECTED,
+      contentId:       username,
+      type:            'MESSAGE_DAY',
+      status:          badge ? EventStatus.PROCESSED : EventStatus.REJECTED,
       rejectionReason: badge ? null : `no badge linked to @${username}`,
-      payload:        {
+      payload: {
         telegramUserId,
         username,
-        date:   dateStr,
-        chatId: msg.chat.id,
+        date:     dateStr,
+        chatId:   msg.chat.id,
         chatType: msg.chat.type,
       },
-      occurredAt:     msgDate,
-      processedAt:    badge ? new Date() : null,
+      occurredAt:  msgDate,
+      processedAt: badge ? new Date() : null,
     },
   });
 
@@ -103,19 +96,18 @@ export async function POST(req: NextRequest) {
     return ok();
   }
 
-  // ── Increment active days + recompute score ───────────────────────────────
   const newTgDays = (badge.telegramActiveDays ?? 0) + 1;
 
-  const newXLvl   = resolveXSignalLevel(badge.xSignalImpressions);
+  const newXLvl   = resolveXSignalLevel(badge.xSignalPublicViews, badge.xQualifyingPosts);
   const newTgLvl  = resolveTelegramLevel(newTgDays);
+  const newDcLvl  = resolveDiscordLevel(badge.discordActiveDays);
   const newGovLvl = resolveGovernanceLevel(badge.governanceVotes);
-  const newHldLvl = resolveHolderLevel(badge.holderQualDays);
-  const newScore  = computeSignalScore(newXLvl, newTgLvl, newGovLvl, newHldLvl);
+  const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
   const newTier   = calculateTier(newScore);
 
   const stateChanged =
-    newTgLvl  !== badge.telegramLevel ||
-    newScore  !== badge.signalScore;
+    newTgLvl !== badge.telegramLevel ||
+    newScore !== badge.signalScore;
 
   await db.$transaction(async (tx) => {
     await tx.badge.update({
@@ -124,8 +116,8 @@ export async function POST(req: NextRequest) {
         telegramActiveDays: newTgDays,
         telegramLevel:      newTgLvl,
         xSignalLevel:       newXLvl,
+        discordLevel:       newDcLvl,
         governanceLevel:    newGovLvl,
-        holderLevel:        newHldLvl,
         signalScore:        newScore,
         cachedTier:         newTier as any,
       },
@@ -135,7 +127,7 @@ export async function POST(req: NextRequest) {
       await tx.badgeUpdate.create({
         data: {
           badgeId:        badge.id,
-          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newGovLvl, newHldLvl),
+          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newDcLvl, newGovLvl),
           status:         'PENDING',
         },
       });
@@ -146,7 +138,6 @@ export async function POST(req: NextRequest) {
     `[telegram-webhook] @${username} day=${newTgDays} tgLvl=${newTgLvl} score=${newScore} tier=${newTier} stateChanged=${stateChanged}`,
   );
 
-  // Auto-flush to DUAL if write credentials present
   if (stateChanged && process.env.DUAL_EMAIL && process.env.DUAL_PASSWORD) {
     runPendingUpdates().catch(err =>
       console.error('[telegram-webhook] flush error:', err),

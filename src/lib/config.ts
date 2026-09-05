@@ -15,20 +15,20 @@ export const achievementConfig = {
     { level: 5, name: 'PILLAR',        activeDays: 180, points: 250 },
   ],
 
-  governance: [
-    { level: 1, name: 'FIRST_VOTE',   votes: 1,  points: 50  },
-    { level: 2, name: 'VOTER',         votes: 3,  points: 100 },
-    { level: 3, name: 'PARTICIPANT',   votes: 10, points: 150 },
-    { level: 4, name: 'GOVERNOR',      votes: 25, points: 200 },
-    { level: 5, name: 'STEWARD',       votes: 50, points: 250 },
+  discord: [
+    { level: 1, name: 'FIRST_CONTACT', activeDays: 1,   points: 50  },
+    { level: 2, name: 'REGULAR',       activeDays: 7,   points: 100 },
+    { level: 3, name: 'CONNECTED',     activeDays: 30,  points: 150 },
+    { level: 4, name: 'CORE_MEMBER',   activeDays: 90,  points: 200 },
+    { level: 5, name: 'PILLAR',        activeDays: 180, points: 250 },
   ],
 
-  holderStaking: [
-    { level: 1, name: 'HOLDER',        qualifyingDays: 0,   points: 50  },
-    { level: 2, name: 'COMMITTED',     qualifyingDays: 30,  points: 100 },
-    { level: 3, name: 'DEDICATED',     qualifyingDays: 90,  points: 150 },
-    { level: 4, name: 'BELIEVER',      qualifyingDays: 180, points: 200 },
-    { level: 5, name: 'DIAMOND_WINGS', qualifyingDays: 365, points: 250 },
+  governance: [
+    { level: 1, name: 'FIRST_VOICE',   participations: 1,  points: 50  },
+    { level: 2, name: 'CONTRIBUTOR',   participations: 3,  points: 100 },
+    { level: 3, name: 'PARTICIPANT',   participations: 10, points: 150 },
+    { level: 4, name: 'GOVERNOR',      participations: 25, points: 200 },
+    { level: 5, name: 'STEWARD',       participations: 50, points: 250 },
   ],
 
   butterflyTiers: [

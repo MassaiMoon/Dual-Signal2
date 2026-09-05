@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           xSignalLevel:    true,
           telegramLevel:   true,
           governanceLevel: true,
-          holderLevel:     true,
+          discordLevel:    true,
         },
       }),
       db.event.count({ where: { status: EventStatus.PENDING } }),

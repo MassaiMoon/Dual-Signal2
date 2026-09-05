@@ -1,7 +1,7 @@
 /**
  * POST /api/admin/update-score
  *
- * M8 — Set absolute signal data for a badge and propagate to DUAL.
+ * Set absolute signal data for a badge and propagate to DUAL.
  *
  * Accepts raw counters (absolute values, not deltas). Resolves levels,
  * computes score + tier, updates the DB, and queues a DUAL badge write.
@@ -16,8 +16,8 @@ import { calculateTier } from '@/lib/config';
 import {
   resolveXSignalLevel,
   resolveTelegramLevel,
+  resolveDiscordLevel,
   resolveGovernanceLevel,
-  resolveHolderLevel,
   computeSignalScore,
   buildRequestedState,
 } from '@/lib/rules-engine';
@@ -26,11 +26,12 @@ import { runPendingUpdates } from '@/lib/update-worker';
 export const dynamic = 'force-dynamic';
 
 interface UpdateScoreBody {
-  walletAddress:      string;
-  xImpressions?:     number;
+  walletAddress:       string;
+  xPublicViews?:       number;
+  xQualifyingPosts?:   number;
   telegramActiveDays?: number;
-  governanceVotes?:  number;
-  holderQualDays?:   number;
+  discordActiveDays?:  number;
+  governanceVotes?:    number;
 }
 
 export async function POST(req: NextRequest) {
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { walletAddress, xImpressions, telegramActiveDays, governanceVotes, holderQualDays } = body;
+  const { walletAddress, xPublicViews, xQualifyingPosts, telegramActiveDays, discordActiveDays, governanceVotes } = body;
   if (!walletAddress) {
     return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
   }
@@ -52,38 +53,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No badge found for this wallet' }, { status: 404 });
   }
 
-  // Use provided values; fall back to existing DB values so partial updates work
-  const newX   = xImpressions       ?? badge.xSignalImpressions;
-  const newTg  = telegramActiveDays ?? badge.telegramActiveDays;
-  const newGov = governanceVotes    ?? badge.governanceVotes;
-  const newHld = holderQualDays     ?? badge.holderQualDays;
+  const newViews = xPublicViews       ?? badge.xSignalPublicViews;
+  const newPosts = xQualifyingPosts   ?? badge.xQualifyingPosts;
+  const newTg    = telegramActiveDays ?? badge.telegramActiveDays;
+  const newDc    = discordActiveDays  ?? badge.discordActiveDays;
+  const newGov   = governanceVotes    ?? badge.governanceVotes;
 
-  const newXLvl   = resolveXSignalLevel(newX);
+  const newXLvl   = resolveXSignalLevel(newViews, newPosts);
   const newTgLvl  = resolveTelegramLevel(newTg);
+  const newDcLvl  = resolveDiscordLevel(newDc);
   const newGovLvl = resolveGovernanceLevel(newGov);
-  const newHldLvl = resolveHolderLevel(newHld);
-  const newScore  = computeSignalScore(newXLvl, newTgLvl, newGovLvl, newHldLvl);
+  const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
   const newTier   = calculateTier(newScore);
 
   const stateChanged =
     newXLvl   !== badge.xSignalLevel    ||
     newTgLvl  !== badge.telegramLevel   ||
+    newDcLvl  !== badge.discordLevel    ||
     newGovLvl !== badge.governanceLevel ||
-    newHldLvl !== badge.holderLevel     ||
     newScore  !== badge.signalScore;
 
   await db.$transaction(async (tx) => {
     await tx.badge.update({
       where: { id: badge.id },
       data: {
-        xSignalImpressions: newX,
+        xSignalPublicViews: newViews,
+        xQualifyingPosts:   newPosts,
         telegramActiveDays: newTg,
+        discordActiveDays:  newDc,
         governanceVotes:    newGov,
-        holderQualDays:     newHld,
         xSignalLevel:       newXLvl,
         telegramLevel:      newTgLvl,
+        discordLevel:       newDcLvl,
         governanceLevel:    newGovLvl,
-        holderLevel:        newHldLvl,
         signalScore:        newScore,
         cachedTier:         newTier as any,
       },
@@ -93,7 +95,7 @@ export async function POST(req: NextRequest) {
       await tx.badgeUpdate.create({
         data: {
           badgeId:        badge.id,
-          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newGovLvl, newHldLvl),
+          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newDcLvl, newGovLvl),
           status:         'PENDING',
         },
       });
@@ -102,7 +104,6 @@ export async function POST(req: NextRequest) {
 
   console.log(`[update-score] badge=${badge.id} score=${newScore} tier=${newTier} stateChanged=${stateChanged}`);
 
-  // Auto-flush to DUAL if write credentials are present
   if (stateChanged && process.env.DUAL_EMAIL && process.env.DUAL_PASSWORD) {
     runPendingUpdates().catch((err) =>
       console.error('[update-score] flush error:', err),
@@ -110,19 +111,25 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    status:          stateChanged ? 'updated' : 'no_change',
-    badgeId:         badge.id,
-    dualObjectId:    badge.dualObjectId,
+    status:       stateChanged ? 'updated' : 'no_change',
+    badgeId:      badge.id,
+    dualObjectId: badge.dualObjectId,
     walletAddress,
-    signalScore:     newScore,
-    tier:            newTier,
+    signalScore:  newScore,
+    tier:         newTier,
     levels: {
-      xSignal:      newXLvl,
-      telegram:     newTgLvl,
-      governance:   newGovLvl,
-      holderStaking: newHldLvl,
+      xSignal:    newXLvl,
+      telegram:   newTgLvl,
+      discord:    newDcLvl,
+      governance: newGovLvl,
     },
-    rawCounters: { xImpressions: newX, telegramActiveDays: newTg, governanceVotes: newGov, holderQualDays: newHld },
+    rawCounters: {
+      xPublicViews: newViews,
+      xQualifyingPosts: newPosts,
+      telegramActiveDays: newTg,
+      discordActiveDays: newDc,
+      governanceVotes: newGov,
+    },
     dualUpdateQueued: stateChanged,
   });
 }

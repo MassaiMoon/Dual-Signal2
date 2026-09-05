@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         x_signal_level:   '0',
         telegram_level:   '0',
         governance_level: '0',
-        holder_level:     '0',
+        discord_level:    '0',
         wallet_address:   walletAddress,
         member_since:     memberSince,
       },
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         xSignalLevel:    0,
         telegramLevel:   0,
         governanceLevel: 0,
-        holderLevel:     0,
+        discordLevel:    0,
       },
     });
 

@@ -22,7 +22,7 @@ export async function GET(
     xSignalLevel:   badge.xSignalLevel,
     telegramLevel:  badge.telegramLevel,
     governanceLevel:badge.governanceLevel,
-    holderLevel:    badge.holderLevel,
+    discordLevel:   badge.discordLevel,
     isOG:           badge.isOG,
     walletAddress:  badge.walletAddress,
     memberSince:    badge.memberSince,

@@ -11,9 +11,11 @@ datasource db {
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id                 String   @id @default(cuid())
+  username           String?  @unique
+  usernameNormalized String?  @unique @map("username_normalized")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
   badge            Badge?
   externalAccounts ExternalAccount[]
@@ -35,22 +37,23 @@ model Badge {
   signalScore Int  @default(0) @map("signal_score")
   cachedTier  Tier @default(INITIATE) @map("cached_tier")
 
-  // Achievement track levels (0 = locked, 1–5 = level reached)
+  // Achievement track levels (0 = locked / not connected, 1–5 = level reached)
   xSignalLevel    Int @default(0) @map("x_signal_level")
   telegramLevel   Int @default(0) @map("telegram_level")
+  discordLevel    Int @default(0) @map("discord_level")
   governanceLevel Int @default(0) @map("governance_level")
-  holderLevel     Int @default(0) @map("holder_level")
 
-  // Progress values (raw counters for each track)
-  xSignalImpressions Int @default(0) @map("x_signal_impressions")
+  // Progress counters (cached from evidence tables)
+  xSignalPublicViews Int @default(0) @map("x_signal_public_views")
+  xQualifyingPosts   Int @default(0) @map("x_qualifying_posts")
   telegramActiveDays Int @default(0) @map("telegram_active_days")
+  discordActiveDays  Int @default(0) @map("discord_active_days")
   governanceVotes    Int @default(0) @map("governance_votes")
-  holderQualDays     Int @default(0) @map("holder_qual_days")
 
   // Special status
   isOG Boolean @default(false) @map("is_og")
 
-  // Display fields
+  // Display / identity fields
   walletAddress  String @default("") @map("wallet_address")
   memberSince    String @default("") @map("member_since")
   discordHandle  String @default("") @map("discord_handle")
@@ -62,9 +65,62 @@ model Badge {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  badgeUpdates BadgeUpdate[]
+  badgeUpdates             BadgeUpdate[]
+  xPosts                   XPost[]
+  telegramDays             TelegramActiveDay[]
+  discordDays              DiscordActiveDay[]
+  governanceParticipations GovernanceParticipation[]
 
   @@map("badges")
+}
+
+// ─── Evidence Tables ──────────────────────────────────────────────────────────
+
+model XPost {
+  id          String   @id @default(cuid())
+  badgeId     String   @map("badge_id")
+  badge       Badge    @relation(fields: [badgeId], references: [id])
+  postId      String   @map("post_id")
+  publicViews BigInt   @default(0) @map("public_views")
+  postedAt    DateTime @map("posted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([badgeId, postId])
+  @@map("x_posts")
+}
+
+model TelegramActiveDay {
+  id        String   @id @default(cuid())
+  badgeId   String   @map("badge_id")
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  day       DateTime @map("day") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([badgeId, day])
+  @@map("telegram_active_days")
+}
+
+model DiscordActiveDay {
+  id        String   @id @default(cuid())
+  badgeId   String   @map("badge_id")
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  day       DateTime @map("day") @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([badgeId, day])
+  @@map("discord_active_days")
+}
+
+model GovernanceParticipation {
+  id             String   @id @default(cuid())
+  badgeId        String   @map("badge_id")
+  badge          Badge    @relation(fields: [badgeId], references: [id])
+  proposalId     String   @map("proposal_id")
+  participatedAt DateTime @map("participated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([badgeId, proposalId])
+  @@map("governance_participations")
 }
 
 // ─── External Accounts ────────────────────────────────────────────────────────
@@ -74,10 +130,10 @@ model ExternalAccount {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
-  source         EventSource @map("source")
-  externalUserId String      @map("external_user_id")
+  source         Provider  @map("source")
+  externalUserId String    @map("external_user_id")
   handle         String
-  verifiedAt     DateTime?   @map("verified_at")
+  verifiedAt     DateTime? @map("verified_at")
 
   events Event[]
 
@@ -142,6 +198,15 @@ enum Tier {
   LEGEND
 }
 
+// Provider: identity sources for ExternalAccount (who can be connected)
+enum Provider {
+  TWITTER
+  TELEGRAM
+  DISCORD
+  DUAL_FORUM
+}
+
+// EventSource: all possible event origins (broader than Provider)
 enum EventSource {
   MOCK
   DUAL
@@ -149,6 +214,7 @@ enum EventSource {
   TELEGRAM
   TWITTER
   LINKEDIN
+  DUAL_FORUM
 }
 
 enum EventStatus {

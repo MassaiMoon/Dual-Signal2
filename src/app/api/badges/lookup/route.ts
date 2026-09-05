@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     xSignalLevel:   badge.xSignalLevel,
     telegramLevel:  badge.telegramLevel,
     governanceLevel: badge.governanceLevel,
-    holderLevel:    badge.holderLevel,
+    discordLevel:   badge.discordLevel,
     telegramActiveDays: badge.telegramActiveDays,
     badgeUrl:       `${appUrl}/badge/${badge.dualObjectId}`,
     faceUrl:        `${appUrl}/faces/badge?id=${badge.dualObjectId}`,

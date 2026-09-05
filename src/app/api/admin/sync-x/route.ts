@@ -1,8 +1,8 @@
 /**
  * POST /api/admin/sync-x
  *
- * Fetches tweet impression data for all badges that have an xHandle set,
- * then updates xSignalImpressions + recalculates score/tier.
+ * Fetches tweet public view data for all badges that have an xHandle set,
+ * then updates xSignalPublicViews + recalculates score/tier.
  *
  * Uses X API v2 with app-only Bearer token (no user OAuth needed).
  * Fetches up to 100 recent tweets per user, sums impression_count
@@ -21,8 +21,8 @@ import { calculateTier } from '@/lib/config';
 import {
   resolveXSignalLevel,
   resolveTelegramLevel,
+  resolveDiscordLevel,
   resolveGovernanceLevel,
-  resolveHolderLevel,
   computeSignalScore,
   buildRequestedState,
 } from '@/lib/rules-engine';
@@ -64,15 +64,14 @@ interface PublicMetrics {
   bookmark_count?:   number;
 }
 
-// Engagement-weighted proxy when impression_count is unavailable
-function estimateImpressions(m: PublicMetrics): number {
+function estimatePublicViews(m: PublicMetrics): number {
   return (
     (m.impression_count ?? 0) ||
     (m.retweet_count * 25 + m.quote_count * 20 + m.reply_count * 5 + m.like_count * 2 + (m.bookmark_count ?? 0) * 3)
   );
 }
 
-async function getTotalImpressions(userId: string, bearer: string): Promise<number> {
+async function getTotalPublicViews(userId: string, bearer: string): Promise<{ views: number; postCount: number }> {
   try {
     const data = await xGet(
       `/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics,text`,
@@ -80,10 +79,11 @@ async function getTotalImpressions(userId: string, bearer: string): Promise<numb
     );
     const tweets: { text: string; public_metrics: PublicMetrics }[] = data?.data ?? [];
     const dualTweets = tweets.filter(t => /\$DUAL/i.test(t.text));
-    return dualTweets.reduce((sum, t) => sum + estimateImpressions(t.public_metrics), 0);
+    const views = dualTweets.reduce((sum, t) => sum + estimatePublicViews(t.public_metrics), 0);
+    return { views, postCount: dualTweets.length };
   } catch (err) {
-    console.warn(`[sync-x] getTotalImpressions userId=${userId}:`, (err as Error).message);
-    return 0;
+    console.warn(`[sync-x] getTotalPublicViews userId=${userId}:`, (err as Error).message);
+    return { views: 0, postCount: 0 };
   }
 }
 
@@ -99,7 +99,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'TWITTER_BEARER_TOKEN not set' }, { status: 500 });
   }
 
-  // Only sync badges that have an X handle
   const badges = await db.badge.findMany({
     where: { xHandle: { not: '' } },
   });
@@ -108,35 +107,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ synced: 0, message: 'No badges with xHandle set' });
   }
 
-  const results: { handle: string; impressions: number; tier: string; score: number; changed: boolean }[] = [];
+  const results: { handle: string; publicViews: number; tier: string; score: number; changed: boolean }[] = [];
   let updated = 0;
 
   for (const badge of badges) {
     const handle = badge.xHandle.replace(/^@/, '');
 
-    // Resolve X user ID
     const userId = await getUserId(handle, bearer);
     if (!userId) {
-      results.push({ handle, impressions: 0, tier: badge.cachedTier, score: badge.signalScore, changed: false });
+      results.push({ handle, publicViews: 0, tier: badge.cachedTier, score: badge.signalScore, changed: false });
       continue;
     }
 
-    // Fetch total impressions from their timeline
-    const impressions = await getTotalImpressions(userId, bearer);
+    const { views, postCount } = await getTotalPublicViews(userId, bearer);
 
-    // Only update if impressions increased (never decrease the count)
-    const newImpressions = Math.max(impressions, badge.xSignalImpressions);
-    if (newImpressions === badge.xSignalImpressions) {
-      results.push({ handle, impressions: newImpressions, tier: badge.cachedTier, score: badge.signalScore, changed: false });
+    const newViews = Math.max(views, badge.xSignalPublicViews);
+    const newPosts = Math.max(postCount, badge.xQualifyingPosts);
+    if (newViews === badge.xSignalPublicViews && newPosts === badge.xQualifyingPosts) {
+      results.push({ handle, publicViews: newViews, tier: badge.cachedTier, score: badge.signalScore, changed: false });
       continue;
     }
 
-    // Recompute score
-    const newXLvl   = resolveXSignalLevel(newImpressions);
+    const newXLvl   = resolveXSignalLevel(newViews, newPosts);
     const newTgLvl  = resolveTelegramLevel(badge.telegramActiveDays);
+    const newDcLvl  = resolveDiscordLevel(badge.discordActiveDays);
     const newGovLvl = resolveGovernanceLevel(badge.governanceVotes);
-    const newHldLvl = resolveHolderLevel(badge.holderQualDays);
-    const newScore  = computeSignalScore(newXLvl, newTgLvl, newGovLvl, newHldLvl);
+    const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
     const newTier   = calculateTier(newScore);
 
     const stateChanged = newXLvl !== badge.xSignalLevel || newScore !== badge.signalScore;
@@ -145,11 +141,12 @@ export async function POST(req: NextRequest) {
       await tx.badge.update({
         where: { id: badge.id },
         data: {
-          xSignalImpressions: newImpressions,
+          xSignalPublicViews: newViews,
+          xQualifyingPosts:   newPosts,
           xSignalLevel:       newXLvl,
           telegramLevel:      newTgLvl,
+          discordLevel:       newDcLvl,
           governanceLevel:    newGovLvl,
-          holderLevel:        newHldLvl,
           signalScore:        newScore,
           cachedTier:         newTier as any,
         },
@@ -158,7 +155,7 @@ export async function POST(req: NextRequest) {
         await tx.badgeUpdate.create({
           data: {
             badgeId:        badge.id,
-            requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newGovLvl, newHldLvl),
+            requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newDcLvl, newGovLvl),
             status:         'PENDING',
           },
         });
@@ -166,14 +163,12 @@ export async function POST(req: NextRequest) {
     });
 
     updated++;
-    results.push({ handle, impressions: newImpressions, tier: newTier, score: newScore, changed: stateChanged });
-    console.log(`[sync-x] @${handle} impressions=${newImpressions} xLvl=${newXLvl} score=${newScore} tier=${newTier}`);
+    results.push({ handle, publicViews: newViews, tier: newTier, score: newScore, changed: stateChanged });
+    console.log(`[sync-x] @${handle} publicViews=${newViews} posts=${newPosts} xLvl=${newXLvl} score=${newScore} tier=${newTier}`);
 
-    // Small delay between users to respect rate limits
     await new Promise(r => setTimeout(r, 300));
   }
 
-  // Flush all queued DUAL writes
   if (updated > 0 && process.env.DUAL_EMAIL && process.env.DUAL_PASSWORD) {
     runPendingUpdates().catch(err => console.error('[sync-x] flush error:', err));
   }

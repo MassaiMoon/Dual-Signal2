@@ -1,5 +1,5 @@
 /**
- * M4 Rules Engine
+ * Rules Engine
  *
  * Central scoring and event-processing logic. Used by:
  *   - /api/admin/simulate-event  (inline for MOCK events)
@@ -12,11 +12,16 @@ import { EventStatus, UpdateStatus, type Badge, type Event } from '@prisma/clien
 
 // ─── Level resolvers ──────────────────────────────────────────────────────────
 
-export function resolveXSignalLevel(impressions: number): number {
+export function resolveXSignalLevel(publicViews: number, qualifyingPosts: number): number {
   let lvl = 0;
   for (const l of achievementConfig.xSignal) {
-    const threshold = 'impressions' in l ? l.impressions : 0;
-    if (impressions >= threshold) lvl = l.level;
+    if (l.level === 1) {
+      if (qualifyingPosts >= (l as { qualifyingPosts: number }).qualifyingPosts) lvl = 1;
+    } else {
+      const threshold = 'impressions' in l ? (l as { impressions: number }).impressions : 0;
+      // Levels are sequential — higher levels require the previous level to be reached first
+      if (lvl >= l.level - 1 && publicViews >= threshold) lvl = l.level;
+    }
   }
   return lvl;
 }
@@ -29,63 +34,56 @@ export function resolveTelegramLevel(activeDays: number): number {
   return lvl;
 }
 
-export function resolveGovernanceLevel(votes: number): number {
+export function resolveDiscordLevel(activeDays: number): number {
   let lvl = 0;
-  for (const l of achievementConfig.governance) {
-    if (votes >= l.votes) lvl = l.level;
+  for (const l of achievementConfig.discord) {
+    if (activeDays >= l.activeDays) lvl = l.level;
   }
   return lvl;
 }
 
-export function resolveHolderLevel(qualDays: number): number {
+export function resolveGovernanceLevel(participations: number): number {
   let lvl = 0;
-  for (const l of achievementConfig.holderStaking) {
-    if (qualDays >= l.qualifyingDays) lvl = l.level;
+  for (const l of achievementConfig.governance) {
+    if (participations >= l.participations) lvl = l.level;
   }
   return lvl;
 }
 
 export function computeSignalScore(
-  xLvl: number,
-  tgLvl: number,
-  govLvl: number,
-  hldLvl: number,
+  xLvl:    number,
+  tgLvl:   number,
+  dcLvl:   number,
+  govLvl:  number,
 ): number {
-  const xPts   = achievementConfig.xSignal[xLvl - 1]?.points         ?? 0;
-  const tgPts  = achievementConfig.telegramPresence[tgLvl - 1]?.points ?? 0;
-  const govPts = achievementConfig.governance[govLvl - 1]?.points      ?? 0;
-  const hldPts = achievementConfig.holderStaking[hldLvl - 1]?.points   ?? 0;
-  return xPts + tgPts + govPts + hldPts;
+  const xPts   = achievementConfig.xSignal[xLvl - 1]?.points           ?? 0;
+  const tgPts  = achievementConfig.telegramPresence[tgLvl - 1]?.points  ?? 0;
+  const dcPts  = achievementConfig.discord[dcLvl - 1]?.points           ?? 0;
+  const govPts = achievementConfig.governance[govLvl - 1]?.points       ?? 0;
+  return xPts + tgPts + dcPts + govPts;
 }
 
 // ─── Badge state builder ──────────────────────────────────────────────────────
 
 export function buildRequestedState(
-  score: number,
-  tier: string,
-  xLvl: number,
-  tgLvl: number,
+  score:  number,
+  tier:   string,
+  xLvl:   number,
+  tgLvl:  number,
+  dcLvl:  number,
   govLvl: number,
-  hldLvl: number,
 ): Record<string, string> {
   return {
     signal_score:     String(score),
     identity_tier:    tier,
     x_signal_level:   String(xLvl),
     telegram_level:   String(tgLvl),
+    discord_level:    String(dcLvl),
     governance_level: String(govLvl),
-    holder_level:     String(hldLvl),
   };
 }
 
 // ─── DUAL event processor ─────────────────────────────────────────────────────
-//
-// Handles on-chain events fired by DUAL Network after a badge is minted or
-// updated. Two cases:
-//
-//   mint   → sync wallet address + memberSince from the on-chain owner field
-//   update → mark the oldest matching PENDING BadgeUpdate as COMPLETED
-//            (the on-chain write has been confirmed)
 
 interface DualPayload {
   event_type?: string;
@@ -100,9 +98,9 @@ interface DualPayload {
 }
 
 export async function processDualEvent(event: Event): Promise<'processed' | 'rejected'> {
-  const payload = event.payload as DualPayload;
+  const payload   = event.payload as DualPayload;
   const eventType = (payload.event_type ?? payload.type ?? '').toLowerCase();
-  const objectId  = event.contentId; // set by webhook receiver from object_id
+  const objectId  = event.contentId;
 
   if (!objectId) {
     console.warn(`[rules-engine] DUAL event ${event.id} has no object_id — rejecting`);
@@ -112,7 +110,6 @@ export async function processDualEvent(event: Event): Promise<'processed' | 'rej
 
   const badge = await db.badge.findFirst({ where: { dualObjectId: objectId } });
   if (!badge) {
-    // Could be a badge minted outside our system — log and reject
     console.warn(`[rules-engine] No badge found for dualObjectId=${objectId}`);
     await markEvent(event.id, EventStatus.REJECTED, 'badge not found');
     return 'rejected';
@@ -123,7 +120,6 @@ export async function processDualEvent(event: Event): Promise<'processed' | 'rej
   } else if (eventType === 'update') {
     await handleDualUpdate(event, badge, payload);
   } else {
-    // Unknown event type — mark processed so we don't retry infinitely
     console.log(`[rules-engine] DUAL event type="${eventType}" — no rule, marking processed`);
     await markEvent(event.id, EventStatus.PROCESSED);
   }
@@ -156,7 +152,6 @@ async function handleDualMint(event: Event, badge: Badge, payload: DualPayload) 
 }
 
 async function handleDualUpdate(event: Event, badge: Badge, payload: DualPayload) {
-  // Find the oldest PENDING badge update for this badge (likely the one we triggered)
   const pending = await db.badgeUpdate.findFirst({
     where: { badgeId: badge.id, status: UpdateStatus.PENDING },
     orderBy: { createdAt: 'asc' },

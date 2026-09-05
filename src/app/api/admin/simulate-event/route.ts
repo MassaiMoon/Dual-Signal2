@@ -13,16 +13,14 @@ import { calculateTier } from '@/lib/config';
 import {
   resolveXSignalLevel,
   resolveTelegramLevel,
+  resolveDiscordLevel,
   resolveGovernanceLevel,
-  resolveHolderLevel,
   computeSignalScore,
   buildRequestedState,
 } from '@/lib/rules-engine';
 import type { SimulateEventBody } from '@/types';
 
 export const dynamic = 'force-dynamic';
-
-// ─── Handler ───────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.ADMIN_TOKEN}`) {
@@ -44,7 +42,6 @@ export async function POST(req: NextRequest) {
 
   const sourceEventId = `MOCK:${track}:${badgeId}:${contentId}`;
 
-  // Idempotency
   const existing = await db.event.findUnique({
     where: { source_sourceEventId: { source: EventSource.MOCK, sourceEventId } },
   });
@@ -53,7 +50,6 @@ export async function POST(req: NextRequest) {
   const badge = await db.badge.findUnique({ where: { id: badgeId } });
   if (!badge) return NextResponse.json({ error: 'Badge not found' }, { status: 404 });
 
-  // Record the event
   const event = await db.event.create({
     data: {
       source: EventSource.MOCK,
@@ -67,37 +63,39 @@ export async function POST(req: NextRequest) {
   });
 
   // Compute new progress for the affected track
-  const newX   = track === 'xSignal'       ? (progress ?? badge.xSignalImpressions + 1) : badge.xSignalImpressions;
-  const newTg  = track === 'telegram'      ? (progress ?? badge.telegramActiveDays + 1)  : badge.telegramActiveDays;
-  const newGov = track === 'governance'    ? (progress ?? badge.governanceVotes + 1)      : badge.governanceVotes;
-  const newHld = track === 'holderStaking' ? (progress ?? badge.holderQualDays + 1)       : badge.holderQualDays;
+  const newViews     = track === 'xSignal'   ? (progress ?? badge.xSignalPublicViews + 1) : badge.xSignalPublicViews;
+  const newPosts     = track === 'xSignal'   ? badge.xQualifyingPosts + 1                 : badge.xQualifyingPosts;
+  const newTg        = track === 'telegram'  ? (progress ?? badge.telegramActiveDays + 1) : badge.telegramActiveDays;
+  const newDc        = track === 'discord'   ? (progress ?? badge.discordActiveDays + 1)  : badge.discordActiveDays;
+  const newGov       = track === 'governance'? (progress ?? badge.governanceVotes + 1)    : badge.governanceVotes;
 
-  const newXLvl  = resolveXSignalLevel(newX);
-  const newTgLvl = resolveTelegramLevel(newTg);
-  const newGovLvl= resolveGovernanceLevel(newGov);
-  const newHldLvl= resolveHolderLevel(newHld);
-  const newScore = computeSignalScore(newXLvl, newTgLvl, newGovLvl, newHldLvl);
-  const newTier  = calculateTier(newScore);
+  const newXLvl   = resolveXSignalLevel(newViews, newPosts);
+  const newTgLvl  = resolveTelegramLevel(newTg);
+  const newDcLvl  = resolveDiscordLevel(newDc);
+  const newGovLvl = resolveGovernanceLevel(newGov);
+  const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
+  const newTier   = calculateTier(newScore);
 
   const stateChanged =
     newXLvl   !== badge.xSignalLevel    ||
     newTgLvl  !== badge.telegramLevel   ||
+    newDcLvl  !== badge.discordLevel    ||
     newGovLvl !== badge.governanceLevel ||
-    newHldLvl !== badge.holderLevel     ||
     newScore  !== badge.signalScore;
 
   await db.$transaction(async (tx) => {
     await tx.badge.update({
       where: { id: badge.id },
       data: {
-        xSignalImpressions: newX,
+        xSignalPublicViews: newViews,
+        xQualifyingPosts:   newPosts,
         telegramActiveDays: newTg,
+        discordActiveDays:  newDc,
         governanceVotes:    newGov,
-        holderQualDays:     newHld,
         xSignalLevel:       newXLvl,
         telegramLevel:      newTgLvl,
+        discordLevel:       newDcLvl,
         governanceLevel:    newGovLvl,
-        holderLevel:        newHldLvl,
         signalScore:        newScore,
         cachedTier:         newTier as any,
       },
@@ -112,7 +110,7 @@ export async function POST(req: NextRequest) {
       await tx.badgeUpdate.create({
         data: {
           badgeId:        badge.id,
-          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newGovLvl, newHldLvl),
+          requestedState: buildRequestedState(newScore, newTier, newXLvl, newTgLvl, newDcLvl, newGovLvl),
           status:         'PENDING',
         },
       });
@@ -120,13 +118,13 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({
-    status:       'processed',
-    eventId:      event.id,
-    badgeId:      badge.id,
+    status:          'processed',
+    eventId:         event.id,
+    badgeId:         badge.id,
     track,
-    signalScore:  newScore,
-    tier:         newTier,
-    levels: { xSignal: newXLvl, telegram: newTgLvl, governance: newGovLvl, holderStaking: newHldLvl },
+    signalScore:     newScore,
+    tier:            newTier,
+    levels: { xSignal: newXLvl, telegram: newTgLvl, discord: newDcLvl, governance: newGovLvl },
     dualUpdateQueued: stateChanged,
   });
 }

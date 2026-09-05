@@ -22,19 +22,19 @@ export const achievementAssets = {
     4: '/assets/dual-signal/achievements/telegram/telegram-4-core-member.png',
     5: '/assets/dual-signal/achievements/telegram/telegram-5-pillar.png',
   },
+  discord: {
+    1: '/assets/dual-signal/achievements/discord/discord-1-first-contact.png',
+    2: '/assets/dual-signal/achievements/discord/discord-2-regular.png',
+    3: '/assets/dual-signal/achievements/discord/discord-3-connected.png',
+    4: '/assets/dual-signal/achievements/discord/discord-4-core-member.png',
+    5: '/assets/dual-signal/achievements/discord/discord-5-pillar.png',
+  },
   governance: {
     1: '/assets/dual-signal/achievements/governance/governance-1-first-vote.png',
     2: '/assets/dual-signal/achievements/governance/governance-2-voter.png',
     3: '/assets/dual-signal/achievements/governance/governance-3-participant.png',
     4: '/assets/dual-signal/achievements/governance/governance-4-governor.png',
     5: '/assets/dual-signal/achievements/governance/governance-5-steward.png',
-  },
-  holderStaking: {
-    1: '/assets/dual-signal/achievements/holder-staking/holder-1-holder.png',
-    2: '/assets/dual-signal/achievements/holder-staking/holder-2-committed.png',
-    3: '/assets/dual-signal/achievements/holder-staking/holder-3-dedicated.png',
-    4: '/assets/dual-signal/achievements/holder-staking/holder-4-believer.png',
-    5: '/assets/dual-signal/achievements/holder-staking/holder-5-diamond-wings.png',
   },
 } as const;
 

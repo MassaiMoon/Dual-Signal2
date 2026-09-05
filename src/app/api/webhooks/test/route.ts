@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { EventSource, EventStatus } from '@prisma/client';
+import { EventSource, EventStatus, Provider } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'externalUserId, source, eventType, contentId required' }, { status: 400 });
   }
 
-  const eventSource = source as EventSource;
+  const eventSource   = source as EventSource;
   const sourceEventId = `${source}:${externalUserId}:${contentId}`;
 
   // Idempotency
@@ -36,10 +36,13 @@ export async function POST(req: NextRequest) {
   });
   if (existing) return NextResponse.json({ status: 'duplicate', eventId: existing.id });
 
-  // Resolve linked account
-  const account = await db.externalAccount.findUnique({
-    where: { source_externalUserId: { source: eventSource, externalUserId } },
-  });
+  // Resolve linked account (ExternalAccount.source is Provider, a subset of EventSource)
+  const providerValues = Object.values(Provider) as string[];
+  const account = providerValues.includes(source)
+    ? await db.externalAccount.findUnique({
+        where: { source_externalUserId: { source: source as Provider, externalUserId } },
+      })
+    : null;
 
   const event = await db.event.create({
     data: {

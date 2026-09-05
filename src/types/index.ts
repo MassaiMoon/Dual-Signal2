@@ -1,9 +1,8 @@
 export type SimulateEventBody = {
   badgeId:   string;
-  track:     'xSignal' | 'telegram' | 'governance' | 'holderStaking';
+  track:     'xSignal' | 'telegram' | 'discord' | 'governance';
   contentId: string;
   secret:    string;
-  // Optional: raw progress value to set directly (overrides +1 increment)
   progress?: number;
 };
 
@@ -14,8 +13,8 @@ export type BadgeResponse = {
   tier:           string;
   xSignalLevel:   number;
   telegramLevel:  number;
+  discordLevel:   number;
   governanceLevel:number;
-  holderLevel:    number;
   isOG:           boolean;
   walletAddress:  string;
   memberSince:    string;

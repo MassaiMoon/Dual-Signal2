@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { calculateTier } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,21 +16,22 @@ export async function GET(
   }
 
   return NextResponse.json({
-    badgeId:        badge.id,
-    dualObjectId:   badge.dualObjectId,
-    signalScore:    badge.signalScore,
-    tier:           badge.cachedTier,
-    xSignalLevel:   badge.xSignalLevel,
-    telegramLevel:  badge.telegramLevel,
-    governanceLevel:badge.governanceLevel,
-    holderLevel:    badge.holderLevel,
-    isOG:           badge.isOG,
-    walletAddress:  badge.walletAddress,
-    memberSince:    badge.memberSince,
+    badgeId:         badge.id,
+    dualObjectId:    badge.dualObjectId,
+    signalScore:     badge.signalScore,
+    tier:            badge.cachedTier,
+    xSignalLevel:    badge.xSignalLevel,
+    telegramLevel:   badge.telegramLevel,
+    discordLevel:    badge.discordLevel,
+    governanceLevel: badge.governanceLevel,
+    isOG:            badge.isOG,
+    walletAddress:   badge.walletAddress,
+    memberSince:     badge.memberSince,
     // Progress counters
-    xSignalImpressions: badge.xSignalImpressions,
+    xSignalPublicViews: badge.xSignalPublicViews,
+    xQualifyingPosts:   badge.xQualifyingPosts,
     telegramActiveDays: badge.telegramActiveDays,
+    discordActiveDays:  badge.discordActiveDays,
     governanceVotes:    badge.governanceVotes,
-    holderQualDays:     badge.holderQualDays,
   });
 }

@@ -10,11 +10,7 @@
  *   circular tier HUD, TOKENIZE EVERYTHING footer.
  *
  * This component ONLY overlays dynamic state into the spaces designed for it.
- *
- * PNG ASSET TRANSPARENCY:
- *   Tier PNGs        → RGBA ✓ transparent
- *   Achievement PNGs → RGB  ✗ no alpha — must be replaced with RGBA exports
- *   OG PNG           → RGB  ✗ no alpha — must be replaced with RGBA export
+ * Achievement icons are only rendered when the track is connected (level > 0).
  */
 
 import { useEffect, useState, Suspense } from 'react';
@@ -33,27 +29,13 @@ const C = {
 } as const;
 
 // ─── Layout config — all values are % of card canvas (1536 × 1024) ──────────
-//
-// Adjust these to precisely align overlays with the background image.
-// Enable ?debugLayout=1 in the URL to see bounding boxes.
 
 const L = {
-  // Left circular HUD — tier artwork fills this zone
-  tier: { l: 10, t: 6, w: 42, h: 74 },
-
-  // OG prestige pin — upper-right corner of tier zone
-  og:   { l: 44, t: 9, w: 10 },
-
-  // Tier name — above bottom crystal decorations
+  tier:     { l: 10, t: 6, w: 42, h: 74 },
+  og:       { l: 44, t: 9, w: 10 },
   tierName: { l: 11, t: 73, w: 41 },
-
-  // Wallet value — inside the wallet field box
-  wallet: { l: 59.5, t: 24.5, w: 29, h: 6 },
-
-  // Signal score number only — "/ 1,000" is static in background artwork
-  signal: { l: 57.5, t: 35.5, w: 24, h: 8 },
-
-  // Single achievement zone — icon column left, level column right, 4 equal rows inside
+  wallet:   { l: 59.5, t: 24.5, w: 29, h: 6 },
+  signal:   { l: 57.5, t: 35.5, w: 24, h: 8 },
   achievements: { l: 55.0, t: 54.5, r: 4.5, h: 26 },
 } as const;
 
@@ -70,17 +52,6 @@ const TIER_BRIGHTNESS: Record<string, number> = {
   LEGEND:      1.20,
 };
 
-// Returns the correct achievement PNG for the given track and level (1-5).
-// Uses level-1 icon when locked (level 0) so the socket always shows art.
-function iconSrc(
-  track:  keyof typeof achievementAssets,
-  level:  number,
-): string {
-  const map = achievementAssets[track];
-  const key = Math.max(1, level) as keyof typeof map;
-  return map[key];
-}
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface BadgeData {
@@ -88,14 +59,14 @@ interface BadgeData {
   tier:            string;
   xSignalLevel:    number;
   telegramLevel:   number;
+  discordLevel:    number;
   governanceLevel: number;
-  holderLevel:     number;
   isOG:            boolean;
   walletAddress:   string;
   memberSince:     string;
 }
 
-// ─── Overlay helper — positions an element by L config ───────────────────────
+// ─── Overlay helper ───────────────────────────────────────────────────────────
 
 function Slot({
   cfg, debug, debugColor = '#0ff', style, children,
@@ -107,14 +78,14 @@ function Slot({
   children?:   React.ReactNode;
 }) {
   const s: React.CSSProperties = {
-    position:  'absolute',
-    left:      cfg.l != null ? `${cfg.l}%` : undefined,
-    top:       cfg.t != null ? `${cfg.t}%` : undefined,
-    right:     cfg.r != null ? `${cfg.r}%` : undefined,
-    bottom:    cfg.b != null ? `${cfg.b}%` : undefined,
-    width:     cfg.w != null ? `${cfg.w}%` : undefined,
-    height:    cfg.h != null ? `${cfg.h}%` : undefined,
-    outline:   debug ? `1px solid ${debugColor}` : undefined,
+    position: 'absolute',
+    left:     cfg.l != null ? `${cfg.l}%` : undefined,
+    top:      cfg.t != null ? `${cfg.t}%` : undefined,
+    right:    cfg.r != null ? `${cfg.r}%` : undefined,
+    bottom:   cfg.b != null ? `${cfg.b}%` : undefined,
+    width:    cfg.w != null ? `${cfg.w}%` : undefined,
+    height:   cfg.h != null ? `${cfg.h}%` : undefined,
+    outline:  debug ? `1px solid ${debugColor}` : undefined,
     ...style,
   };
   return <div style={s}>{children}</div>;
@@ -122,16 +93,19 @@ function Slot({
 
 // ─── Badge card ──────────────────────────────────────────────────────────────
 
+type TrackKey = keyof typeof achievementAssets;
+
 function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
-  const tierSrc    = tierAssets[data.tier] ?? tierAssets['INITIATE'];
+  const tierSrc     = tierAssets[data.tier] ?? tierAssets['INITIATE'];
   const shortWallet = data.walletAddress
     ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
     : '—';
-  const tracks = [
-    { src: iconSrc('xSignal',       data.xSignalLevel),   level: data.xSignalLevel   },
-    { src: iconSrc('telegram',      data.telegramLevel),   level: data.telegramLevel  },
-    { src: iconSrc('governance',    data.governanceLevel), level: data.governanceLevel },
-    { src: iconSrc('holderStaking', data.holderLevel),     level: data.holderLevel    },
+
+  const tracks: { key: TrackKey; level: number }[] = [
+    { key: 'xSignal',    level: data.xSignalLevel    },
+    { key: 'telegram',   level: data.telegramLevel   },
+    { key: 'governance', level: data.governanceLevel },
+    { key: 'discord',    level: data.discordLevel    },
   ];
 
   return (
@@ -143,19 +117,12 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
       outline:     debug ? '2px solid red' : undefined,
     }}>
 
-      {/* z=0 — Background (defines the canvas) */}
+      {/* z=0 — Background */}
       <img
         src={specialAssets.cardBackground}
         alt=""
         draggable={false}
-        style={{
-          position:  'absolute',
-          inset:     0,
-          width:     '100%',
-          height:    '100%',
-          objectFit: 'fill',
-          zIndex:    0,
-        }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill', zIndex: 0 }}
       />
 
       {/* z=2 — Tier artwork */}
@@ -173,30 +140,18 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
       {/* z=4 — OG prestige pin */}
       {data.isOG && (
         <Slot cfg={L.og} debug={debug} debugColor="#fa0" style={{ zIndex: 4 }}>
-          <img
-            src={specialAssets.OG}
-            alt="OG"
-            draggable={false}
-            style={{ width: '100%', height: 'auto', objectFit: 'contain',
-              /* TODO: og.png lacks alpha channel — replace with RGBA export */ }}
-          />
+          <img src={specialAssets.OG} alt="OG" draggable={false}
+            style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
         </Slot>
       )}
 
-      {/* z=5 — Tier name (left panel, bottom) */}
-      <Slot cfg={L.tierName} debug={debug} debugColor="#f0f" style={{
-        zIndex:    5,
-        textAlign: 'center',
-      }}>
+      {/* z=5 — Tier name */}
+      <Slot cfg={L.tierName} debug={debug} debugColor="#f0f" style={{ zIndex: 5, textAlign: 'center' }}>
         <div style={{
-          color:         C.tealLt,
-          fontFamily:    'Rajdhani, Orbitron, monospace',
-          fontSize:      'clamp(10px, 3.2%, 22px)',
-          fontWeight:    700,
-          letterSpacing: '0.2em',
-          textShadow:    `0 0 1.5% #5ED3EA88`,
-          textTransform: 'uppercase',
-          lineHeight:    1,
+          color: C.tealLt, fontFamily: 'Rajdhani, Orbitron, monospace',
+          fontSize: 'clamp(10px, 3.2%, 22px)', fontWeight: 700,
+          letterSpacing: '0.2em', textShadow: `0 0 1.5% #5ED3EA88`,
+          textTransform: 'uppercase', lineHeight: 1,
         }}>
           {data.tier}
         </div>
@@ -204,98 +159,63 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
 
       {/* z=5 — Wallet value */}
       <Slot cfg={L.wallet} debug={debug} debugColor="#0f0" style={{
-        zIndex:      5,
-        display:     'flex',
-        alignItems:  'center',
-        paddingTop:  '1.2%',
-        paddingRight: '12%',
+        zIndex: 5, display: 'flex', alignItems: 'center',
+        paddingTop: '1.2%', paddingRight: '12%',
       }}>
         <span style={{
-          color:         C.tealLt,
-          fontFamily:    'Rajdhani, monospace',
-          fontSize:      'clamp(12px, 2.6%, 22px)',
-          fontWeight:    600,
-          letterSpacing: '0.04em',
-          whiteSpace:    'nowrap',
+          color: C.tealLt, fontFamily: 'Rajdhani, monospace',
+          fontSize: 'clamp(12px, 2.6%, 22px)', fontWeight: 600,
+          letterSpacing: '0.04em', whiteSpace: 'nowrap',
         }}>
           {shortWallet}
         </span>
       </Slot>
 
-      {/* z=5 — Signal score only — "/ 1,000" is already in the background artwork */}
+      {/* z=5 — Signal score */}
       <Slot cfg={L.signal} debug={debug} debugColor="#ff0" style={{
-        zIndex:     5,
-        display:    'flex',
-        alignItems: 'center',
-        lineHeight: 1,
+        zIndex: 5, display: 'flex', alignItems: 'center', lineHeight: 1,
       }}>
         <span style={{
-          color:      C.tealLt,
-          fontFamily: 'Rajdhani, Orbitron, monospace',
-          fontSize:   'clamp(14px, 4.5%, 36px)',
-          fontWeight: 700,
+          color: C.tealLt, fontFamily: 'Rajdhani, Orbitron, monospace',
+          fontSize: 'clamp(14px, 4.5%, 36px)', fontWeight: 700,
         }}>
           {data.signalScore.toLocaleString()}
         </span>
       </Slot>
 
-      {/* z=3 — Achievement zone: 4 equal rows, icon left + level right */}
-      <Slot
-        cfg={L.achievements}
-        debug={debug}
-        debugColor="#9f9"
-        style={{
-          zIndex:        3,
-          display:       'flex',
-          flexDirection: 'column',
-          justifyContent:'space-between',
-        }}
-      >
-        {tracks.map(({ src, level }, i) => (
-          <div key={i} style={{
-            flex:        1,
-            display:     'flex',
-            alignItems:  'center',
-            minHeight:   0,
-          }}>
-            {/* Badge icon — full opacity always; locked = dimmed via brightness only */}
+      {/* z=3 — Achievement zone: 4 rows, icon shown only when connected (level > 0) */}
+      <Slot cfg={L.achievements} debug={debug} debugColor="#9f9" style={{
+        zIndex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      }}>
+        {tracks.map(({ key, level }, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', minHeight: 0 }}>
             <div style={{
-              flexShrink:     0,
-              width:          '16%',
-              aspectRatio:    '1',
-              display:        'flex',
-              alignItems:     'center',
-              justifyContent: 'center',
+              flexShrink: 0, width: '16%', aspectRatio: '1',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <img
-                src={src}
-                alt=""
-                draggable={false}
-                style={{
-                  width:      '100%',
-                  height:     '100%',
-                  objectFit:  'contain',
-                  display:    'block',
-                  opacity:    1,
-                  filter:     level > 0
-                    ? 'brightness(1.0)'
-                    : 'brightness(0.4) saturate(0.5)',
-                }}
-              />
+              {level > 0 ? (
+                <img
+                  src={achievementAssets[key][level as 1 | 2 | 3 | 4 | 5]}
+                  alt=""
+                  draggable={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                />
+              ) : (
+                // Disconnected: show dim circle placeholder
+                <div style={{
+                  width: '70%', height: '70%', borderRadius: '50%',
+                  background: '#0d3040', border: '1px solid #2A5C70',
+                }} />
+              )}
             </div>
 
-            {/* Spacer */}
             <div style={{ flex: 1 }} />
 
-            {/* Level indicator */}
             <span style={{
-              color:         level > 0 ? C.tealLt : C.dim,
-              fontFamily:    'Rajdhani, Orbitron, monospace',
-              fontSize:      'clamp(9px, 1.8%, 15px)',
-              fontWeight:    700,
-              letterSpacing: '0.05em',
-              whiteSpace:    'nowrap',
-              paddingRight:  '2%',
+              color: level > 0 ? C.tealLt : C.dim,
+              fontFamily: 'Rajdhani, Orbitron, monospace',
+              fontSize: 'clamp(9px, 1.8%, 15px)', fontWeight: 700,
+              letterSpacing: '0.05em', whiteSpace: 'nowrap', paddingRight: '2%',
             }}>
               {level > 0 ? ROMAN[level] : '—'}
             </span>
@@ -306,7 +226,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
   );
 }
 
-// ─── Loading / error states ───────────────────────────────────────────────────
+// ─── Loading state ────────────────────────────────────────────────────────────
 
 function LoadingState() {
   return (
@@ -323,32 +243,32 @@ function LoadingState() {
 const MOCK_PROFILES: Record<string, BadgeData> = {
   initiate: {
     signalScore: 0, tier: 'INITIATE',
-    xSignalLevel: 0, telegramLevel: 0, governanceLevel: 0, holderLevel: 0,
+    xSignalLevel: 0, telegramLevel: 0, discordLevel: 0, governanceLevel: 0,
     isOG: false, walletAddress: '0x0000000000000000000000000000000000000000', memberSince: '2025-01',
   },
   explorer: {
     signalScore: 150, tier: 'EXPLORER',
-    xSignalLevel: 1, telegramLevel: 1, governanceLevel: 0, holderLevel: 1,
+    xSignalLevel: 1, telegramLevel: 1, discordLevel: 0, governanceLevel: 1,
     isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-03',
   },
   builder: {
     signalScore: 380, tier: 'BUILDER',
-    xSignalLevel: 2, telegramLevel: 2, governanceLevel: 1, holderLevel: 2,
+    xSignalLevel: 2, telegramLevel: 2, discordLevel: 1, governanceLevel: 1,
     isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-04',
   },
   stakeholder: {
     signalScore: 750, tier: 'STAKEHOLDER',
-    xSignalLevel: 4, telegramLevel: 4, governanceLevel: 4, holderLevel: 4,
+    xSignalLevel: 4, telegramLevel: 4, discordLevel: 4, governanceLevel: 4,
     isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-06',
   },
   genesis: {
     signalScore: 920, tier: 'GENESIS',
-    xSignalLevel: 5, telegramLevel: 4, governanceLevel: 4, holderLevel: 5,
+    xSignalLevel: 5, telegramLevel: 4, discordLevel: 4, governanceLevel: 5,
     isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-11',
   },
   legend: {
     signalScore: 1000, tier: 'LEGEND',
-    xSignalLevel: 5, telegramLevel: 5, governanceLevel: 5, holderLevel: 5,
+    xSignalLevel: 5, telegramLevel: 5, discordLevel: 5, governanceLevel: 5,
     isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-09',
   },
 };
@@ -397,11 +317,7 @@ function BadgeFaceInner() {
         *, *::before, *::after { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; background: #001A27; }
       `}</style>
-      <div style={{
-        width:     '100%',
-        maxWidth:  700,
-        margin:    '0 auto',
-      }}>
+      <div style={{ width: '100%', maxWidth: 700, margin: '0 auto' }}>
         <BadgeCard data={data} debug={debug} />
       </div>
     </>
@@ -419,9 +335,7 @@ export default function BadgeFacePage() {
 }
 
 const pageStyle: React.CSSProperties = {
-  minHeight:      '100vh',
-  display:        'flex',
-  alignItems:     'center',
-  justifyContent: 'center',
-  background:     '#001A27',
+  minHeight: '100vh', display: 'flex',
+  alignItems: 'center', justifyContent: 'center',
+  background: '#001A27',
 };
