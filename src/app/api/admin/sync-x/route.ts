@@ -75,11 +75,12 @@ function estimateImpressions(m: PublicMetrics): number {
 async function getTotalImpressions(userId: string, bearer: string): Promise<number> {
   try {
     const data = await xGet(
-      `/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics`,
+      `/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics,text`,
       bearer,
     );
-    const tweets: { public_metrics: PublicMetrics }[] = data?.data ?? [];
-    return tweets.reduce((sum, t) => sum + estimateImpressions(t.public_metrics), 0);
+    const tweets: { text: string; public_metrics: PublicMetrics }[] = data?.data ?? [];
+    const dualTweets = tweets.filter(t => /\$DUAL/i.test(t.text));
+    return dualTweets.reduce((sum, t) => sum + estimateImpressions(t.public_metrics), 0);
   } catch (err) {
     console.warn(`[sync-x] getTotalImpressions userId=${userId}:`, (err as Error).message);
     return 0;
