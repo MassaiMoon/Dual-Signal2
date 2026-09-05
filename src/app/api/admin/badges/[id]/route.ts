@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic';
 interface PatchBody {
   discordHandle?:  string;
   telegramHandle?: string;
+  xHandle?:        string;
 }
 
 export async function PATCH(
@@ -34,6 +35,7 @@ export async function PATCH(
   const data: Record<string, string> = {};
   if (body.discordHandle  !== undefined) data.discordHandle  = body.discordHandle.replace(/^@/, '').trim();
   if (body.telegramHandle !== undefined) data.telegramHandle = body.telegramHandle.replace(/^@/, '').trim();
+  if (body.xHandle        !== undefined) data.xHandle        = body.xHandle.replace(/^@/, '').trim();
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
@@ -45,5 +47,6 @@ export async function PATCH(
     id:             badge.id,
     discordHandle:  badge.discordHandle,
     telegramHandle: badge.telegramHandle,
+    xHandle:        badge.xHandle,
   });
 }

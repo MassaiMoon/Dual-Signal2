@@ -13,6 +13,7 @@ interface BadgeRow {
   memberSince:    string;
   discordHandle:  string;
   telegramHandle: string;
+  xHandle:        string;
   isOG:           boolean;
   createdAt:      string;
   xSignalLevel:    number;
@@ -92,7 +93,7 @@ export default function AdminPage() {
   const [authed,   setAuthed]   = useState(false);
   const [data,     setData]     = useState<DashboardData | null>(null);
 
-  function patchBadgeHandle(badgeId: string, field: 'discordHandle' | 'telegramHandle', value: string) {
+  function patchBadgeHandle(badgeId: string, field: 'discordHandle' | 'telegramHandle' | 'xHandle', value: string) {
     setData(prev => {
       if (!prev) return prev;
       return {
@@ -295,12 +296,15 @@ export default function AdminPage() {
       )}
 
       {/* Cron actions */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
         <button style={styles.btnAction} onClick={() => triggerCron('/api/cron/process-events', 'process-events')}>
           ▶ Process Events
         </button>
         <button style={styles.btnAction} onClick={() => triggerCron('/api/cron/flush-updates', 'flush-updates')}>
           ▶ Flush Updates
+        </button>
+        <button style={{ ...styles.btnAction, borderColor: 'rgba(94,211,234,0.35)' }} onClick={() => triggerCron('/api/admin/sync-x', 'Sync X')}>
+          𝕏 Sync Impressions
         </button>
       </div>
 
@@ -343,6 +347,14 @@ export default function AdminPage() {
                       </td>
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <HandleEditor
+                            badgeId={b.id}
+                            field="xHandle"
+                            value={b.xHandle}
+                            prefix="𝕏"
+                            token={token}
+                            onSaved={(val) => patchBadgeHandle(b.id, 'xHandle', val)}
+                          />
                           <HandleEditor
                             badgeId={b.id}
                             field="telegramHandle"
@@ -633,7 +645,7 @@ function HandleEditor({
   badgeId, field, value, prefix, token, onSaved,
 }: {
   badgeId: string;
-  field:   'discordHandle' | 'telegramHandle';
+  field:   'discordHandle' | 'telegramHandle' | 'xHandle';
   value:   string;
   prefix:  string;
   token:   string;

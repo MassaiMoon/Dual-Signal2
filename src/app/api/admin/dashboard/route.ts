@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
           memberSince:    true,
           discordHandle:  true,
           telegramHandle: true,
+          xHandle:        true,
           isOG:           true,
           createdAt:      true,
           xSignalLevel:    true,

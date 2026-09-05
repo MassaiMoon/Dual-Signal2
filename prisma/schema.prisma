@@ -55,6 +55,7 @@ model Badge {
   memberSince    String @default("") @map("member_since")
   discordHandle  String @default("") @map("discord_handle")
   telegramHandle String @default("") @map("telegram_handle")
+  xHandle        String @default("") @map("x_handle")
 
   lastIntegrityHash String @default("") @map("last_integrity_hash")
 
