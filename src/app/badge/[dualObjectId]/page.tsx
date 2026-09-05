@@ -17,17 +17,19 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { dualObjectId } = await params;
-  const badge = await db.badge.findFirst({ where: { dualObjectId } });
+  const badge = await db.badge.findFirst({
+    where: { dualObjectId },
+    include: { user: { select: { username: true } } },
+  });
 
   if (!badge) {
     return { title: 'DUAL // SIGNAL — Badge Not Found' };
   }
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
-  const wallet = badge.walletAddress ?? '';
-  const shortWallet = wallet
-    ? `${wallet.slice(0, 6)}···${wallet.slice(-4)}`
-    : 'Community Member';
+  const appUrl      = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
+  const username    = badge.user?.username ?? '';
+  const wallet      = badge.walletAddress ?? '';
+  const shortWallet = username || (wallet ? `${wallet.slice(0, 6)}···${wallet.slice(-4)}` : 'Community Member');
 
   const title       = `DUAL // SIGNAL — ${shortWallet}`;
   const description = `${badge.cachedTier ?? 'INITIATE'} • ${badge.signalScore ?? 0} SIGNAL score • Member since ${badge.memberSince ?? 'N/A'}`;
@@ -55,17 +57,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BadgePage({ params }: Props) {
   const { dualObjectId } = await params;
-  const badge = await db.badge.findFirst({ where: { dualObjectId } });
+  const badge = await db.badge.findFirst({
+    where: { dualObjectId },
+    include: { user: { select: { username: true } } },
+  });
 
   if (!badge) notFound();
 
   const appUrl      = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
   const faceUrl     = `${appUrl}/faces/badge?id=${dualObjectId}`;
   const pageUrl     = `${appUrl}/badge/${dualObjectId}`;
+  const username    = badge.user?.username ?? '';
   const wallet      = badge.walletAddress ?? '';
-  const shortWallet = wallet
-    ? `${wallet.slice(0, 6)}···${wallet.slice(-4)}`
-    : 'Community Member';
+  const displayId   = username || (wallet ? `${wallet.slice(0, 6)}···${wallet.slice(-4)}` : 'Community Member');
   const tier        = badge.cachedTier ?? 'INITIATE';
   const score       = badge.signalScore ?? 0;
   const memberSince = badge.memberSince ?? '';
@@ -105,7 +109,7 @@ export default async function BadgePage({ params }: Props) {
           width={400}
           height={600}
           style={{ border: 'none', display: 'block' }}
-          title={`DUAL // SIGNAL Badge — ${shortWallet}`}
+          title={`DUAL // SIGNAL Badge — ${displayId}`}
         />
       </div>
 
@@ -117,10 +121,10 @@ export default async function BadgePage({ params }: Props) {
         fontSize:     14,
         color:        '#7BA8B8',
       }}>
-        <Stat label="TIER"   value={tier} accent />
-        <Stat label="SIGNAL" value={score.toLocaleString()} />
+        <Stat label="TIER"     value={tier} accent />
+        <Stat label="SIGNAL"   value={score.toLocaleString()} />
         {memberSince && <Stat label="MEMBER SINCE" value={memberSince} />}
-        <Stat label="WALLET" value={shortWallet} />
+        <Stat label="USERNAME" value={displayId} />
       </div>
 
       {/* Share + embed */}
@@ -131,7 +135,7 @@ export default async function BadgePage({ params }: Props) {
         flexDirection:'column',
         gap:          16,
       }}>
-        <ShareButton url={pageUrl} label={`${shortWallet} — ${tier} on DUAL // SIGNAL`} />
+        <ShareButton url={pageUrl} label={`${displayId} — ${tier} on DUAL // SIGNAL`} />
 
         <details style={{
           background:   'rgba(94,211,234,0.04)',

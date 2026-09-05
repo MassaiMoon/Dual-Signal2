@@ -19,7 +19,7 @@ interface BadgeRow {
   xSignalLevel:    number;
   telegramLevel:   number;
   governanceLevel: number;
-  holderLevel:     number;
+  discordLevel:    number;
 }
 
 interface EventRow {
@@ -111,20 +111,21 @@ export default function AdminPage() {
   const [rightPanel, setRightPanel] = useState<'mint' | 'update'>('mint');
 
   // Mint form state
-  const [mintWallet,  setMintWallet]  = useState('');
-  const [mintX,       setMintX]       = useState('');
-  const [mintTg,      setMintTg]      = useState('');
-  const [mintDiscord, setMintDiscord] = useState('');
-  const [mintOG,      setMintOG]      = useState(false);
-  const [minting, setMinting] = useState(false);
-  const [mintResult, setMintResult] = useState('');
+  const [mintUsername, setMintUsername] = useState('');
+  const [mintWallet,   setMintWallet]   = useState('');
+  const [mintX,        setMintX]        = useState('');
+  const [mintTg,       setMintTg]       = useState('');
+  const [mintDiscord,  setMintDiscord]  = useState('');
+  const [mintOG,       setMintOG]       = useState(false);
+  const [minting,      setMinting]      = useState(false);
+  const [mintResult,   setMintResult]   = useState('');
 
-  // Update score form state
-  const [updWallet, setUpdWallet] = useState('');
+  // Update score form state (identifier: dualObjectId preferred, wallet as fallback)
+  const [updId,     setUpdId]     = useState('');
   const [updX,      setUpdX]      = useState('');
   const [updTg,     setUpdTg]     = useState('');
   const [updGov,    setUpdGov]    = useState('');
-  const [updHld,    setUpdHld]    = useState('');
+  const [updDc,     setUpdDc]     = useState('');
   const [updating,  setUpdating]  = useState(false);
   const [updResult, setUpdResult] = useState('');
 
@@ -176,11 +177,18 @@ export default function AdminPage() {
     setUpdating(true);
     setUpdResult('');
     try {
-      const body: Record<string, unknown> = { walletAddress: updWallet.trim() };
-      if (updX   !== '') body.xImpressions       = Number(updX);
+      const id = updId.trim();
+      // Detect identifier type: DUAL object IDs start with known prefix, otherwise treat as username
+      const body: Record<string, unknown> = id.startsWith('0x')
+        ? { walletAddress: id }
+        : id.length > 20 && !id.includes(' ')
+          ? { dualObjectId: id }
+          : { username: id };
+
+      if (updX   !== '') body.xPublicViews       = Number(updX);
       if (updTg  !== '') body.telegramActiveDays  = Number(updTg);
       if (updGov !== '') body.governanceVotes     = Number(updGov);
-      if (updHld !== '') body.holderQualDays      = Number(updHld);
+      if (updDc  !== '') body.discordActiveDays   = Number(updDc);
 
       const res = await fetch('/api/admin/update-score', {
         method: 'POST',
@@ -195,7 +203,7 @@ export default function AdminPage() {
           ? 'No change — score already matches.'
           : `Updated → ${tier} · ${signalScore} SIGNAL${dualUpdateQueued ? ' · DUAL write queued' : ''}`,
       );
-      setUpdWallet(''); setUpdX(''); setUpdTg(''); setUpdGov(''); setUpdHld('');
+      setUpdId(''); setUpdX(''); setUpdTg(''); setUpdGov(''); setUpdDc('');
       setTimeout(() => { setUpdResult(''); load(token); }, 3500);
     } catch (e) { setUpdResult(`Error: ${e}`); }
     finally { setUpdating(false); }
@@ -210,7 +218,8 @@ export default function AdminPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          walletAddress:  mintWallet.trim(),
+          username:       mintUsername.trim() || undefined,
+          walletAddress:  mintWallet.trim()   || undefined,
           xHandle:        mintX.trim(),
           telegramHandle: mintTg.trim(),
           discordHandle:  mintDiscord.trim(),
@@ -220,7 +229,7 @@ export default function AdminPage() {
       const json = await res.json();
       if (!res.ok) { setMintResult(`Error: ${json.error}`); return; }
       setMintResult(`Minted! Object: ${json.dualObjectId}`);
-      setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false);
+      setMintUsername(''); setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false);
       setTimeout(() => { setMintResult(''); load(token); }, 3000);
     } catch (e) { setMintResult(`Error: ${e}`); }
     finally { setMinting(false); }
@@ -336,7 +345,7 @@ export default function AdminPage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['Wallet', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'HLD', 'OG', 'View'].map(h => (
+                    {['Wallet / Username', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'OG', 'View'].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -345,7 +354,9 @@ export default function AdminPage() {
                   {d.badges.map(b => (
                     <tr key={b.id} style={styles.tr}>
                       <td style={styles.td}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{short(b.walletAddress)}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                          {short(b.walletAddress) !== '—' ? short(b.walletAddress) : '—'}
+                        </span>
                       </td>
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -385,7 +396,7 @@ export default function AdminPage() {
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.xSignalLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.telegramLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.governanceLevel}</td>
-                      <td style={{ ...styles.td, textAlign: 'center' }}>{b.holderLevel}</td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>{b.discordLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.isOG ? '⬡' : ''}</td>
                       <td style={styles.td}>
                         <a
@@ -500,13 +511,19 @@ export default function AdminPage() {
           {/* Mint form */}
           {rightPanel === 'mint' && (
             <form onSubmit={handleMint} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={styles.label}>Wallet Address *</label>
+              <label style={styles.label}>Username *</label>
+              <input
+                style={styles.input}
+                placeholder="MassaiMoon"
+                value={mintUsername}
+                onChange={e => setMintUsername(e.target.value)}
+              />
+              <label style={styles.label}>Wallet (optional)</label>
               <input
                 style={styles.input}
                 placeholder="0x..."
                 value={mintWallet}
                 onChange={e => setMintWallet(e.target.value)}
-                required
               />
               <label style={styles.label}>𝕏 Handle</label>
               <input
@@ -558,18 +575,18 @@ export default function AdminPage() {
           {/* Update Score form */}
           {rightPanel === 'update' && (
             <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <label style={styles.label}>Wallet Address *</label>
+              <label style={styles.label}>Username / Object ID / Wallet *</label>
               <input
                 style={styles.input}
-                placeholder="0x..."
-                value={updWallet}
-                onChange={e => setUpdWallet(e.target.value)}
+                placeholder="MassaiMoon or objectId or 0x…"
+                value={updId}
+                onChange={e => setUpdId(e.target.value)}
                 required
               />
               <div style={{ fontSize: 11, color: '#3A5060', marginBottom: 2 }}>
-                Leave blank to keep existing value
+                Leave counters blank to keep existing values
               </div>
-              <label style={styles.label}>X Impressions</label>
+              <label style={styles.label}>X Public Views</label>
               <input
                 style={styles.input}
                 type="number"
@@ -596,14 +613,14 @@ export default function AdminPage() {
                 value={updGov}
                 onChange={e => setUpdGov(e.target.value)}
               />
-              <label style={styles.label}>Holder Qualifying Days</label>
+              <label style={styles.label}>Discord Active Days</label>
               <input
                 style={styles.input}
                 type="number"
                 min={0}
-                placeholder="e.g. 90"
-                value={updHld}
-                onChange={e => setUpdHld(e.target.value)}
+                placeholder="e.g. 14"
+                value={updDc}
+                onChange={e => setUpdDc(e.target.value)}
               />
               {updResult && (
                 <div style={{

@@ -26,7 +26,11 @@ import { runPendingUpdates } from '@/lib/update-worker';
 export const dynamic = 'force-dynamic';
 
 interface UpdateScoreBody {
-  walletAddress:       string;
+  // Identifier — provide one of these:
+  walletAddress?:      string;
+  dualObjectId?:       string;
+  username?:           string;
+  // Counters (absolute values, not deltas)
   xPublicViews?:       number;
   xQualifyingPosts?:   number;
   telegramActiveDays?: number;
@@ -43,14 +47,26 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { walletAddress, xPublicViews, xQualifyingPosts, telegramActiveDays, discordActiveDays, governanceVotes } = body;
-  if (!walletAddress) {
-    return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
+  const { walletAddress, dualObjectId, username, xPublicViews, xQualifyingPosts, telegramActiveDays, discordActiveDays, governanceVotes } = body;
+
+  if (!walletAddress && !dualObjectId && !username) {
+    return NextResponse.json({ error: 'Provide walletAddress, dualObjectId, or username' }, { status: 400 });
   }
 
-  const badge = await db.badge.findFirst({ where: { walletAddress } });
+  // Find badge by any of the three identifiers
+  let badge = null;
+  if (dualObjectId) {
+    badge = await db.badge.findFirst({ where: { dualObjectId } });
+  } else if (username) {
+    badge = await db.badge.findFirst({
+      where: { user: { usernameNormalized: username.toLowerCase() } },
+    });
+  } else if (walletAddress) {
+    badge = await db.badge.findFirst({ where: { walletAddress } });
+  }
+
   if (!badge) {
-    return NextResponse.json({ error: 'No badge found for this wallet' }, { status: 404 });
+    return NextResponse.json({ error: 'No Passport found for the given identifier' }, { status: 404 });
   }
 
   const newViews = xPublicViews       ?? badge.xSignalPublicViews;
@@ -114,7 +130,7 @@ export async function POST(req: NextRequest) {
     status:       stateChanged ? 'updated' : 'no_change',
     badgeId:      badge.id,
     dualObjectId: badge.dualObjectId,
-    walletAddress,
+    walletAddress: badge.walletAddress,
     signalScore:  newScore,
     tier:         newTier,
     levels: {

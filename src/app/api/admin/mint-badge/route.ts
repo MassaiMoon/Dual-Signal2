@@ -1,15 +1,12 @@
 /**
  * POST /api/admin/mint-badge
  *
- * M6 — Mint a DUAL // SIGNAL badge for a new community member.
+ * Admin: mint a DUAL // SIGNAL Passport for a community member.
  *
- * 1. Mints a new badge object on DUAL Network via ebus.mint()
- * 2. Creates User + Badge records in the database
- * 3. Returns the badge face URL ready to share
+ * username is now the primary identity — walletAddress is optional.
+ * Either username or walletAddress must be provided.
  *
  * Protected by ADMIN_TOKEN bearer auth.
- *
- * Requires DUAL_SIGNAL_TEMPLATE_ID in env.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,12 +16,15 @@ import { calculateTier } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
+const USERNAME_RE = /^[A-Za-z0-9_-]{3,24}$/;
+
 interface MintRequest {
-  walletAddress:  string;
-  xHandle?:       string;
+  username?:       string;
+  walletAddress?:  string;
+  xHandle?:        string;
   telegramHandle?: string;
-  discordHandle?: string;
-  isOG?:          boolean;
+  discordHandle?:  string;
+  isOG?:           boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -41,25 +41,55 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { walletAddress, xHandle = '', telegramHandle = '', discordHandle = '', isOG = false } = body;
-  if (!walletAddress) {
-    return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
+  const {
+    username:       rawUsername,
+    walletAddress:  rawWallet = '',
+    xHandle        = '',
+    telegramHandle = '',
+    discordHandle  = '',
+    isOG           = false,
+  } = body;
+
+  if (!rawUsername && !rawWallet) {
+    return NextResponse.json({ error: 'username or walletAddress is required' }, { status: 400 });
   }
 
-  // Guard against duplicate mints for the same wallet
-  const existingBadge = await db.badge.findFirst({ where: { walletAddress } });
-  if (existingBadge) {
-    return NextResponse.json(
-      { error: 'A badge already exists for this wallet', badgeId: existingBadge.id },
-      { status: 409 },
-    );
+  const username          = rawUsername?.trim() ?? '';
+  const walletAddress     = rawWallet.trim();
+
+  if (username && !USERNAME_RE.test(username)) {
+    return NextResponse.json({ error: 'Invalid username format' }, { status: 422 });
   }
 
-  const now    = new Date();
+  // Guard against duplicate mints
+  if (username) {
+    const existingUser = await db.user.findUnique({
+      where: { usernameNormalized: username.toLowerCase() },
+    });
+    if (existingUser) {
+      const existingBadge = await db.badge.findFirst({ where: { userId: existingUser.id } });
+      if (existingBadge) {
+        return NextResponse.json(
+          { error: 'A Passport already exists for this username', badgeId: existingBadge.id },
+          { status: 409 },
+        );
+      }
+    }
+  } else if (walletAddress) {
+    const existingBadge = await db.badge.findFirst({ where: { walletAddress } });
+    if (existingBadge) {
+      return NextResponse.json(
+        { error: 'A Passport already exists for this wallet', badgeId: existingBadge.id },
+        { status: 409 },
+      );
+    }
+  }
+
+  const now         = new Date();
   const memberSince = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const shortWallet = `${walletAddress.slice(0, 6)}···${walletAddress.slice(-4)}`;
+  const displayName = username || (walletAddress ? `${walletAddress.slice(0, 6)}···${walletAddress.slice(-4)}` : 'Member');
 
-  // ── Mint on DUAL ────────────────────────────────────────────────────────────
+  // ── Mint on DUAL ─────────────────────────────────────────────────────────────
   let mintResult: Awaited<ReturnType<typeof ebus.mint>>;
   try {
     mintResult = await ebus.mint(
@@ -71,12 +101,11 @@ export async function POST(req: NextRequest) {
         telegram_level:   '0',
         governance_level: '0',
         discord_level:    '0',
+        username:         username,
         wallet_address:   walletAddress,
         member_since:     memberSince,
       },
-      {
-        name: `DUAL // SIGNAL — ${shortWallet}`,
-      },
+      { name: `DUAL // SIGNAL — ${displayName}` },
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -90,11 +119,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Mint succeeded but no object ID returned' }, { status: 502 });
   }
 
-  console.log(`[mint-badge] Minted DUAL object ${dualObjectId} for wallet ${walletAddress}`);
+  console.log(`[mint-badge] Minted DUAL object ${dualObjectId} for ${displayName}`);
 
-  // ── Create DB records ───────────────────────────────────────────────────────
+  // ── Create DB records ─────────────────────────────────────────────────────────
   const { user, badge } = await db.$transaction(async (tx) => {
-    const user = await tx.user.create({ data: {} });
+    const user = await tx.user.create({
+      data: username
+        ? { username, usernameNormalized: username.toLowerCase() }
+        : {},
+    });
 
     const badge = await tx.badge.create({
       data: {
@@ -103,9 +136,9 @@ export async function POST(req: NextRequest) {
         dualTemplateId:  templateId,
         walletAddress,
         memberSince,
-        xHandle:       xHandle.replace(/^@/, ''),
-        telegramHandle: telegramHandle.replace(/^@/, ''),
-        discordHandle:  discordHandle.replace(/^@/, ''),
+        xHandle:         xHandle.replace(/^@/, ''),
+        telegramHandle:  telegramHandle.replace(/^@/, ''),
+        discordHandle:   discordHandle.replace(/^@/, ''),
         isOG,
         signalScore:     0,
         cachedTier:      'INITIATE',
@@ -119,7 +152,7 @@ export async function POST(req: NextRequest) {
     return { user, badge };
   });
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
+  const appUrl       = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
   const badgeFaceUrl = `${appUrl}/faces/badge?id=${dualObjectId}`;
 
   console.log(`[mint-badge] Created badge ${badge.id} for user ${user.id}`);
@@ -129,7 +162,8 @@ export async function POST(req: NextRequest) {
     badgeId:      badge.id,
     userId:       user.id,
     dualObjectId,
-    walletAddress,
+    username:     username || null,
+    walletAddress: walletAddress || null,
     memberSince,
     tier:         'INITIATE',
     badgeFaceUrl,

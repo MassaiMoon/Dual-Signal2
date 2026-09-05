@@ -13,10 +13,25 @@ import { db } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const wallet = req.nextUrl.searchParams.get('wallet')?.trim();
-  if (!wallet) return NextResponse.json({ error: 'wallet required' }, { status: 400 });
+  const wallet   = req.nextUrl.searchParams.get('wallet')?.trim();
+  const username = req.nextUrl.searchParams.get('username')?.trim();
+  const objectId = req.nextUrl.searchParams.get('id')?.trim();
 
-  const badge = await db.badge.findFirst({ where: { walletAddress: wallet } });
+  if (!wallet && !username && !objectId) {
+    return NextResponse.json({ error: 'Provide wallet, username, or id' }, { status: 400 });
+  }
+
+  let badge = null;
+  if (objectId) {
+    badge = await db.badge.findFirst({ where: { dualObjectId: objectId } });
+  } else if (username) {
+    badge = await db.badge.findFirst({
+      where: { user: { usernameNormalized: username.toLowerCase() } },
+    });
+  } else if (wallet) {
+    badge = await db.badge.findFirst({ where: { walletAddress: wallet } });
+  }
+
   if (!badge) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
@@ -30,6 +45,7 @@ export async function GET(req: NextRequest) {
     xHandle:        badge.xHandle,
     telegramHandle: badge.telegramHandle,
     discordHandle:  badge.discordHandle,
+    walletAddress:  badge.walletAddress,
     badgeUrl:       `${appUrl}/badge/${badge.dualObjectId}`,
   });
 }

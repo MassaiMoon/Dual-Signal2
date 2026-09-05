@@ -63,7 +63,13 @@ interface BadgeData {
   governanceLevel: number;
   isOG:            boolean;
   walletAddress:   string;
+  username:        string;
   memberSince:     string;
+  // Connected flags — account linked (not necessarily achievement earned)
+  xConnected:          boolean;
+  telegramConnected:   boolean;
+  discordConnected:    boolean;
+  governanceConnected: boolean;
 }
 
 // ─── Overlay helper ───────────────────────────────────────────────────────────
@@ -96,16 +102,23 @@ function Slot({
 type TrackKey = keyof typeof achievementAssets;
 
 function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
-  const tierSrc     = tierAssets[data.tier] ?? tierAssets['INITIATE'];
-  const shortWallet = data.walletAddress
-    ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
-    : '—';
+  const tierSrc = tierAssets[data.tier] ?? tierAssets['INITIATE'];
 
-  const tracks: { key: TrackKey; level: number }[] = [
-    { key: 'xSignal',    level: data.xSignalLevel    },
-    { key: 'telegram',   level: data.telegramLevel   },
-    { key: 'governance', level: data.governanceLevel },
-    { key: 'discord',    level: data.discordLevel    },
+  // Display username if set; fall back to short wallet; then '—'
+  const displayIdentity = data.username
+    ? data.username
+    : data.walletAddress
+      ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
+      : '—';
+
+  // For each track: if level > 0 show that level's artwork;
+  // if level = 0 but connected show level 1 artwork (connected indicator);
+  // if not connected show dim placeholder.
+  const tracks: { key: TrackKey; level: number; connected: boolean }[] = [
+    { key: 'xSignal',    level: data.xSignalLevel,    connected: data.xConnected          },
+    { key: 'telegram',   level: data.telegramLevel,   connected: data.telegramConnected   },
+    { key: 'governance', level: data.governanceLevel, connected: data.governanceConnected },
+    { key: 'discord',    level: data.discordLevel,    connected: data.discordConnected    },
   ];
 
   return (
@@ -157,7 +170,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         </div>
       </Slot>
 
-      {/* z=5 — Wallet value */}
+      {/* z=5 — Username / identity value */}
       <Slot cfg={L.wallet} debug={debug} debugColor="#0f0" style={{
         zIndex: 5, display: 'flex', alignItems: 'center',
         paddingTop: '1.2%', paddingRight: '12%',
@@ -167,7 +180,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
           fontSize: 'clamp(12px, 2.6%, 22px)', fontWeight: 600,
           letterSpacing: '0.04em', whiteSpace: 'nowrap',
         }}>
-          {shortWallet}
+          {displayIdentity}
         </span>
       </Slot>
 
@@ -183,25 +196,29 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         </span>
       </Slot>
 
-      {/* z=3 — Achievement zone: 4 rows, icon shown only when connected (level > 0) */}
+      {/* z=3 — Achievement zone: 4 rows.
+           - Connected + level > 0 → show earned level artwork
+           - Connected + level = 0 → show level 1 artwork (connected indicator)
+           - Not connected         → show dim placeholder */}
       <Slot cfg={L.achievements} debug={debug} debugColor="#9f9" style={{
         zIndex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
       }}>
-        {tracks.map(({ key, level }, i) => (
+        {tracks.map(({ key, level, connected }, i) => {
+          const displayLevel = level > 0 ? level : (connected ? 1 : 0);
+          return (
           <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', minHeight: 0 }}>
             <div style={{
               flexShrink: 0, width: '16%', aspectRatio: '1',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {level > 0 ? (
+              {displayLevel > 0 ? (
                 <img
-                  src={achievementAssets[key][level as 1 | 2 | 3 | 4 | 5]}
+                  src={achievementAssets[key][displayLevel as 1 | 2 | 3 | 4 | 5]}
                   alt=""
                   draggable={false}
                   style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                 />
               ) : (
-                // Disconnected: show dim circle placeholder
                 <div style={{
                   width: '70%', height: '70%', borderRadius: '50%',
                   background: '#0d3040', border: '1px solid #2A5C70',
@@ -212,15 +229,16 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
             <div style={{ flex: 1 }} />
 
             <span style={{
-              color: level > 0 ? C.tealLt : C.dim,
+              color: displayLevel > 0 ? C.tealLt : C.dim,
               fontFamily: 'Rajdhani, Orbitron, monospace',
               fontSize: 'clamp(9px, 1.8%, 15px)', fontWeight: 700,
               letterSpacing: '0.05em', whiteSpace: 'nowrap', paddingRight: '2%',
             }}>
-              {level > 0 ? ROMAN[level] : '—'}
+              {level > 0 ? ROMAN[level] : (connected ? '·' : '—')}
             </span>
           </div>
-        ))}
+          );
+        })}
       </Slot>
     </div>
   );
@@ -244,32 +262,38 @@ const MOCK_PROFILES: Record<string, BadgeData> = {
   initiate: {
     signalScore: 0, tier: 'INITIATE',
     xSignalLevel: 0, telegramLevel: 0, discordLevel: 0, governanceLevel: 0,
-    isOG: false, walletAddress: '0x0000000000000000000000000000000000000000', memberSince: '2025-01',
+    isOG: false, walletAddress: '', username: 'Preview', memberSince: '2025-01',
+    xConnected: false, telegramConnected: false, discordConnected: false, governanceConnected: false,
   },
   explorer: {
     signalScore: 150, tier: 'EXPLORER',
     xSignalLevel: 1, telegramLevel: 1, discordLevel: 0, governanceLevel: 1,
-    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-03',
+    isOG: false, walletAddress: '', username: 'Explorer', memberSince: '2025-03',
+    xConnected: true, telegramConnected: true, discordConnected: false, governanceConnected: true,
   },
   builder: {
     signalScore: 380, tier: 'BUILDER',
     xSignalLevel: 2, telegramLevel: 2, discordLevel: 1, governanceLevel: 1,
-    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-04',
+    isOG: false, walletAddress: '', username: 'Builder', memberSince: '2025-04',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   stakeholder: {
     signalScore: 750, tier: 'STAKEHOLDER',
     xSignalLevel: 4, telegramLevel: 4, discordLevel: 4, governanceLevel: 4,
-    isOG: false, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2025-06',
+    isOG: false, walletAddress: '', username: 'Stakeholder', memberSince: '2025-06',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   genesis: {
     signalScore: 920, tier: 'GENESIS',
     xSignalLevel: 5, telegramLevel: 4, discordLevel: 4, governanceLevel: 5,
-    isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-11',
+    isOG: true, walletAddress: '', username: 'MassaiMoon', memberSince: '2024-11',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   legend: {
     signalScore: 1000, tier: 'LEGEND',
     xSignalLevel: 5, telegramLevel: 5, discordLevel: 5, governanceLevel: 5,
-    isOG: true, walletAddress: '0xAbCd1234567890AbCd1234567890AbCd12345678', memberSince: '2024-09',
+    isOG: true, walletAddress: '', username: 'Legend', memberSince: '2024-09',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
 };
 
