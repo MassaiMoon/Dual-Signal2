@@ -23,8 +23,11 @@ function buildTransport() {
   if (!user || !pass) return null;
 
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
+    service:           'gmail',
+    auth:              { user, pass },
+    connectionTimeout: 5000,
+    socketTimeout:     8000,
+    greetingTimeout:   5000,
   });
 }
 
@@ -89,14 +92,21 @@ Telegram: ${tg ? `@${tg}` : '—'}</pre>
     </div>
   `;
 
+  const timeout = new Promise<void>((_, reject) =>
+    setTimeout(() => reject(new Error('Email timeout after 10 s')), 10_000),
+  );
+
   try {
-    await transport.sendMail({
-      from:    `"DUAL SIGNAL" <${process.env.GMAIL_USER}>`,
-      to:      ADMIN_EMAIL,
-      subject: `Badge mint request — ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`,
-      text,
-      html,
-    });
+    await Promise.race([
+      transport.sendMail({
+        from:    `"DUAL SIGNAL" <${process.env.GMAIL_USER}>`,
+        to:      ADMIN_EMAIL,
+        subject: `Badge mint request — ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`,
+        text,
+        html,
+      }),
+      timeout,
+    ]);
     console.log(`[request-mint] Email sent to ${ADMIN_EMAIL} for wallet ${walletAddress}`);
     return NextResponse.json({ queued: true, emailSent: true });
   } catch (err) {
