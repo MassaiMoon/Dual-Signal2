@@ -304,30 +304,32 @@ export default function JoinPage() {
         {/* ── Step 4: Pending mint ─────────────────────────────────────────── */}
         {step === 'pending' && (
           <div style={styles.card}>
-            <div style={styles.pendingIcon}>⬡</div>
-            <h1 style={styles.cardTitle}>Request Received</h1>
+            <div style={styles.successIcon} aria-hidden>✓</div>
+            <h1 style={styles.cardTitle}>Request Sent</h1>
             <p style={styles.cardDesc}>
-              No badge exists for this wallet yet. Share the message below with a
-              DUAL // SIGNAL admin to get your badge minted.
+              Your details have been submitted. An admin will review and mint
+              your DUAL // SIGNAL badge — check back on the leaderboard soon.
             </p>
 
-            <div style={styles.copyBox}>
-              <p style={styles.copyBoxLabel}>Copy and send to an admin:</p>
-              <code style={styles.copyBoxCode}>
-                {`Wallet: ${walletAddress.trim()}
-X: ${xHandle || '—'}
-Telegram: ${telegramHandle || '—'}`}
-              </code>
-              <button
-                style={styles.copyBtn}
-                onClick={() =>
-                  navigator.clipboard.writeText(
-                    `Wallet: ${walletAddress.trim()}\nX: ${xHandle || '—'}\nTelegram: ${telegramHandle || '—'}`,
-                  )
-                }
-              >
-                Copy
-              </button>
+            <div style={styles.summaryBox}>
+              <div style={styles.summaryRow}>
+                <span style={styles.summaryKey}>Wallet</span>
+                <span style={styles.summaryVal}>
+                  {walletAddress.slice(0, 8)}…{walletAddress.slice(-6)}
+                </span>
+              </div>
+              {xHandle && (
+                <div style={styles.summaryRow}>
+                  <span style={styles.summaryKey}>𝕏</span>
+                  <span style={styles.summaryVal}>@{xHandle.replace(/^@/, '')}</span>
+                </div>
+              )}
+              {telegramHandle && (
+                <div style={styles.summaryRow}>
+                  <span style={styles.summaryKey}>Telegram</span>
+                  <span style={styles.summaryVal}>@{telegramHandle.replace(/^@/, '')}</span>
+                </div>
+              )}
             </div>
 
             <div style={styles.linksRow}>
@@ -343,7 +345,7 @@ Telegram: ${telegramHandle || '—'}`}
                   setTelegramHandle('');
                 }}
               >
-                Start over
+                Register another wallet
               </button>
             </div>
           </div>
@@ -579,6 +581,37 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize:    40,
     color:       '#4A90A4',
     marginBottom: 12,
+  },
+  summaryBox: {
+    width:        '100%',
+    background:   '#0A1525',
+    border:       '1px solid rgba(94,211,234,0.12)',
+    borderRadius:  10,
+    padding:      '4px 16px',
+    marginBottom: 20,
+    boxSizing:    'border-box',
+  },
+  summaryRow: {
+    display:        'flex',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    padding:        '10px 0',
+    borderBottom:   '1px solid rgba(94,211,234,0.07)',
+    gap:             12,
+  },
+  summaryKey: {
+    fontSize:     12,
+    letterSpacing:'0.08em',
+    textTransform:'uppercase',
+    color:        '#4A90A4',
+    flexShrink:    0,
+  },
+  summaryVal: {
+    fontSize:   13,
+    color:      '#C8D8E8',
+    fontFamily: 'monospace',
+    textAlign:  'right',
+    wordBreak:  'break-all',
   },
   copyBox: {
     width:        '100%',
