@@ -31,8 +31,8 @@ const C = {
 // ─── Layout config — all values are % of card canvas (1536 × 1024) ──────────
 
 const L = {
-  tier:     { l: 10, t: 6, w: 42, h: 74 },
-  og:       { l: 41, t: 18.5, w: 10 },
+  tier:     { l: 10, t: 9, w: 42, h: 74 },
+  og:       { l: 41, t: 15.5, w: 10 },
   tierName: { l: 11, t: 73, w: 41 },
   wallet:   { l: 59.5, t: 24.5, w: 29, h: 6 },
   signal:   { l: 57.5, t: 35.5, w: 24, h: 8 },
