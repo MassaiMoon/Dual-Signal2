@@ -49,8 +49,8 @@ const L = {
 const ACH = {
   l:    69,
   r:    4.5,
-  h:    6.5,
-  tops: [54.5, 61.0, 67.5, 74.0] as const,
+  h:    7.5,
+  tops: [52.5, 58.5, 64.5, 70.5] as const,
   gap:  '4%',
 } as const;
 
@@ -230,7 +230,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
                 src={assets[(j + 1) as 1 | 2 | 3 | 4 | 5]}
                 alt=""
                 draggable={false}
-                style={{ height: '80%', aspectRatio: '1', objectFit: 'contain', flexShrink: 0 }}
+                style={{ height: '88%', aspectRatio: '1', objectFit: 'contain', flexShrink: 0 }}
               />
             ))}
           </Slot>
