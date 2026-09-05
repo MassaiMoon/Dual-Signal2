@@ -131,7 +131,16 @@ export default function JoinPage() {
       return;
     }
 
-    // Case B: no badge yet → show pending screen (admin mints manually)
+    // Case B: no badge yet → notify admin by email, show pending screen
+    try {
+      await fetch('/api/public/request-mint', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ walletAddress: walletAddress.trim(), xHandle: x, telegramHandle: tg }),
+      });
+    } catch {
+      // Email failure is non-blocking — still show confirmation screen
+    }
     setLoading(false);
     setStep('pending');
   }
