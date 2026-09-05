@@ -2,12 +2,21 @@
  * POST /api/public/request-mint
  *
  * Called by /join when a visitor submits handles for a wallet with no badge.
- * Sends an email notification to the admin via Gmail SMTP.
+ * Sends a Telegram notification (primary) with Gmail SMTP as fallback.
  *
  * Required Railway env vars:
- *   GMAIL_USER         — sending Gmail address (e.g. yourname@gmail.com)
- *   GMAIL_APP_PASSWORD — 16-char App Password from Google Account → Security → App passwords
- *   ADMIN_EMAIL        — destination (defaults to perinaca15@gmail.com)
+ *   TELEGRAM_BOT_TOKEN    — already set for webhook tracking
+ *   ADMIN_TELEGRAM_CHAT_ID — your personal Telegram chat ID (see instructions below)
+ *
+ * Optional fallback:
+ *   GMAIL_USER / GMAIL_APP_PASSWORD — used only if Telegram notification fails
+ *   ADMIN_EMAIL — email destination (defaults to perinaca15@gmail.com)
+ *
+ * To get ADMIN_TELEGRAM_CHAT_ID:
+ *   1. Open Telegram, search for your bot and send it any message (e.g. /start)
+ *   2. Visit: https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+ *   3. Look for "chat":{"id": 123456789} — that number is your chat ID
+ *   4. Add it to Railway as ADMIN_TELEGRAM_CHAT_ID
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -17,47 +26,59 @@ export const dynamic = 'force-dynamic';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'perinaca15@gmail.com';
 
-function buildTransport() {
+// ── Telegram ──────────────────────────────────────────────────────────────────
+
+async function sendTelegram(walletAddress: string, x: string, tg: string, now: string): Promise<boolean> {
+  const token  = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return false;
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://dual-signal2-production.up.railway.app').replace(/\/$/, '');
+
+  const text = [
+    '🔔 <b>New Badge Mint Request</b>',
+    '',
+    `💳 <b>Wallet:</b> <code>${walletAddress}</code>`,
+    `𝕏 <b>X:</b> ${x  ? `@${x}`  : '—'}`,
+    `📱 <b>Telegram:</b> ${tg ? `@${tg}` : '—'}`,
+    `🕐 <b>Time:</b> ${now}`,
+    '',
+    `<a href="${appUrl}/admin">Open Admin Panel → Quick Mint</a>`,
+  ].join('\n');
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+    });
+    const data = await res.json() as { ok: boolean; description?: string };
+    if (!data.ok) {
+      console.error('[request-mint] Telegram error:', data.description);
+      return false;
+    }
+    console.log(`[request-mint] Telegram notification sent to chat_id=${chatId}`);
+    return true;
+  } catch (err) {
+    console.error('[request-mint] Telegram fetch error:', (err as Error).message);
+    return false;
+  }
+}
+
+// ── Gmail fallback ────────────────────────────────────────────────────────────
+
+async function sendEmail(walletAddress: string, x: string, tg: string, now: string): Promise<boolean> {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
-  if (!user || !pass) return null;
+  if (!user || !pass) return false;
 
-  return nodemailer.createTransport({
+  const transport = nodemailer.createTransport({
     service:           'gmail',
     auth:              { user, pass },
     connectionTimeout: 8000,
     socketTimeout:     10000,
     greetingTimeout:   8000,
   });
-}
-
-export async function POST(req: NextRequest) {
-  let body: { walletAddress: string; xHandle?: string; telegramHandle?: string };
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-
-  const { walletAddress, xHandle, telegramHandle } = body;
-  if (!walletAddress) {
-    return NextResponse.json({ error: 'walletAddress required' }, { status: 400 });
-  }
-
-  const x  = (xHandle        ?? '').replace(/^@/, '').trim();
-  const tg = (telegramHandle ?? '').replace(/^@/, '').trim();
-  const now = new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false }) + ' UTC';
-
-  const transport = buildTransport();
-  if (!transport) {
-    console.warn('[request-mint] GMAIL_USER / GMAIL_APP_PASSWORD not set — skipping email');
-    return NextResponse.json({ queued: true, emailSent: false });
-  }
-
-  // Verify SMTP credentials on first use — catches wrong App Password fast
-  try {
-    await transport.verify();
-  } catch (err) {
-    console.error('[request-mint] SMTP verify failed:', (err as Error).message);
-    return NextResponse.json({ queued: true, emailSent: false, smtpError: 'auth' });
-  }
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://dual-signal2-production.up.railway.app').replace(/\/$/, '');
 
@@ -72,47 +93,46 @@ export async function POST(req: NextRequest) {
     `Mint here: ${appUrl}/admin`,
   ].join('\n');
 
-  const html = `
-    <div style="font-family:monospace;background:#0A1525;color:#C8D8E8;padding:32px;border-radius:12px;max-width:520px">
-      <h2 style="color:#5ED3EA;margin:0 0 4px;letter-spacing:0.1em">DUAL // SIGNAL</h2>
-      <p style="color:#4A90A4;margin:0 0 24px;font-size:12px;letter-spacing:0.15em">NEW MINT REQUEST</p>
-
-      <table style="width:100%;border-collapse:collapse">
-        <tr><td style="padding:8px 0;color:#4A90A4;width:110px;font-size:13px">Wallet</td>
-            <td style="padding:8px 0;color:#E8F4FC;font-size:13px;word-break:break-all">${walletAddress}</td></tr>
-        <tr><td style="padding:8px 0;color:#4A90A4;font-size:13px">𝕏 Handle</td>
-            <td style="padding:8px 0;color:#E8F4FC;font-size:13px">${x ? `@${x}` : '—'}</td></tr>
-        <tr><td style="padding:8px 0;color:#4A90A4;font-size:13px">Telegram</td>
-            <td style="padding:8px 0;color:#E8F4FC;font-size:13px">${tg ? `@${tg}` : '—'}</td></tr>
-        <tr><td style="padding:8px 0;color:#4A90A4;font-size:13px">Submitted</td>
-            <td style="padding:8px 0;color:#E8F4FC;font-size:13px">${now}</td></tr>
-      </table>
-
-      <div style="margin:24px 0 0;padding:16px;background:#0F1E30;border:1px solid rgba(94,211,234,0.15);border-radius:8px">
-        <pre style="margin:0;color:#C8D8E8;font-size:13px">Wallet: ${walletAddress}
-X: ${x ? `@${x}` : '—'}
-Telegram: ${tg ? `@${tg}` : '—'}</pre>
-      </div>
-
-      <p style="margin:20px 0 0;font-size:12px;color:#4A90A4">
-        <a href="${appUrl}/admin" style="color:#5ED3EA">Open Admin Panel → Quick Mint</a>
-      </p>
-    </div>
-  `;
-
   try {
+    await transport.verify();
     const info = await transport.sendMail({
-      from:     `"DUAL SIGNAL" <${process.env.GMAIL_USER}>`,
-      to:       ADMIN_EMAIL,
-      replyTo:  ADMIN_EMAIL,
-      subject:  `Badge mint request — ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`,
+      from:    `"DUAL SIGNAL" <${user}>`,
+      to:      ADMIN_EMAIL,
+      replyTo: ADMIN_EMAIL,
+      subject: `Badge mint request — ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`,
       text,
-      html,
     });
-    console.log(`[request-mint] Email sent — messageId=${info.messageId} to=${ADMIN_EMAIL} wallet=${walletAddress}`);
-    return NextResponse.json({ queued: true, emailSent: true });
+    console.log(`[request-mint] Email sent — messageId=${info.messageId}`);
+    return true;
   } catch (err) {
-    console.error('[request-mint] sendMail error:', (err as Error).message);
-    return NextResponse.json({ queued: true, emailSent: false });
+    console.error('[request-mint] Email error:', (err as Error).message);
+    return false;
   }
+}
+
+// ── Handler ───────────────────────────────────────────────────────────────────
+
+export async function POST(req: NextRequest) {
+  let body: { walletAddress: string; xHandle?: string; telegramHandle?: string };
+  try { body = await req.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+  const { walletAddress, xHandle, telegramHandle } = body;
+  if (!walletAddress) {
+    return NextResponse.json({ error: 'walletAddress required' }, { status: 400 });
+  }
+
+  const x   = (xHandle        ?? '').replace(/^@/, '').trim();
+  const tg  = (telegramHandle ?? '').replace(/^@/, '').trim();
+  const now = new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false }) + ' UTC';
+
+  // Try Telegram first (instant, no spam issues), fall back to email
+  const tgSent    = await sendTelegram(walletAddress, x, tg, now);
+  const emailSent = tgSent ? false : await sendEmail(walletAddress, x, tg, now);
+
+  if (!tgSent && !emailSent) {
+    console.warn('[request-mint] No notification sent — set TELEGRAM_BOT_TOKEN + ADMIN_TELEGRAM_CHAT_ID in Railway');
+  }
+
+  return NextResponse.json({ queued: true, tgSent, emailSent });
 }
