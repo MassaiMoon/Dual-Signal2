@@ -43,15 +43,16 @@ const L = {
 // l   = left edge of badge area (%, after baked-in track labels)
 // r   = right margin (%)
 // h   = row height (% of canvas height)
-// tops = top of each track row, order: X / Telegram / Governance / Discord
+// cy = center-Y of each track row (% of canvas height), order: X / Telegram / Governance / Discord
+// Rendered with transform:translateY(-50%) so cy IS the exact badge-center position — no h/2 offset.
 // gap = flex column-gap between badges (relative to row container width)
 
 const ACH = {
-  l:    69,
-  r:    4.5,
-  h:    7.5,
-  tops: [52.5, 58.5, 64.5, 70.5] as const,
-  gap:  '4%',
+  l:  69,
+  r:  4.5,
+  h:  7.5,
+  cy: [57.5, 63.5, 69.5, 75.5] as const,
+  gap: '4%',
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -219,10 +220,10 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         return (
           <Slot
             key={key}
-            cfg={{ l: ACH.l, r: ACH.r, t: ACH.tops[i], h: ACH.h }}
+            cfg={{ l: ACH.l, r: ACH.r, t: ACH.cy[i], h: ACH.h }}
             debug={debug}
             debugColor="#9f9"
-            style={{ zIndex: 3, display: 'flex', alignItems: 'center', gap: ACH.gap }}
+            style={{ zIndex: 3, display: 'flex', alignItems: 'center', gap: ACH.gap, transform: 'translateY(-50%)' }}
           >
             {Array.from({ length: visibleCount }, (_, j) => (
               <img
