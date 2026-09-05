@@ -91,6 +91,18 @@ export default function AdminPage() {
   const [token,    setToken]    = useState('');
   const [authed,   setAuthed]   = useState(false);
   const [data,     setData]     = useState<DashboardData | null>(null);
+
+  function patchBadgeHandle(badgeId: string, field: 'discordHandle' | 'telegramHandle', value: string) {
+    setData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        badges: prev.badges.map(b =>
+          b.id === badgeId ? { ...b, [field]: value } : b,
+        ),
+      };
+    });
+  }
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
   const [tab,      setTab]      = useState<'badges' | 'events' | 'queue'>('badges');
@@ -318,7 +330,7 @@ export default function AdminPage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['Wallet', 'Tier', 'Signal', 'Member Since', 'xS', 'TG', 'GOV', 'HLD', 'OG', 'View'].map(h => (
+                    {['Wallet', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'HLD', 'OG', 'View'].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -328,8 +340,26 @@ export default function AdminPage() {
                     <tr key={b.id} style={styles.tr}>
                       <td style={styles.td}>
                         <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{short(b.walletAddress)}</span>
-                        {b.discordHandle  && <Tag>{b.discordHandle}</Tag>}
-                        {b.telegramHandle && <Tag>{b.telegramHandle}</Tag>}
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <HandleEditor
+                            badgeId={b.id}
+                            field="telegramHandle"
+                            value={b.telegramHandle}
+                            prefix="TG"
+                            token={token}
+                            onSaved={(val) => patchBadgeHandle(b.id, 'telegramHandle', val)}
+                          />
+                          <HandleEditor
+                            badgeId={b.id}
+                            field="discordHandle"
+                            value={b.discordHandle}
+                            prefix="DC"
+                            token={token}
+                            onSaved={(val) => patchBadgeHandle(b.id, 'discordHandle', val)}
+                          />
+                        </div>
                       </td>
                       <td style={styles.td}>
                         <span style={{ color: TIER_COLOR[b.cachedTier] ?? '#5ED3EA', fontWeight: 600, fontSize: 11 }}>
@@ -356,7 +386,7 @@ export default function AdminPage() {
                     </tr>
                   ))}
                   {d.badges.length === 0 && (
-                    <tr><td colSpan={10} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
+                    <tr><td colSpan={11} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
                   )}
                 </tbody>
               </table>
@@ -595,6 +625,103 @@ function StatCard({ label, value, color, warn }: {
       <div style={{ fontSize: 10, letterSpacing: 2, color: '#3A6070', textTransform: 'uppercase', marginTop: 4 }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+function HandleEditor({
+  badgeId, field, value, prefix, token, onSaved,
+}: {
+  badgeId: string;
+  field:   'discordHandle' | 'telegramHandle';
+  value:   string;
+  prefix:  string;
+  token:   string;
+  onSaved: (val: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(value);
+  const [saving,  setSaving]  = useState(false);
+  const [err,     setErr]     = useState('');
+
+  async function save() {
+    setSaving(true);
+    setErr('');
+    try {
+      const res = await fetch(`/api/admin/badges/${badgeId}`, {
+        method:  'PATCH',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ [field]: draft }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setErr(json.error ?? 'Error'); return; }
+      const saved = field === 'telegramHandle' ? json.telegramHandle : json.discordHandle;
+      onSaved(saved ?? '');
+      setEditing(false);
+    } catch (e) { setErr(String(e)); }
+    finally { setSaving(false); }
+  }
+
+  if (editing) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 9, color: '#2A4050', letterSpacing: 1, minWidth: 16 }}>{prefix}</span>
+        <input
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="handle"
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+          style={{
+            width:      80,
+            fontSize:   11,
+            background: 'rgba(0,17,30,0.8)',
+            border:     '1px solid rgba(94,211,234,0.3)',
+            borderRadius: 4,
+            padding:    '2px 6px',
+            color:      '#D4E8F0',
+            outline:    'none',
+          }}
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          style={{ background: 'none', border: 'none', color: '#5ED3EA', cursor: 'pointer', fontSize: 13, padding: 0 }}
+        >
+          {saving ? '…' : '✓'}
+        </button>
+        <button
+          onClick={() => { setEditing(false); setDraft(value); setErr(''); }}
+          style={{ background: 'none', border: 'none', color: '#4A7A8A', cursor: 'pointer', fontSize: 13, padding: 0 }}
+        >
+          ✕
+        </button>
+        {err && <span style={{ fontSize: 10, color: '#F87171' }}>{err}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => { setDraft(value); setEditing(true); }}
+      title="Click to edit"
+      style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+    >
+      <span style={{ fontSize: 9, color: '#2A4050', letterSpacing: 1, minWidth: 16 }}>{prefix}</span>
+      {value ? (
+        <span style={{
+          fontSize:   11,
+          color:      '#4A7A8A',
+          background: 'rgba(94,211,234,0.06)',
+          border:     '1px solid rgba(94,211,234,0.1)',
+          borderRadius: 4,
+          padding:    '1px 6px',
+        }}>
+          @{value}
+        </span>
+      ) : (
+        <span style={{ fontSize: 10, color: '#1E3A48', fontStyle: 'italic' }}>+ add</span>
+      )}
     </div>
   );
 }
