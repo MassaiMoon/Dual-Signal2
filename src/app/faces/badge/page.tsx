@@ -48,11 +48,11 @@ const L = {
 // gap = flex column-gap between badges (relative to row container width)
 
 const ACH = {
-  l:  69,
+  l:  71,
   r:  4.5,
   h:  7.5,
   cy: [57.5, 63.5, 69.5, 75.5] as const,
-  gap: '4%',
+  gap: '2%',
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
