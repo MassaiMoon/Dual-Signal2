@@ -5,12 +5,13 @@
  *
  * Background (1536×1024, 3:2) already contains all static UI chrome:
  *   DUAL logo, DUAL // SIGNAL title, COMMUNITY IDENTITY PASSPORT,
- *   WALLET label + field frame, SIGNAL label, progress bar border,
- *   ACHIEVEMENTS heading, X SIGNAL / TELEGRAM / GOVERNANCE / HOLDER/STAKING labels,
+ *   USERNAME label + field frame, SIGNAL label, progress bar border,
+ *   ACHIEVEMENTS heading, X SIGNAL / TELEGRAM / GOVERNANCE / DISCORD labels,
  *   circular tier HUD, TOKENIZE EVERYTHING footer.
  *
  * This component ONLY overlays dynamic state into the spaces designed for it.
- * Achievement icons are only rendered when the track is connected (level > 0).
+ * Achievement badges render cumulatively (Tier 1 through earned tier) in
+ * horizontal rows to the RIGHT of the baked-in track labels.
  */
 
 import { useEffect, useState, Suspense } from 'react';
@@ -36,12 +37,24 @@ const L = {
   tierName: { l: 11, t: 73, w: 41 },
   wallet:   { l: 59.5, t: 24.5, w: 29, h: 6 },
   signal:   { l: 57.5, t: 35.5, w: 24, h: 8 },
-  achievements: { l: 55.0, t: 54.5, r: 4.5, h: 26 },
+} as const;
+
+// ─── Achievement badge rows ───────────────────────────────────────────────────
+// l   = left edge of badge area (%, after baked-in track labels)
+// r   = right margin (%)
+// h   = row height (% of canvas height)
+// tops = top of each track row, order: X / Telegram / Governance / Discord
+// gap = flex column-gap between badges (relative to row container width)
+
+const ACH = {
+  l:    69,
+  r:    4.5,
+  h:    6.5,
+  tops: [54.5, 61.0, 67.5, 74.0] as const,
+  gap:  '4%',
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'] as const;
 
 const TIER_BRIGHTNESS: Record<string, number> = {
   INITIATE:    0.70,
@@ -104,16 +117,13 @@ type TrackKey = keyof typeof achievementAssets;
 function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
   const tierSrc = tierAssets[data.tier] ?? tierAssets['INITIATE'];
 
-  // Display username if set; fall back to short wallet; then '—'
   const displayIdentity = data.username
     ? data.username
     : data.walletAddress
       ? `${data.walletAddress.slice(0, 6)}···${data.walletAddress.slice(-4)}`
       : '—';
 
-  // For each track: if level > 0 show that level's artwork;
-  // if level = 0 but connected show level 1 artwork (connected indicator);
-  // if not connected show dim placeholder.
+  // Track order must match ACH.tops index order
   const tracks: { key: TrackKey; level: number; connected: boolean }[] = [
     { key: 'xSignal',    level: data.xSignalLevel,    connected: data.xConnected          },
     { key: 'telegram',   level: data.telegramLevel,   connected: data.telegramConnected   },
@@ -196,50 +206,36 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         </span>
       </Slot>
 
-      {/* z=3 — Achievement zone: 4 rows.
-           - Connected + level > 0 → show earned level artwork
-           - Connected + level = 0 → show level 1 artwork (connected indicator)
-           - Not connected         → show dim placeholder */}
-      <Slot cfg={L.achievements} debug={debug} debugColor="#9f9" style={{
-        zIndex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-      }}>
-        {tracks.map(({ key, level, connected }, i) => {
-          const displayLevel = level > 0 ? level : (connected ? 1 : 0);
-          return (
-          <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'center', minHeight: 0 }}>
-            <div style={{
-              flexShrink: 0, width: '16%', aspectRatio: '1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {displayLevel > 0 ? (
-                <img
-                  src={achievementAssets[key][displayLevel as 1 | 2 | 3 | 4 | 5]}
-                  alt=""
-                  draggable={false}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                />
-              ) : (
-                <div style={{
-                  width: '70%', height: '70%', borderRadius: '50%',
-                  background: '#0d3040', border: '1px solid #2A5C70',
-                }} />
-              )}
-            </div>
-
-            <div style={{ flex: 1 }} />
-
-            <span style={{
-              color: displayLevel > 0 ? C.tealLt : C.dim,
-              fontFamily: 'Rajdhani, Orbitron, monospace',
-              fontSize: 'clamp(9px, 1.8%, 15px)', fontWeight: 700,
-              letterSpacing: '0.05em', whiteSpace: 'nowrap', paddingRight: '2%',
-            }}>
-              {level > 0 ? ROMAN[level] : (connected ? '·' : '—')}
-            </span>
-          </div>
-          );
-        })}
-      </Slot>
+      {/* z=3 — Achievement badge rows (cumulative)
+           Each track gets its own horizontal row positioned after the baked-in label.
+           Rules:
+             not connected        → render nothing
+             connected, level = 0 → render Tier 1 badge only (connected indicator)
+             connected, level ≥ 1 → render badges Tier 1 through earned tier */}
+      {tracks.map(({ key, level, connected }, i) => {
+        const visibleCount = connected ? Math.max(1, level) : 0;
+        if (visibleCount === 0) return null;
+        const assets = achievementAssets[key];
+        return (
+          <Slot
+            key={key}
+            cfg={{ l: ACH.l, r: ACH.r, t: ACH.tops[i], h: ACH.h }}
+            debug={debug}
+            debugColor="#9f9"
+            style={{ zIndex: 3, display: 'flex', alignItems: 'center', gap: ACH.gap }}
+          >
+            {Array.from({ length: visibleCount }, (_, j) => (
+              <img
+                key={j}
+                src={assets[(j + 1) as 1 | 2 | 3 | 4 | 5]}
+                alt=""
+                draggable={false}
+                style={{ height: '80%', aspectRatio: '1', objectFit: 'contain', flexShrink: 0 }}
+              />
+            ))}
+          </Slot>
+        );
+      })}
     </div>
   );
 }
@@ -271,9 +267,10 @@ const MOCK_PROFILES: Record<string, BadgeData> = {
     isOG: false, walletAddress: '', username: 'Explorer', memberSince: '2025-03',
     xConnected: true, telegramConnected: true, discordConnected: false, governanceConnected: true,
   },
+  // Matches spec acceptance test: X=3, Telegram=2, Governance=1, Discord=4
   builder: {
     signalScore: 380, tier: 'BUILDER',
-    xSignalLevel: 2, telegramLevel: 2, discordLevel: 1, governanceLevel: 1,
+    xSignalLevel: 3, telegramLevel: 2, discordLevel: 4, governanceLevel: 1,
     isOG: false, walletAddress: '', username: 'Builder', memberSince: '2025-04',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
@@ -293,6 +290,20 @@ const MOCK_PROFILES: Record<string, BadgeData> = {
     signalScore: 1000, tier: 'LEGEND',
     xSignalLevel: 5, telegramLevel: 5, discordLevel: 5, governanceLevel: 5,
     isOG: true, walletAddress: '', username: 'Legend', memberSince: '2024-09',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
+  },
+  // Mixed state: X=5, Telegram=3, Governance=2, Discord=4
+  mixed: {
+    signalScore: 640, tier: 'STAKEHOLDER',
+    xSignalLevel: 5, telegramLevel: 3, discordLevel: 4, governanceLevel: 2,
+    isOG: false, walletAddress: '', username: 'Mixed', memberSince: '2025-05',
+    xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
+  },
+  // Connected at level 0 across all tracks (connected-but-not-yet-earned state)
+  connected0: {
+    signalScore: 0, tier: 'INITIATE',
+    xSignalLevel: 0, telegramLevel: 0, discordLevel: 0, governanceLevel: 0,
+    isOG: false, walletAddress: '', username: 'Connected', memberSince: '2026-09',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
 };
