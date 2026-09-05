@@ -286,7 +286,7 @@ const MOCK_PROFILES: Record<string, BadgeData> = {
   genesis: {
     signalScore: 920, tier: 'GENESIS',
     xSignalLevel: 5, telegramLevel: 4, discordLevel: 4, governanceLevel: 5,
-    isOG: true, walletAddress: '', username: 'MassaiMoon', memberSince: '2024-11',
+    isOG: true, walletAddress: '', username: 'Genesis', memberSince: '2024-11',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   legend: {

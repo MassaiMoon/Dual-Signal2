@@ -3,15 +3,15 @@ import { PrismaClient } from '@prisma/client';
 const db = new PrismaClient();
 
 async function main() {
-  console.log('Seeding MassaiMoon demo identity...');
+  console.log('Seeding demo identity...');
 
   const user = await db.user.upsert({
-    where: { username: 'MassaiMoon' },
+    where: { username: 'DemoUser' },
     update: {},
     create: {
-      id:                 'massaimoon-001',
-      username:           'MassaiMoon',
-      usernameNormalized: 'massaimoon',
+      id:                 'demouser-001',
+      username:           'DemoUser',
+      usernameNormalized: 'demouser',
     },
   });
   console.log('✓ User:            ', user.id, `(@${user.username})`);
@@ -29,14 +29,14 @@ async function main() {
       telegramLevel:   0,
       discordLevel:    0,
       governanceLevel: 0,
-      xHandle:        'MassaiMoon',
-      telegramHandle: 'MassaiMoon',
-      discordHandle:  'MassaiMoon',
+      xHandle:        '',
+      telegramHandle: '',
+      discordHandle:  '',
       memberSince:    '2026-09',
     },
   });
   console.log('✓ Badge:           ', badge.id, `(${badge.cachedTier}, score=${badge.signalScore})`);
-  console.log('\nMassaiMoon identity ready.');
+  console.log('\nDemo identity ready.');
   console.log('Signal Score = 0, all tracks locked. No wallet required.');
   console.log('Use POST /api/admin/simulate-event to begin the demo flow.');
 }

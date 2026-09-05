@@ -514,7 +514,7 @@ export default function AdminPage() {
               <label style={styles.label}>Username *</label>
               <input
                 style={styles.input}
-                placeholder="MassaiMoon"
+                placeholder="Username"
                 value={mintUsername}
                 onChange={e => setMintUsername(e.target.value)}
               />
@@ -578,7 +578,7 @@ export default function AdminPage() {
               <label style={styles.label}>Username / Object ID / Wallet *</label>
               <input
                 style={styles.input}
-                placeholder="MassaiMoon or objectId or 0x…"
+                placeholder="Username or objectId or 0x…"
                 value={updId}
                 onChange={e => setUpdId(e.target.value)}
                 required

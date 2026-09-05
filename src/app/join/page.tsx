@@ -463,7 +463,7 @@ export default function JoinPage() {
                 <input
                   style={{ ...S.input, ...(inputFocus ? S.inputFocused : {}) }}
                   type="text"
-                  placeholder="e.g. MassaiMoon"
+                  placeholder="Username"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onFocus={() => setInputFocus(true)}
