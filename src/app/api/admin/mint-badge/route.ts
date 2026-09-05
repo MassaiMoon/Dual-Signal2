@@ -21,8 +21,9 @@ export const dynamic = 'force-dynamic';
 
 interface MintRequest {
   walletAddress:  string;
-  discordHandle?: string;
+  xHandle?:       string;
   telegramHandle?: string;
+  discordHandle?: string;
   isOG?:          boolean;
 }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { walletAddress, discordHandle = '', telegramHandle = '', isOG = false } = body;
+  const { walletAddress, xHandle = '', telegramHandle = '', discordHandle = '', isOG = false } = body;
   if (!walletAddress) {
     return NextResponse.json({ error: 'walletAddress is required' }, { status: 400 });
   }
@@ -102,8 +103,9 @@ export async function POST(req: NextRequest) {
         dualTemplateId:  templateId,
         walletAddress,
         memberSince,
-        discordHandle,
-        telegramHandle,
+        xHandle:       xHandle.replace(/^@/, ''),
+        telegramHandle: telegramHandle.replace(/^@/, ''),
+        discordHandle:  discordHandle.replace(/^@/, ''),
         isOG,
         signalScore:     0,
         cachedTier:      'INITIATE',

@@ -111,10 +111,11 @@ export default function AdminPage() {
   const [rightPanel, setRightPanel] = useState<'mint' | 'update'>('mint');
 
   // Mint form state
-  const [mintWallet, setMintWallet] = useState('');
+  const [mintWallet,  setMintWallet]  = useState('');
+  const [mintX,       setMintX]       = useState('');
+  const [mintTg,      setMintTg]      = useState('');
   const [mintDiscord, setMintDiscord] = useState('');
-  const [mintTg, setMintTg] = useState('');
-  const [mintOG, setMintOG] = useState(false);
+  const [mintOG,      setMintOG]      = useState(false);
   const [minting, setMinting] = useState(false);
   const [mintResult, setMintResult] = useState('');
 
@@ -210,15 +211,16 @@ export default function AdminPage() {
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({
           walletAddress:  mintWallet.trim(),
-          discordHandle:  mintDiscord.trim(),
+          xHandle:        mintX.trim(),
           telegramHandle: mintTg.trim(),
+          discordHandle:  mintDiscord.trim(),
           isOG:           mintOG,
         }),
       });
       const json = await res.json();
       if (!res.ok) { setMintResult(`Error: ${json.error}`); return; }
       setMintResult(`Minted! Object: ${json.dualObjectId}`);
-      setMintWallet(''); setMintDiscord(''); setMintTg(''); setMintOG(false);
+      setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false);
       setTimeout(() => { setMintResult(''); load(token); }, 3000);
     } catch (e) { setMintResult(`Error: ${e}`); }
     finally { setMinting(false); }
@@ -506,12 +508,12 @@ export default function AdminPage() {
                 onChange={e => setMintWallet(e.target.value)}
                 required
               />
-              <label style={styles.label}>Discord Handle</label>
+              <label style={styles.label}>𝕏 Handle</label>
               <input
                 style={styles.input}
                 placeholder="@handle"
-                value={mintDiscord}
-                onChange={e => setMintDiscord(e.target.value)}
+                value={mintX}
+                onChange={e => setMintX(e.target.value)}
               />
               <label style={styles.label}>Telegram Handle</label>
               <input
@@ -519,6 +521,13 @@ export default function AdminPage() {
                 placeholder="@handle"
                 value={mintTg}
                 onChange={e => setMintTg(e.target.value)}
+              />
+              <label style={styles.label}>Discord Handle</label>
+              <input
+                style={styles.input}
+                placeholder="@handle"
+                value={mintDiscord}
+                onChange={e => setMintDiscord(e.target.value)}
               />
               <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input
