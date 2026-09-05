@@ -317,6 +317,10 @@ export default function AdminPage() {
         <button style={{ ...styles.btnAction, borderColor: 'rgba(94,211,234,0.35)' }} onClick={() => triggerCron('/api/admin/sync-x', 'Sync X')}>
           𝕏 Sync Impressions
         </button>
+        <a href="/admin/telegram-import"
+          style={{ ...styles.btnAction, textDecoration: 'none', lineHeight: '1.6', borderColor: 'rgba(94,211,234,0.25)' }}>
+          Telegram Imports →
+        </a>
       </div>
 
       {/* Two-column layout: main table + mint form */}

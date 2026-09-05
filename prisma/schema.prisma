@@ -94,6 +94,13 @@ model TelegramActiveDay {
   badgeId   String   @map("badge_id")
   badge     Badge    @relation(fields: [badgeId], references: [id])
   day       DateTime @map("day") @db.Date
+
+  // Import provenance — null for manually created records
+  sourceImportId         String?         @map("source_import_id")
+  sourceImport           TelegramImport? @relation(fields: [sourceImportId], references: [id])
+  telegramProviderUserId String?         @map("telegram_provider_user_id")
+  firstMessageId         String?         @map("first_message_id")
+
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([badgeId, day])
@@ -187,6 +194,56 @@ model BadgeUpdate {
   @@map("badge_updates")
 }
 
+// ─── Telegram Import ─────────────────────────────────────────────────────────
+
+model TelegramImport {
+  id                String       @id @default(cuid())
+  filename          String
+  messageCount      Int          @default(0) @map("message_count")
+  matchedUsers      Int          @default(0) @map("matched_users")
+  unmatchedUsers    Int          @default(0) @map("unmatched_users")
+  activeDaysCreated Int          @default(0) @map("active_days_created")
+  duplicatesIgnored Int          @default(0) @map("duplicates_ignored")
+  importedWeekStart String?      @map("imported_week_start")
+  importedWeekEnd   String?      @map("imported_week_end")
+  status            ImportStatus @default(COMPLETED)
+  error             String?
+  isDryRun          Boolean      @default(false) @map("is_dry_run")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  identities TelegramImportIdentity[]
+  activeDays TelegramActiveDay[]
+
+  @@map("telegram_imports")
+}
+
+model TelegramImportIdentity {
+  id             String         @id @default(cuid())
+  importId       String         @map("import_id")
+  import         TelegramImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  telegramUserId String         @map("telegram_user_id")
+  handle         String
+  displayName    String         @map("display_name")
+  messageCount   Int            @default(0) @map("message_count")
+  uniqueDays     Int            @default(0) @map("unique_days")
+  firstSeenDate  String         @map("first_seen_date")
+  lastSeenDate   String         @map("last_seen_date")
+  // JSON array of "YYYY-MM-DD" strings — stored for retroactive linking of unmatched users
+  activeDates    Json           @default("[]") @map("active_dates")
+
+  matchedUserId  String?        @map("matched_user_id")
+  matchedBadgeId String?        @map("matched_badge_id")
+  matchReason    String?        @map("match_reason")
+  status         IdentityStatus @default(UNMATCHED)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([importId, telegramUserId])
+  @@map("telegram_import_identities")
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Tier {
@@ -229,4 +286,17 @@ enum UpdateStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum ImportStatus {
+  COMPLETED
+  FAILED
+  DRY_RUN
+}
+
+enum IdentityStatus {
+  MATCHED
+  UNMATCHED
+  AMBIGUOUS
+  LINKED
 }
