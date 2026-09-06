@@ -117,8 +117,10 @@ export interface TimelineResult {
 
 /**
  * Fetch the most recent posts for a user.
- * Excludes plain retweets (exclude=retweets). Replies are included so
- * the classifier can check for qualifying keywords.
+ * We do NOT use the `exclude=retweets` API filter because on some X API
+ * tiers it also excludes quote tweets, which should qualify if the user's
+ * own text contains a DUAL keyword. Plain repost exclusion is handled
+ * client-side in x-classifier.ts (referenced_tweets[].type === 'retweeted').
  * Cost: $0.005 per post resource returned.
  */
 export async function getUserTimeline(
@@ -128,7 +130,6 @@ export async function getUserTimeline(
 ): Promise<TimelineResult> {
   const params: Record<string, string> = {
     'tweet.fields': 'created_at,public_metrics,referenced_tweets,text',
-    'exclude':      'retweets',
     'max_results':  String(Math.min(100, Math.max(5, opts.maxResults ?? 100))),
   };
   if (opts.sinceId) params['since_id'] = opts.sinceId;
