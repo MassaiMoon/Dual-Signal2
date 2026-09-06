@@ -18,7 +18,7 @@ export function resolveXSignalLevel(publicViews: number, qualifyingPosts: number
     if (l.level === 1) {
       if (qualifyingPosts >= (l as { qualifyingPosts: number }).qualifyingPosts) lvl = 1;
     } else {
-      const threshold = 'impressions' in l ? (l as { impressions: number }).impressions : 0;
+      const threshold = 'publicViews' in l ? (l as { publicViews: number }).publicViews : 0;
       // Levels are sequential — higher levels require the previous level to be reached first
       if (lvl >= l.level - 1 && publicViews >= threshold) lvl = l.level;
     }

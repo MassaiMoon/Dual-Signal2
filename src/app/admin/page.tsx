@@ -314,9 +314,13 @@ export default function AdminPage() {
         <button style={styles.btnAction} onClick={() => triggerCron('/api/cron/flush-updates', 'flush-updates')}>
           ▶ Flush Updates
         </button>
-        <button style={{ ...styles.btnAction, borderColor: 'rgba(94,211,234,0.35)' }} onClick={() => triggerCron('/api/admin/sync-x', 'Sync X')}>
-          𝕏 Sync Impressions
+        <button style={{ ...styles.btnAction, borderColor: 'rgba(94,211,234,0.35)' }} onClick={() => triggerCron('/api/admin/sync-x', 'Sync X Views')}>
+          𝕏 Sync Views
         </button>
+        <a href="/admin/x"
+          style={{ ...styles.btnAction, textDecoration: 'none', lineHeight: '1.6', borderColor: 'rgba(94,211,234,0.2)' }}>
+          X Review →
+        </a>
         <a href="/admin/telegram-import"
           style={{ ...styles.btnAction, textDecoration: 'none', lineHeight: '1.6', borderColor: 'rgba(94,211,234,0.25)' }}>
           Telegram Imports →

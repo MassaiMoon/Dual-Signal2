@@ -1,10 +1,33 @@
+// ── X API pricing constants (pay-per-use, isolated so they can change without rewriting logic)
+export const X_API_PRICING = {
+  postReadUsd:    0.005,  // $ per post resource returned (GET /2/users/:id/tweets, GET /2/tweets)
+  userLookupUsd:  0.010,  // $ per user resource returned (GET /2/users/by/username/:username)
+} as const;
+
+// Internal safety budget — stop syncing before reaching the X console's $10 hard cap
+export const X_INTERNAL_BUDGET_USD = 8.00;
+
+// Posts must contain at least one of these keywords (case-insensitive) to qualify.
+// More specific entries must come before shorter/generic ones so the first match
+// returns the most precise keyword (e.g. '$DUAL' before 'DUAL').
+export const X_QUALIFYING_KEYWORDS = [
+  '$DUAL',
+  'dual.org',
+  '@dualnetwork',
+  '@DUAL',
+  'DUAL',
+] as const;
+
+// Billing cycle anchor day-of-month (X console shows Sep 5 – Oct 5; anchor = 5)
+export const X_BILLING_ANCHOR_DAY = 5;
+
 export const achievementConfig = {
   xSignal: [
-    { level: 1, name: 'FIRST_SIGNAL',  qualifyingPosts: 1, impressions: 0,       points: 50  },
-    { level: 2, name: 'SPARK',         impressions: 1_000,                        points: 100 },
-    { level: 3, name: 'PULSE',         impressions: 10_000,                       points: 150 },
-    { level: 4, name: 'WAVE',          impressions: 100_000,                      points: 200 },
-    { level: 5, name: 'IMPACT',        impressions: 1_000_000,                    points: 250 },
+    { level: 1, name: 'FIRST_SIGNAL',  qualifyingPosts: 1, publicViews: 0,         points: 50  },
+    { level: 2, name: 'SPARK',         publicViews: 1_000,                          points: 100 },
+    { level: 3, name: 'PULSE',         publicViews: 10_000,                         points: 150 },
+    { level: 4, name: 'WAVE',          publicViews: 100_000,                        points: 200 },
+    { level: 5, name: 'IMPACT',        publicViews: 1_000_000,                      points: 250 },
   ],
 
   telegramPresence: [

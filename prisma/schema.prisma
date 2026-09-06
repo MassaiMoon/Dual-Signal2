@@ -77,15 +77,38 @@ model Badge {
 // ─── Evidence Tables ──────────────────────────────────────────────────────────
 
 model XPost {
-  id          String   @id @default(cuid())
-  badgeId     String   @map("badge_id")
-  badge       Badge    @relation(fields: [badgeId], references: [id])
-  postId      String   @map("post_id")
-  publicViews BigInt   @default(0) @map("public_views")
-  postedAt    DateTime @map("posted_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id      String @id @default(cuid())
+  badgeId String @map("badge_id")
+  badge   Badge  @relation(fields: [badgeId], references: [id])
+
+  // Immutable X identifiers
+  postId        String @map("post_id")
+  authorXUserId String @default("") @map("author_x_user_id")
+  authorHandle  String @default("") @map("author_handle")
+
+  // Classification (determined on first fetch, stored as minimal metadata)
+  qualifies      Boolean @default(false)
+  matchedKeyword String? @map("matched_keyword")
+
+  // View counts — current = most recently fetched; first = when first observed
+  publicViews         BigInt @default(0) @map("public_views")
+  firstObservedViews  BigInt @default(0) @map("first_observed_views")
+
+  // Timestamps
+  postedAt      DateTime  @map("posted_at")
+  firstSeenAt   DateTime? @map("first_seen_at")
+  lastCheckedAt DateTime? @map("last_checked_at")
+  nextCheckAt   DateTime? @map("next_check_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Refresh metadata
+  checkCount Int           @default(0) @map("check_count")
+  status     XPostStatus   @default(ACTIVE)
 
   @@unique([badgeId, postId])
+  @@index([nextCheckAt])
+  @@index([badgeId, qualifies])
   @@map("x_posts")
 }
 
@@ -142,6 +165,11 @@ model ExternalAccount {
   handle         String
   verifiedAt     DateTime? @map("verified_at")
 
+  // X-specific: cursor for incremental timeline fetch (since_id)
+  lastXPostId  String?   @map("last_x_post_id")
+  // X-specific: when the X user ID was resolved from the handle
+  xResolvedAt  DateTime? @map("x_resolved_at")
+
   events Event[]
 
   @@unique([source, externalUserId])
@@ -192,6 +220,22 @@ model BadgeUpdate {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("badge_updates")
+}
+
+// ─── X API Budget Ledger ─────────────────────────────────────────────────────
+
+model XApiUsage {
+  id            String   @id @default(cuid())
+  // Billing cycle key — YYYY-MM-DD of cycle start (e.g. "2026-09-05")
+  billingCycle  String   @map("billing_cycle")
+  endpoint      String
+  resourceCount Int      @default(0) @map("resource_count")
+  // Stored as microdollars-as-float; label in UI as "Estimated"
+  estimatedCost Float    @default(0) @map("estimated_cost")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([billingCycle])
+  @@map("x_api_usage")
 }
 
 // ─── Telegram Import ─────────────────────────────────────────────────────────
@@ -299,4 +343,11 @@ enum IdentityStatus {
   UNMATCHED
   AMBIGUOUS
   LINKED
+}
+
+enum XPostStatus {
+  ACTIVE       // post exists and is being tracked
+  UNAVAILABLE  // post returned 404/403 — preserve last verified views, flag for review
+  DELETED      // confirmed deleted
+  MANUAL       // manually added by admin (not discovered via API)
 }
