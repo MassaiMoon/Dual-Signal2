@@ -135,11 +135,15 @@ export default function XReviewPage() {
       });
       const json = await res.json();
       if (!res.ok) { setSyncResult(`Error: ${json.error}`); return; }
+      const errLines = (json.errors as Array<{ handle: string; error: string }> ?? [])
+        .map(e => `  @${e.handle}: ${e.error}`)
+        .join('\n');
       setSyncResult(
         `Done — ${json.accountsConsidered} accounts, ${json.newPostsDiscovered} new posts, ` +
         `${json.qualifyingPosts} qualifying, ${json.postsRefreshed} refreshed, ` +
         `${json.usersWithStateChanges} changed · Est. $${json.estimatedCostThisSync?.toFixed(4)} this sync / ` +
-        `$${json.estimatedCycleTotal?.toFixed(4)} cycle`,
+        `$${json.estimatedCycleTotal?.toFixed(4)} cycle` +
+        (errLines ? `\n\nErrors:\n${errLines}` : ''),
       );
       await load(token);
     } catch (e) { setSyncResult(`Error: ${e}`); }
@@ -229,8 +233,8 @@ export default function XReviewPage() {
         <div style={{
           marginBottom: 16, padding: '10px 14px', borderRadius: 8,
           background: 'rgba(94,211,234,0.06)', border: '1px solid rgba(94,211,234,0.2)',
-          fontSize: 13, color: syncResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
-          wordBreak: 'break-all',
+          fontSize: 13, color: syncResult.startsWith('Error') || syncResult.includes('\nErrors:') ? '#F87171' : '#5ED3EA',
+          whiteSpace: 'pre-wrap', wordBreak: 'break-all',
         }}>
           {syncResult}
         </div>
