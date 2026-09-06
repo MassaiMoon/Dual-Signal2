@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       badgeId:          b.id,
       username:         b.user.username ?? '—',
       xHandle:          b.xHandle,
-      xUserId:          (xAcct && !xAcct.externalUserId.startsWith('unresolved_')) ? xAcct.externalUserId : null,
+      xUserId:          (xAcct && /^\d+$/.test(xAcct.externalUserId)) ? xAcct.externalUserId : null,
       resolvedAt:       xAcct?.xResolvedAt ?? null,
       lastXPostId:      xAcct?.lastXPostId ?? null,
       qualifyingPosts:  qualifying.length,
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       cachedTier:       b.cachedTier,
       lastDiscovery:    xAcct?.lastXPostId ? lastPost?.firstSeenAt ?? null : null,
       lastRefresh:      lastCheck,
-      syncStatus:       xAcct ? (xAcct.externalUserId.startsWith('unresolved_') ? 'handle_only' : 'resolved') : 'no_account',
+      syncStatus:       xAcct ? (/^\d+$/.test(xAcct.externalUserId) ? 'resolved' : 'handle_only') : 'no_account',
     };
   });
 

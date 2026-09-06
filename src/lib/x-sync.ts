@@ -118,6 +118,13 @@ async function computeCumulativeViews(badgeId: string): Promise<number> {
   return Number(raw);
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** True only when the stored value is a real X numeric user ID, not a handle. */
+function isResolvedXId(externalUserId: string): boolean {
+  return /^\d+$/.test(externalUserId);
+}
+
 // ── ExternalAccount helpers ───────────────────────────────────────────────────
 
 async function getOrCreateXAccount(badge: {
@@ -161,7 +168,9 @@ async function discoverNewPosts(opts: {
   bearer:   string;
 }): Promise<DiscoveryResult> {
   const { badge, acct, bearer } = opts;
-  let xUserId    = acct.externalUserId.startsWith('unresolved_') ? null : acct.externalUserId;
+  // Treat any non-numeric externalUserId as unresolved (handles stored by old code paths
+  // will be numeric like "944480690324987904"; plain strings like "panconmanteca29" are not).
+  let xUserId    = isResolvedXId(acct.externalUserId) ? acct.externalUserId : null;
   let wasResolved = false;
   let lookupCost  = 0;
 
@@ -418,7 +427,7 @@ async function syncBadge(
     return {
       badgeId:         badge.id,
       handle,
-      xUserId:         discovery.resolvedUserId ?? (acct.externalUserId.startsWith('unresolved_') ? null : acct.externalUserId),
+      xUserId:         discovery.resolvedUserId ?? (isResolvedXId(acct.externalUserId) ? acct.externalUserId : null),
       newPosts:        discovery.newPosts,
       qualifyingPosts: discovery.qualifyingPosts,
       postsRefreshed:  refresh.postsRefreshed,
