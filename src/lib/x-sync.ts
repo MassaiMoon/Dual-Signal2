@@ -191,11 +191,21 @@ async function discoverNewPosts(opts: {
     xUserId = user.id;
     wasResolved = true;
 
-    // Update handle in case it changed, store immutable user ID
-    await db.externalAccount.update({
-      where: { id: acct.id },
-      data: { externalUserId: xUserId, handle: user.username, xResolvedAt: new Date() },
-    });
+    // Update handle in case it changed, store immutable user ID.
+    // P2002 = unique constraint: this X ID is already owned by another ExternalAccount row.
+    // In that case, skip this account rather than crashing the whole sync.
+    try {
+      await db.externalAccount.update({
+        where: { id: acct.id },
+        data: { externalUserId: xUserId, handle: user.username, xResolvedAt: new Date() },
+      });
+    } catch (e: unknown) {
+      if ((e as { code?: string })?.code === 'P2002') {
+        console.warn(`[x-sync] @${acct.handle} X ID ${xUserId} already claimed by another account — skipping`);
+        return { newPosts: 0, qualifyingPosts: 0, costUsd: lookupCost, newestId: null, resolvedUserId: null, wasResolved: false };
+      }
+      throw e;
+    }
 
     // Update badge xHandle to match canonical casing
     if (user.username.toLowerCase() !== acct.handle.toLowerCase()) {
