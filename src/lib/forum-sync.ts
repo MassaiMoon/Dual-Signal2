@@ -81,7 +81,7 @@ async function buildUserIdMap(testForumUsername?: string): Promise<Map<number, {
     const badgeId = acct.user.badge?.id;
     if (!badgeId) continue;
     const forumUserId = parseInt(acct.externalUserId, 10);
-    if (isNaN(forumUserId)) continue;
+    if (isNaN(forumUserId) || forumUserId <= 0) continue;
     map.set(forumUserId, { badgeId, userId: acct.userId, forumUsername: acct.handle });
   }
   return map;
@@ -99,22 +99,30 @@ export async function resolveForumAccount(badgeId: string, forumUsername: string
 
   if (existing) {
     const id = parseInt(existing.externalUserId, 10);
-    return isNaN(id) ? null : { forumUserId: id };
+    // Only trust it if it's a valid positive integer — otherwise re-resolve below
+    if (!isNaN(id) && id > 0) return { forumUserId: id };
   }
 
-  // Resolve via Discourse API
+  // Resolve (or re-resolve) via Discourse API
   const forumUser = await getForumUserByUsername(forumUsername);
   if (!forumUser) return null;
 
-  await db.externalAccount.create({
-    data: {
-      userId:         badge.userId,
-      source:         Provider.DUAL_FORUM,
-      externalUserId: String(forumUser.id),
-      handle:         forumUser.username,
-      verifiedAt:     new Date(),
-    },
-  });
+  if (existing) {
+    await db.externalAccount.update({
+      where: { id: existing.id },
+      data:  { externalUserId: String(forumUser.id), handle: forumUser.username, verifiedAt: new Date() },
+    });
+  } else {
+    await db.externalAccount.create({
+      data: {
+        userId:         badge.userId,
+        source:         Provider.DUAL_FORUM,
+        externalUserId: String(forumUser.id),
+        handle:         forumUser.username,
+        verifiedAt:     new Date(),
+      },
+    });
+  }
 
   return { forumUserId: forumUser.id };
 }
