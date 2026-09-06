@@ -36,6 +36,7 @@ import {
   getBillingCycleKey,
   getEstimatedCycleSpend,
 } from './x-budget';
+import { X_POST_CUTOFF_DATE } from './config';
 import {
   resolveXSignalLevel,
   resolveTelegramLevel,
@@ -218,10 +219,13 @@ async function discoverNewPosts(opts: {
   const budget = await checkBudget(timelineCostEstimate);
   if (!budget.ok) throw new Error(budget.message!);
 
-  // Fetch new posts since last cursor
+  // Fetch new posts since last cursor, bounded by the cutoff date.
+  // start_time is ignored by the API when since_id is set to something more recent,
+  // but it prevents fetching ancient history on the very first sync for an account.
   const timeline = await getUserTimeline(xUserId, bearer, {
     sinceId:    acct.lastXPostId ?? undefined,
     maxResults: 100,
+    startTime:  X_POST_CUTOFF_DATE,
   });
 
   const actualPostCount = timeline.posts.length;
@@ -234,7 +238,12 @@ async function discoverNewPosts(opts: {
   let qualifyingPosts = 0;
   const now = new Date();
 
+  const cutoff = new Date(X_POST_CUTOFF_DATE);
+
   for (const post of timeline.posts) {
+    // Skip posts before the cutoff date (safety net — API start_time should already exclude them)
+    if (new Date(post.created_at) < cutoff) continue;
+
     const classification = classifyPost(post);
     if (!classification.qualifies) continue;
 
@@ -386,6 +395,13 @@ async function syncBadge(
     }
 
     const refresh = await refreshDuePosts(badge.id, bearer);
+
+    // Retroactively disqualify any posts that predate the cutoff (handles posts ingested
+    // before the cutoff was introduced, or by a previous sync without start_time).
+    await db.xPost.updateMany({
+      where: { badgeId: badge.id, postedAt: { lt: new Date(X_POST_CUTOFF_DATE) }, qualifies: true },
+      data:  { qualifies: false },
+    });
 
     // Recompute from DB (source of truth)
     const cumulativeViews = await computeCumulativeViews(badge.id);

@@ -7,6 +7,12 @@ export const X_API_PRICING = {
 // Internal safety budget — stop syncing before reaching the X console's $10 hard cap
 export const X_INTERNAL_BUDGET_USD = 8.00;
 
+// Only posts on or after this date qualify for DUAL signal points.
+// Override with X_POST_CUTOFF_DATE env var (ISO 8601, e.g. "2026-09-06T00:00:00Z").
+// Posts already in the DB before this date are retroactively disqualified on the next sync.
+export const X_POST_CUTOFF_DATE: string =
+  process.env.X_POST_CUTOFF_DATE ?? '2026-09-06T00:00:00.000Z';
+
 // Posts must contain at least one of these keywords (case-insensitive) to qualify.
 // More specific entries must come before shorter/generic ones so the first match
 // returns the most precise keyword (e.g. '$DUAL' before 'DUAL').

@@ -107,6 +107,7 @@ export async function getUserByUsername(
 export interface TimelineOptions {
   sinceId?:    string; // only return posts newer than this ID
   maxResults?: number; // 5–100, default 10
+  startTime?:  string; // ISO 8601 — only return posts at or after this time
 }
 
 export interface TimelineResult {
@@ -132,7 +133,8 @@ export async function getUserTimeline(
     'tweet.fields': 'created_at,public_metrics,referenced_tweets,text',
     'max_results':  String(Math.min(100, Math.max(5, opts.maxResults ?? 100))),
   };
-  if (opts.sinceId) params['since_id'] = opts.sinceId;
+  if (opts.sinceId)   params['since_id']   = opts.sinceId;
+  if (opts.startTime) params['start_time'] = opts.startTime;
 
   const data = await xGet<{
     data?: XPost[];
