@@ -27,6 +27,29 @@ export const X_QUALIFYING_KEYWORDS = [
 // Billing cycle anchor day-of-month (X console shows Sep 5 – Oct 5; anchor = 5)
 export const X_BILLING_ANCHOR_DAY = 5;
 
+// ── Governance Forum ───────────────────────────────────────────────────────────
+
+// Discourse category IDs that qualify for governance signal.
+// 6 = Ecosystem Direction, 7 = Protocol Improvements, 8 = Treasury Grants
+export const GOVERNANCE_QUALIFYING_CATEGORY_IDS = [6, 7, 8] as const;
+
+// Discourse category IDs whose topics count as FORMAL_PROPOSAL (+20 pts) not TOPIC_CREATED (+10 pts).
+// 8 = Treasury Grants (grant/spending proposals)
+export const GOVERNANCE_PROPOSAL_CATEGORY_IDS = [8] as const;
+
+// Activity point values — change here, nowhere else.
+export const GOVERNANCE_ACTIVITY_POINTS = {
+  pollParticipation:  5,  // manual-only in V1
+  firstComment:       3,
+  additionalComment:  1,
+  topicCreated:       10,
+  formalProposal:     20,
+} as const;
+
+// Maximum comment activity points a user can earn from a single topic.
+// (3 first + 1 additional, capped at 5 total)
+export const GOVERNANCE_COMMENT_POINTS_CAP = 5;
+
 export const achievementConfig = {
   xSignal: [
     { level: 1, name: 'FIRST_SIGNAL',  qualifyingPosts: 1, publicViews: 0,         points: 50  },
@@ -53,11 +76,11 @@ export const achievementConfig = {
   ],
 
   governance: [
-    { level: 1, name: 'FIRST_VOICE',   participations: 1,  points: 50  },
-    { level: 2, name: 'CONTRIBUTOR',   participations: 3,  points: 100 },
-    { level: 3, name: 'PARTICIPANT',   participations: 10, points: 150 },
-    { level: 4, name: 'GOVERNOR',      participations: 25, points: 200 },
-    { level: 5, name: 'STEWARD',       participations: 50, points: 250 },
+    { level: 1, name: 'FIRST_VOICE',   activityPoints: 10,  points: 50  },
+    { level: 2, name: 'CONTRIBUTOR',   activityPoints: 30,  points: 100 },
+    { level: 3, name: 'PARTICIPANT',   activityPoints: 75,  points: 150 },
+    { level: 4, name: 'GOVERNOR',      activityPoints: 150, points: 200 },
+    { level: 5, name: 'STEWARD',       activityPoints: 300, points: 250 },
   ],
 
   butterflyTiers: [

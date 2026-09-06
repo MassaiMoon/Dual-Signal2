@@ -90,29 +90,30 @@ describe('resolveDiscordLevel', () => {
 // ─── Governance ───────────────────────────────────────────────────────────────
 
 describe('resolveGovernanceLevel', () => {
-  it('returns 0 with no participations', () => {
+  it('returns 0 below threshold', () => {
     expect(resolveGovernanceLevel(0)).toBe(0);
+    expect(resolveGovernanceLevel(9)).toBe(0);
   });
 
-  it('returns 1 (FIRST_VOICE) at 1 participation', () => {
-    expect(resolveGovernanceLevel(1)).toBe(1);
-    expect(resolveGovernanceLevel(2)).toBe(1);
+  it('returns 1 (FIRST_VOICE) at 10 activity points', () => {
+    expect(resolveGovernanceLevel(10)).toBe(1);
+    expect(resolveGovernanceLevel(29)).toBe(1);
   });
 
-  it('returns 2 (CONTRIBUTOR) at 3 participations', () => {
-    expect(resolveGovernanceLevel(3)).toBe(2);
+  it('returns 2 (CONTRIBUTOR) at 30 activity points', () => {
+    expect(resolveGovernanceLevel(30)).toBe(2);
   });
 
-  it('returns 3 (PARTICIPANT) at 10 participations', () => {
-    expect(resolveGovernanceLevel(10)).toBe(3);
+  it('returns 3 (PARTICIPANT) at 75 activity points', () => {
+    expect(resolveGovernanceLevel(75)).toBe(3);
   });
 
-  it('returns 4 (GOVERNOR) at 25 participations', () => {
-    expect(resolveGovernanceLevel(25)).toBe(4);
+  it('returns 4 (GOVERNOR) at 150 activity points', () => {
+    expect(resolveGovernanceLevel(150)).toBe(4);
   });
 
-  it('returns 5 (STEWARD) at 50 participations', () => {
-    expect(resolveGovernanceLevel(50)).toBe(5);
+  it('returns 5 (STEWARD) at 300 activity points', () => {
+    expect(resolveGovernanceLevel(300)).toBe(5);
   });
 });
 
@@ -165,11 +166,11 @@ describe('calculateTier', () => {
 // ─── End-to-end score scenarios ───────────────────────────────────────────────
 
 describe('full scoring scenarios', () => {
-  it('EXPLORER: x=1, tg=1, dc=0, gov=1 → 150pts', () => {
+  it('EXPLORER: x=1, tg=1, dc=0, gov=L1 → 150pts', () => {
     const x   = resolveXSignalLevel(0, 1);    // L1
     const tg  = resolveTelegramLevel(1);       // L1
     const dc  = resolveDiscordLevel(0);        // L0
-    const gov = resolveGovernanceLevel(1);     // L1
+    const gov = resolveGovernanceLevel(10);    // L1 (10 activity points)
     const score = computeSignalScore(x, tg, dc, gov);
     expect(score).toBe(150);
     expect(calculateTier(score)).toBe('EXPLORER');

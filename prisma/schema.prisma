@@ -44,11 +44,12 @@ model Badge {
   governanceLevel Int @default(0) @map("governance_level")
 
   // Progress counters (cached from evidence tables)
-  xSignalPublicViews Int @default(0) @map("x_signal_public_views")
-  xQualifyingPosts   Int @default(0) @map("x_qualifying_posts")
-  telegramActiveDays Int @default(0) @map("telegram_active_days")
-  discordActiveDays  Int @default(0) @map("discord_active_days")
-  governanceVotes    Int @default(0) @map("governance_votes")
+  xSignalPublicViews      Int @default(0) @map("x_signal_public_views")
+  xQualifyingPosts        Int @default(0) @map("x_qualifying_posts")
+  telegramActiveDays      Int @default(0) @map("telegram_active_days")
+  discordActiveDays       Int @default(0) @map("discord_active_days")
+  governanceVotes         Int @default(0) @map("governance_votes")
+  governanceActivityPoints Int @default(0) @map("governance_activity_points")
 
   // Special status
   isOG Boolean @default(false) @map("is_og")
@@ -70,6 +71,7 @@ model Badge {
   telegramDays             TelegramActiveDay[]
   discordDays              DiscordActiveDay[]
   governanceParticipations GovernanceParticipation[]
+  governanceActivities     GovernanceActivity[]
 
   @@map("badges")
 }
@@ -153,6 +155,33 @@ model GovernanceParticipation {
   @@map("governance_participations")
 }
 
+// ─── Governance Forum Evidence ────────────────────────────────────────────────
+
+model GovernanceActivity {
+  id            String                   @id @default(cuid())
+  badgeId       String                   @map("badge_id")
+  badge         Badge                    @relation(fields: [badgeId], references: [id])
+  forumUserId   Int                      @map("forum_user_id")
+  forumUsername String                   @map("forum_username")
+  topicId       Int                      @map("topic_id")
+  postId        String                   @map("post_id")
+  activityType  GovernanceActivityType   @map("activity_type")
+  pointsAwarded Int                      @map("points_awarded")
+  occurredAt    DateTime                 @map("occurred_at")
+  topicUrl      String                   @default("") @map("topic_url")
+  status        GovernanceActivityStatus @default(ACTIVE)
+  source        GovernanceActivitySource @default(AUTOMATED)
+  verifiedBy    String?                  @map("verified_by")
+  verifiedAt    DateTime?                @map("verified_at")
+  adminNote     String?                  @map("admin_note")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([badgeId, postId, activityType])
+  @@index([badgeId, activityType])
+  @@map("governance_activities")
+}
+
 // ─── External Accounts ────────────────────────────────────────────────────────
 
 model ExternalAccount {
@@ -169,6 +198,10 @@ model ExternalAccount {
   lastXPostId  String?   @map("last_x_post_id")
   // X-specific: when the X user ID was resolved from the handle
   xResolvedAt  DateTime? @map("x_resolved_at")
+
+  // Forum-specific: cursor and sync timestamp for incremental Discourse fetch
+  lastForumPostId Int?      @map("last_forum_post_id")
+  forumSyncedAt   DateTime? @map("forum_synced_at")
 
   events Event[]
 
@@ -350,4 +383,23 @@ enum XPostStatus {
   UNAVAILABLE  // post returned 404/403 — preserve last verified views, flag for review
   DELETED      // confirmed deleted
   MANUAL       // manually added by admin (not discovered via API)
+}
+
+enum GovernanceActivityType {
+  COMMENT
+  TOPIC_CREATED
+  FORMAL_PROPOSAL
+  POLL_PARTICIPATION
+}
+
+enum GovernanceActivityStatus {
+  ACTIVE
+  UNAVAILABLE
+  DELETED
+  MANUAL
+}
+
+enum GovernanceActivitySource {
+  AUTOMATED
+  MANUAL_ADMIN
 }

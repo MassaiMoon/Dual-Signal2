@@ -325,6 +325,10 @@ export default function AdminPage() {
           style={{ ...styles.btnAction, textDecoration: 'none', lineHeight: '1.6', borderColor: 'rgba(94,211,234,0.25)' }}>
           Telegram Imports →
         </a>
+        <a href="/admin/governance"
+          style={{ ...styles.btnAction, textDecoration: 'none', lineHeight: '1.6', borderColor: 'rgba(94,211,234,0.2)' }}>
+          Governance →
+        </a>
       </div>
 
       {/* Two-column layout: main table + mint form */}

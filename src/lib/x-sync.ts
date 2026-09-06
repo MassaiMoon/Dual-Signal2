@@ -377,7 +377,8 @@ async function syncBadge(
     xQualifyingPosts:   number;
     telegramActiveDays: number;
     discordActiveDays:  number;
-    governanceVotes:    number;
+    governanceVotes:         number;
+    governanceActivityPoints: number;
     signalScore:        number;
     cachedTier:         string;
   },
@@ -410,7 +411,7 @@ async function syncBadge(
     const newXLvl   = resolveXSignalLevel(cumulativeViews, qualCount);
     const newTgLvl  = resolveTelegramLevel(badge.telegramActiveDays);
     const newDcLvl  = resolveDiscordLevel(badge.discordActiveDays);
-    const newGovLvl = resolveGovernanceLevel(badge.governanceVotes);
+    const newGovLvl = resolveGovernanceLevel(badge.governanceActivityPoints);
     const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
     const newTier   = calculateTier(newScore);
 

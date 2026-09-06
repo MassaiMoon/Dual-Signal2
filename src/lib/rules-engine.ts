@@ -42,10 +42,10 @@ export function resolveDiscordLevel(activeDays: number): number {
   return lvl;
 }
 
-export function resolveGovernanceLevel(participations: number): number {
+export function resolveGovernanceLevel(activityPoints: number): number {
   let lvl = 0;
   for (const l of achievementConfig.governance) {
-    if (participations >= l.participations) lvl = l.level;
+    if (activityPoints >= l.activityPoints) lvl = l.level;
   }
   return lvl;
 }
