@@ -59,11 +59,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   let body: {
-    username:  string;
-    x?:        string;
-    telegram?: string;
-    discord?:  string;
-    forum?:    string;
+    username:       string;
+    x?:             string;
+    telegram?:      string;
+    discord?:       string;
+    forum?:         string;
+    walletAddress?: string;
   };
 
   try { body = await req.json(); }
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
   const telegramHandle = cleanHandle(body.telegram  ?? '');
   const discordHandle  = cleanHandle(body.discord   ?? '');
   const forumHandle    = cleanHandle(body.forum     ?? '');
+  const walletAddress  = (body.walletAddress ?? '').trim();
 
   // ── Guard: username must be unique ──────────────────────────────────────────
   const existingUser = await db.user.findUnique({ where: { usernameNormalized } });
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
         governance_level: '0',
         discord_level:    '0',
         username:         username,
-        wallet_address:   '',
+        wallet_address:   walletAddress,
         member_since:     memberSince,
       },
       { name: `DUAL // SIGNAL — ${username}` },
@@ -140,7 +142,7 @@ export async function POST(req: NextRequest) {
           userId:          user.id,
           dualObjectId,
           dualTemplateId:  templateId,
-          walletAddress:   '',
+          walletAddress,
           memberSince,
           xHandle,
           telegramHandle,

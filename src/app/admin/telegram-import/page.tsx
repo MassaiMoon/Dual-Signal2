@@ -19,11 +19,15 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface DryRunResult {
   dryRun:             true;
+  format:             'html' | 'json';
+  htmlFiles?:         number;
   chatName:           string;
   totalMessages:      number;
   qualifyingMessages: number;
   uniqueIdentities:   number;
   matchedUsers:       number;
+  strongMatches:      number;
+  weakMatches:        number;
   unmatchedUsers:     number;
   ambiguousUsers:     number;
   wouldCreateDays:    number;
@@ -152,7 +156,7 @@ export default function TelegramImportPage() {
   const [tokenInput, setTokenInput] = useState('');
 
   // Upload state
-  const [file,       setFile]       = useState<File | null>(null);
+  const [files,      setFiles]      = useState<File[]>([]);
   const [running,    setRunning]    = useState(false);
   const [dryResult,  setDryResult]  = useState<DryRunResult | null>(null);
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
@@ -217,20 +221,24 @@ export default function TelegramImportPage() {
     }
   }
 
+  function buildFormData(dryRun: boolean): FormData {
+    const fd = new FormData();
+    for (const f of files) fd.append('file', f);
+    fd.append('dryRun', String(dryRun));
+    return fd;
+  }
+
   async function runDryRun() {
-    if (!file) return;
+    if (files.length === 0) return;
     setRunning(true);
     setError('');
     setDryResult(null);
     setCommitResult(null);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('dryRun', 'true');
     try {
       const res = await fetch('/api/admin/telegram-import', {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
-        body: fd,
+        body: buildFormData(true),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Unknown error'); return; }
@@ -240,23 +248,20 @@ export default function TelegramImportPage() {
   }
 
   async function runCommit() {
-    if (!file) return;
+    if (files.length === 0) return;
     setRunning(true);
     setError('');
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('dryRun', 'false');
     try {
       const res = await fetch('/api/admin/telegram-import', {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
-        body: fd,
+        body: buildFormData(false),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Unknown error'); return; }
       setCommitResult(data);
       setDryResult(null);
-      setFile(null);
+      setFiles([]);
       await loadImports(token);
     } catch (e) { setError(String(e)); }
     finally { setRunning(false); }
@@ -330,17 +335,28 @@ export default function TelegramImportPage() {
           UPLOAD TELEGRAM EXPORT
         </div>
         <div style={{ fontSize: 12, color: '#4A7A8A', marginBottom: 16, lineHeight: 1.7 }}>
-          Export: Telegram Desktop → Settings → Advanced → Export Telegram data → JSON format → result.json
-          <br />Max file size: 15 MB. Message text is NOT stored — only sender identity and dates.
+          <strong style={{ color: '#7ABDD0' }}>HTML (primary):</strong> Telegram Desktop → Export chat history → HTML format → select all messages.html, messages2.html… files at once.<br />
+          <strong style={{ color: '#7ABDD0' }}>JSON (legacy):</strong> Export Telegram data → JSON format → result.json<br />
+          Max 15 MB per file, 20 files max. Message text is NOT stored — only sender identity and dates.
         </div>
 
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ ...S.btn('ghost'), cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {file ? `📄 ${file.name}` : '+ Choose file'}
-            <input type="file" accept=".json" style={{ display: 'none' }}
-              onChange={e => { setFile(e.target.files?.[0] ?? null); setDryResult(null); setCommitResult(null); setError(''); }} />
+            {files.length === 0
+              ? '+ Choose file(s)'
+              : files.length === 1
+              ? `📄 ${files[0].name}`
+              : `📄 ${files.length} files (${files[0].name}…)`}
+            <input type="file" accept=".html,.json" multiple style={{ display: 'none' }}
+              onChange={e => {
+                const selected = Array.from(e.target.files ?? []);
+                setFiles(selected);
+                setDryResult(null);
+                setCommitResult(null);
+                setError('');
+              }} />
           </label>
-          <button style={S.btn('ghost')} disabled={!file || running} onClick={runDryRun}>
+          <button style={S.btn('ghost')} disabled={files.length === 0 || running} onClick={runDryRun}>
             {running ? '…' : '▶ Dry Run'}
           </button>
           {dryResult && (
@@ -349,6 +365,11 @@ export default function TelegramImportPage() {
             </button>
           )}
         </div>
+        {files.length > 1 && (
+          <div style={{ marginTop: 8, fontSize: 11, color: '#3A6070' }}>
+            {files.map(f => f.name).join(' · ')}
+          </div>
+        )}
 
         {error && (
           <div style={{ marginTop: 14, fontSize: 12, color: '#F87171', padding: '8px 12px',
@@ -361,8 +382,12 @@ export default function TelegramImportPage() {
       {/* Dry-run preview */}
       {dryResult && (
         <div style={S.section}>
-          <div style={{ fontSize: 13, letterSpacing: 2, color: '#F7C873', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, letterSpacing: 2, color: '#F7C873', marginBottom: 4 }}>
             DRY RUN PREVIEW — {dryResult.chatName}
+          </div>
+          <div style={{ fontSize: 11, color: '#3A6070', marginBottom: 16 }}>
+            Format: {dryResult.format.toUpperCase()}
+            {dryResult.htmlFiles != null && ` · ${dryResult.htmlFiles} file${dryResult.htmlFiles !== 1 ? 's' : ''}`}
           </div>
           <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 20 }}>
             {[
@@ -370,7 +395,13 @@ export default function TelegramImportPage() {
               ['Qualifying', dryResult.qualifyingMessages],
               ['Identities', dryResult.uniqueIdentities],
               ['Matched', dryResult.matchedUsers],
-              ['Unmatched', dryResult.unmatchedUsers],
+              ...(dryResult.format === 'html' ? [
+                ['Strong Matches', dryResult.strongMatches],
+                ['Weak Matches', dryResult.weakMatches],
+                ['Ambiguous', dryResult.ambiguousUsers],
+              ] : [
+                ['Unmatched', dryResult.unmatchedUsers],
+              ]),
               ['New Days', dryResult.wouldCreateDays],
               ['Duplicates', dryResult.wouldIgnoreDups],
               ['Level Changes', dryResult.wouldChangeLevel],

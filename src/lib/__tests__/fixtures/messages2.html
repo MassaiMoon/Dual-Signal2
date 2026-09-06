@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>DUAL Community — Messages</title></head>
+<body>
+<div class="page_wrap">
+  <div class="page_header">
+    <div class="content">
+      <div class="text bold">DUAL Community</div>
+    </div>
+  </div>
+  <div class="history">
+
+    <!-- Continuation file: overlaps Tuesday (Sep 2) and adds Wednesday (Sep 3) -->
+    <!-- Alice Sep 2 messages already in messages.html — IDs 1034-1036 present here too (overlap test) -->
+    <div class="date_separator details"><span>Tuesday, 2 September 2025</span></div>
+
+    <!-- message1034 repeated from first file (same ID — dedup test) -->
+    <div class="message default clearfix" id="message1034">
+      <div class="pull_left userpic_wrap">
+        <div class="userpic"><div class="initials">A</div></div>
+      </div>
+      <div class="body">
+        <div class="pull_right date details" title="02.09.2025 09:00:00">09:00</div>
+        <div class="from_name"><a href="https://t.me/alice_tg">Alice</a></div>
+        <div class="text">GM day 2</div>
+      </div>
+    </div>
+
+    <div class="date_separator details"><span>Wednesday, 3 September 2025</span></div>
+
+    <!-- Bob on Wednesday (new day) -->
+    <div class="message default clearfix" id="message2001">
+      <div class="pull_left userpic_wrap">
+        <div class="userpic"><div class="initials">B</div></div>
+      </div>
+      <div class="body">
+        <div class="pull_right date details" title="03.09.2025 10:00:00">10:00</div>
+        <div class="from_name">Bob</div>
+        <div class="text">Wednesday vibes</div>
+      </div>
+    </div>
+
+    <!-- Sticker from Bob (joined after his text — inherits Bob as sender) -->
+    <div class="message default clearfix joined" id="message2003">
+      <div class="body">
+        <div class="pull_right date details" title="03.09.2025 10:30:00">10:30</div>
+        <div class="media_wrap clearfix">
+          <div class="sticker_wrap">
+            <img class="sticker" src="stickers/sticker.webp">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alice on Wednesday -->
+    <div class="message default clearfix" id="message2002">
+      <div class="pull_left userpic_wrap">
+        <div class="userpic"><div class="initials">A</div></div>
+      </div>
+      <div class="body">
+        <div class="pull_right date details" title="03.09.2025 14:00:00">14:00</div>
+        <div class="from_name"><a href="https://t.me/alice_tg">Alice</a></div>
+        <div class="text">Gm Wednesday</div>
+      </div>
+    </div>
+
+    <!-- Service message (ignored) -->
+    <div class="message service" id="message2004">
+      <div class="body details">
+        Group name changed to DUAL Community
+      </div>
+    </div>
+
+    <!-- Pin service message (ignored) -->
+    <div class="message service" id="message2005">
+      <div class="body details">
+        <a href="">Alice</a> pinned a message
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

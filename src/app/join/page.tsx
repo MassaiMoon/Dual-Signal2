@@ -332,6 +332,7 @@ export default function JoinPage() {
   const [telegram,   setTelegram]   = useState('');
   const [discord,    setDiscord]    = useState('');
   const [forum,      setForum]      = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
   const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
@@ -394,11 +395,12 @@ export default function JoinPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          username: username.trim(),
-          x:        x.trim(),
-          telegram: telegram.trim(),
-          discord:  discord.trim(),
-          forum:    forum.trim(),
+          username:      username.trim(),
+          x:             x.trim(),
+          telegram:      telegram.trim(),
+          discord:       discord.trim(),
+          forum:         forum.trim(),
+          walletAddress: walletAddress.trim() || undefined,
         }),
       });
 
@@ -583,6 +585,24 @@ export default function JoinPage() {
                   />
                 </div>
 
+                {/* Wallet Address */}
+                <div style={S.communityCard}>
+                  <div style={S.communityLabel}>
+                    <span style={S.communityIcon}>WALLET</span>
+                    <span style={S.communityName}>Wallet Address</span>
+                  </div>
+                  <p style={S.communityDesc}>Where you want to receive your Passport NFT (optional).</p>
+                  <input
+                    style={S.communityInput}
+                    type="text"
+                    placeholder="0x… or Solana address"
+                    value={walletAddress}
+                    onChange={e => setWalletAddress(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </div>
+
               </div>
 
               <p style={S.optionalNote}>All community connections are optional.</p>
@@ -673,7 +693,7 @@ export default function JoinPage() {
                   setUsername('');
                   setAvail('idle');
                   setAvailMsg('');
-                  setX(''); setTelegram(''); setDiscord(''); setForum('');
+                  setX(''); setTelegram(''); setDiscord(''); setForum(''); setWalletAddress('');
                   setResult(null);
                   setError('');
                 }}
