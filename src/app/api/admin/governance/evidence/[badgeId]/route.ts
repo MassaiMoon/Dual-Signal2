@@ -12,13 +12,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req:     NextRequest,
-  { params }: { params: { badgeId: string } },
+  { params }: { params: Promise<{ badgeId: string }> },
 ) {
   if (req.headers.get('authorization') !== `Bearer ${process.env.ADMIN_TOKEN}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { badgeId } = params;
+  const { badgeId } = await params;
 
   const [badge, activities] = await Promise.all([
     db.badge.findUnique({
