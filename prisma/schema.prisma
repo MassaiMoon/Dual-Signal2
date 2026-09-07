@@ -8,6 +8,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+model MemberAuth {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailNormalized String    @unique @map("email_normalized")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+
+  userId String? @unique @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  sessions    MemberSession[]
+  loginTokens LoginToken[]
+
+  @@map("member_auths")
+}
+
+model MemberSession {
+  id           String     @id @default(cuid())
+  memberAuthId String     @map("member_auth_id")
+  memberAuth   MemberAuth @relation(fields: [memberAuthId], references: [id], onDelete: Cascade)
+
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("member_sessions")
+}
+
+model LoginToken {
+  id           String     @id @default(cuid())
+  memberAuthId String     @map("member_auth_id")
+  memberAuth   MemberAuth @relation(fields: [memberAuthId], references: [id], onDelete: Cascade)
+
+  tokenHash String   @unique @map("token_hash")
+  used      Boolean  @default(false)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("login_tokens")
+}
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
@@ -19,6 +67,7 @@ model User {
 
   badge            Badge?
   externalAccounts ExternalAccount[]
+  memberAuth       MemberAuth?
 
   @@map("users")
 }
@@ -202,6 +251,9 @@ model ExternalAccount {
   // Forum-specific: cursor and sync timestamp for incremental Discourse fetch
   lastForumPostId Int?      @map("last_forum_post_id")
   forumSyncedAt   DateTime? @map("forum_synced_at")
+
+  // Flagged when member changes a verified handle — requires admin review
+  requiresReview Boolean @default(false) @map("requires_review")
 
   events Event[]
 

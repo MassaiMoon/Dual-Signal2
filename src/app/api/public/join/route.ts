@@ -2,20 +2,18 @@
  * GET  /api/public/join?username=xxx  — username availability check
  * POST /api/public/join               — create DUAL // SIGNAL Passport
  *
- * Public endpoint — no auth required.
+ * POST requires an authenticated session (ds_session cookie).
+ * One authenticated account may have at most one Passport (idempotent mint guard).
  *
  * Username policy:
  *   3–24 characters, A-Z a-z 0-9 _ -
  *   Case-insensitive uniqueness via usernameNormalized.
- *
- * Wallet is never requested. The DUAL object is owned by the org's internal
- * account; wallet_address is stored as an empty string until the user
- * optionally links one later.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ebus } from '@/lib/dual-client';
+import { getSessionFromRequest } from '@/lib/auth';
 import { Provider } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -58,13 +56,35 @@ export async function GET(req: NextRequest) {
 // ── POST — create Passport ────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // ── Require authentication ──────────────────────────────────────────────────
+  const session = await getSessionFromRequest(req);
+  if (!session) {
+    return NextResponse.json({ error: 'Authentication required. Please log in first.' }, { status: 401 });
+  }
+
+  const memberAuth = session.memberAuth;
+
+  // ── Guard: one Passport per authenticated account ───────────────────────────
+  if (memberAuth.userId) {
+    const existingBadge = await db.badge.findFirst({
+      where: { userId: memberAuth.userId },
+    });
+    if (existingBadge) {
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
+      return NextResponse.json({
+        error:       'You already have a Passport.',
+        badgeUrl:    `${appUrl}/badge/${existingBadge.dualObjectId}`,
+        dualObjectId: existingBadge.dualObjectId,
+      }, { status: 409 });
+    }
+  }
+
   let body: {
-    username:       string;
-    x?:             string;
-    telegram?:      string;
-    discord?:       string;
-    forum?:         string;
-    walletAddress?: string;
+    username:  string;
+    x?:        string;
+    telegram?: string;
+    discord?:  string;
+    forum?:    string;
   };
 
   try { body = await req.json(); }
@@ -82,7 +102,6 @@ export async function POST(req: NextRequest) {
   const telegramHandle = cleanHandle(body.telegram  ?? '');
   const discordHandle  = cleanHandle(body.discord   ?? '');
   const forumHandle    = cleanHandle(body.forum     ?? '');
-  const walletAddress  = (body.walletAddress ?? '').trim();
 
   // ── Guard: username must be unique ──────────────────────────────────────────
   const existingUser = await db.user.findUnique({ where: { usernameNormalized } });
@@ -111,8 +130,8 @@ export async function POST(req: NextRequest) {
         telegram_level:   '0',
         governance_level: '0',
         discord_level:    '0',
-        username:         username,
-        wallet_address:   walletAddress,
+        username,
+        wallet_address:   '',
         member_since:     memberSince,
       },
       { name: `DUAL // SIGNAL — ${username}` },
@@ -120,7 +139,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[join] DUAL mint failed:', msg);
-    return NextResponse.json({ error: `Passport creation failed. Please try again.` }, { status: 502 });
+    return NextResponse.json({ error: 'Passport creation failed. Please try again.' }, { status: 502 });
   }
 
   const dualObjectId = mintResult.steps?.[0]?.output?.ids?.[0];
@@ -129,7 +148,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Passport created on DUAL but no ID returned.' }, { status: 502 });
   }
 
-  // ── Create DB records ────────────────────────────────────────────────────────
+  // ── Create DB records + link to MemberAuth ────────────────────────────────────
   let badge;
   try {
     const result = await db.$transaction(async (tx) => {
@@ -142,7 +161,7 @@ export async function POST(req: NextRequest) {
           userId:          user.id,
           dualObjectId,
           dualTemplateId:  templateId,
-          walletAddress,
+          walletAddress:   '',
           memberSince,
           xHandle,
           telegramHandle,
@@ -157,27 +176,30 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Create ExternalAccount records for provided handles.
-      // verifiedAt is null — handles are self-reported, not yet verified.
+      // External accounts
       const accounts: Array<{
         userId: string; source: Provider; externalUserId: string; handle: string;
       }> = [];
-
       if (xHandle)        accounts.push({ userId: user.id, source: Provider.TWITTER,    externalUserId: xHandle.toLowerCase(),        handle: xHandle        });
       if (telegramHandle) accounts.push({ userId: user.id, source: Provider.TELEGRAM,   externalUserId: telegramHandle.toLowerCase(),  handle: telegramHandle });
       if (discordHandle)  accounts.push({ userId: user.id, source: Provider.DISCORD,    externalUserId: discordHandle.toLowerCase(),   handle: discordHandle  });
       if (forumHandle)    accounts.push({ userId: user.id, source: Provider.DUAL_FORUM, externalUserId: forumHandle.toLowerCase(),     handle: forumHandle    });
 
       if (accounts.length > 0) {
-        await tx.externalAccount.createMany({ data: accounts });
+        await tx.externalAccount.createMany({ data: accounts, skipDuplicates: true });
       }
+
+      // Link authenticated account to this User
+      await tx.memberAuth.update({
+        where: { id: memberAuth.id },
+        data:  { userId: user.id },
+      });
 
       return { user, badge };
     });
     badge = result.badge;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // DUAL object is already minted — log the ID so it can be recovered manually.
     console.error(`[join] DB transaction failed after DUAL mint (objectId=${dualObjectId}):`, msg);
     return NextResponse.json(
       { error: 'Passport was minted but could not be saved. Contact support.' },

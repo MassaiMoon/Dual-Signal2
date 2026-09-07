@@ -3,12 +3,16 @@
 /**
  * /join — DUAL // SIGNAL Passport onboarding.
  *
- * Step 1: Choose username (with live availability check)
+ * Step 0: Enter email + send magic link (if not already authenticated)
+ * Step 1: Choose username
  * Step 2: Connect community identities (all optional)
  * Step 3: Creating Passport (loading)
- * Step 4: Passport created — view / share
+ * Step 4: Passport created — view / go to dashboard
  *
- * No wallet required.
+ * On mount, checks /api/me:
+ *   - 401           → show email step
+ *   - 200 + badge   → redirect to /me (already has Passport)
+ *   - 200 + no badge → go directly to username step
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -16,7 +20,7 @@ import Link from 'next/link';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Step = 'username' | 'community' | 'creating' | 'done';
+type Step = 'checking' | 'email' | 'email_sent' | 'username' | 'community' | 'creating' | 'done';
 type AvailabilityState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -200,7 +204,6 @@ const S: Record<string, React.CSSProperties> = {
     margin:    '0 0 12px',
     textAlign: 'center' as const,
   },
-  // Community cards
   communityList: {
     display:       'flex',
     flexDirection: 'column' as const,
@@ -261,7 +264,6 @@ const S: Record<string, React.CSSProperties> = {
     marginBottom:  4,
     letterSpacing: '0.06em',
   },
-  // Done screen
   successIcon: {
     width:          52,
     height:         52,
@@ -304,19 +306,39 @@ const S: Record<string, React.CSSProperties> = {
     color:     '#C8D8E8',
     textAlign: 'right' as const,
   },
-  linksRow: {
-    display:        'flex',
-    alignItems:     'center',
-    gap:             8,
-    marginTop:       10,
-    justifyContent: 'center',
+  sentWrap: {
+    textAlign: 'center' as const,
+    padding:   '8px 0',
   },
-  linkMuted: {
+  sentIcon: {
+    fontSize:    40,
+    display:     'block',
+    marginBottom: 16,
+  },
+  sentTitle: {
+    margin:     '0 0 12px',
+    fontSize:   22,
+    fontWeight: 700,
+    color:      '#E8F4FC',
+  },
+  sentDesc: {
+    fontSize:   14,
+    color:      '#3A5A6A',
+    lineHeight: 1.7,
+    margin:     '0 0 20px',
+  },
+  backLink: {
+    background:     'none',
+    border:         'none',
     color:          '#2A3A4A',
     fontSize:       12,
-    textDecoration: 'none',
+    cursor:         'pointer',
+    fontFamily:     'inherit',
+    textDecoration: 'underline',
+    display:        'block',
+    textAlign:      'center' as const,
+    marginTop:      8,
   },
-  dot: { color: '#182830', fontSize: 12 },
   footer: {
     position:       'relative',
     zIndex:         1,
@@ -349,7 +371,6 @@ const S: Record<string, React.CSSProperties> = {
     color:    '#172030',
     fontSize:  10,
   },
-  // Loading
   loadingWrap: {
     display:       'flex',
     flexDirection: 'column' as const,
@@ -375,28 +396,54 @@ const S: Record<string, React.CSSProperties> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function JoinPage() {
-  const [step,          setStep]          = useState<Step>('username');
-  const [username,      setUsername]      = useState('');
-  const [avail,         setAvail]         = useState<AvailabilityState>('idle');
-  const [availMsg,      setAvailMsg]      = useState('');
-  const [x,             setX]             = useState('');
-  const [telegram,      setTelegram]      = useState('');
-  const [discord,       setDiscord]       = useState('');
-  const [forum,         setForum]         = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [submitting,    setSubmitting]    = useState(false);
-  const [error,         setError]         = useState('');
-  const [result,        setResult]        = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
-  const [inputFocus,    setInputFocus]    = useState(false);
+  const [step,       setStep]       = useState<Step>('checking');
+  const [email,      setEmail]      = useState('');
+  const [emailFocus, setEmailFocus] = useState(false);
+  const [sending,    setSending]    = useState(false);
+  const [username,   setUsername]   = useState('');
+  const [avail,      setAvail]      = useState<AvailabilityState>('idle');
+  const [availMsg,   setAvailMsg]   = useState('');
+  const [x,          setX]          = useState('');
+  const [telegram,   setTelegram]   = useState('');
+  const [discord,    setDiscord]    = useState('');
+  const [forum,      setForum]      = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState('');
+  const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
+  const [inputFocus, setInputFocus] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── On mount: check session ────────────────────────────────────────────────
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then(async r => {
+        if (r.status === 401) {
+          setStep('email');
+          return;
+        }
+        if (r.ok) {
+          const data = await r.json();
+          if (data.badge) {
+            window.location.href = '/me';
+          } else {
+            setStep('username');
+          }
+        } else {
+          setStep('email');
+        }
+      })
+      .catch(() => setStep('email'));
+  }, []);
 
   // ── Username availability debounce ─────────────────────────────────────────
 
   useEffect(() => {
+    if (step !== 'username') return;
     const raw = username.trim();
     if (!raw) { setAvail('idle'); setAvailMsg(''); return; }
-    if (raw.length < 3) { setAvail('invalid'); setAvailMsg('At least 3 characters'); return; }
+    if (raw.length < 3)  { setAvail('invalid'); setAvailMsg('At least 3 characters'); return; }
     if (raw.length > 24) { setAvail('invalid'); setAvailMsg('24 characters maximum'); return; }
     if (!/^[A-Za-z0-9_-]+$/.test(raw)) {
       setAvail('invalid'); setAvailMsg('Letters, numbers, _ and - only'); return;
@@ -421,9 +468,33 @@ export default function JoinPage() {
     }, 500);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [username]);
+  }, [username, step]);
 
-  // ── Step 1: Continue ───────────────────────────────────────────────────────
+  // ── Step 0: Send magic link ────────────────────────────────────────────────
+
+  async function handleSendLink(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) { setError('Please enter your email address.'); return; }
+    setSending(true);
+    setError('');
+    try {
+      const res  = await fetch('/api/auth/send-login-link', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? 'Something went wrong.'); return; }
+      setStep('email_sent');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // ── Step 1: Continue to community ─────────────────────────────────────────
 
   function handleContinue(e: React.FormEvent) {
     e.preventDefault();
@@ -446,18 +517,28 @@ export default function JoinPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          username:      username.trim(),
-          x:             x.trim(),
-          telegram:      telegram.trim(),
-          discord:       discord.trim(),
-          forum:         forum.trim(),
-          walletAddress: walletAddress.trim() || undefined,
+          username: username.trim(),
+          x:        x.trim(),
+          telegram: telegram.trim(),
+          discord:  discord.trim(),
+          forum:    forum.trim(),
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        // If already has a passport → redirect to /me
+        if (res.status === 409 && data.badgeUrl) {
+          window.location.href = '/me';
+          return;
+        }
+        // If session expired → back to email step
+        if (res.status === 401) {
+          setError('Session expired. Please log in again.');
+          setStep('email');
+          return;
+        }
         setError(data.error ?? 'Passport creation failed. Please try again.');
         setStep('community');
         return;
@@ -492,7 +573,6 @@ export default function JoinPage() {
   return (
     <div style={S.page}>
 
-      {/* Keyframes + desktop-only corner text */}
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         .join-main { justify-content: center; align-items: center; padding: 48px 16px; }
@@ -502,7 +582,7 @@ export default function JoinPage() {
         }
       `}</style>
 
-      {/* Background artwork — approved production asset */}
+      {/* Background artwork */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/dual-signal/join-background.png"
@@ -521,15 +601,96 @@ export default function JoinPage() {
 
       <main style={S.main} className="join-main">
 
+        {/* ── Checking session ────────────────────────────────────────────── */}
+        {step === 'checking' && (
+          <div style={S.card}>
+            <div style={S.loadingWrap}>
+              <div style={S.spinner} />
+              <p style={S.loadingText}>Loading…</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 0: Email ───────────────────────────────────────────────── */}
+        {step === 'email' && (
+          <div style={S.card}>
+            <p style={S.eyebrow}>
+              STEP 01 <span style={S.eyebrowSlash}>//</span> ACCOUNT
+            </p>
+            <h1 style={S.cardTitle}>Create Your Account</h1>
+            <p style={S.cardDesc}>
+              Enter your email to receive a secure login link. No password required.
+            </p>
+
+            {error && <p style={S.errorMsg}>{error}</p>}
+
+            <form onSubmit={handleSendLink}>
+              <label style={S.label} htmlFor="join-email">Email Address</label>
+              <div style={S.inputWrap}>
+                <input
+                  id="join-email"
+                  style={{ ...S.input, ...(emailFocus ? S.inputFocused : {}) }}
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onFocus={() => setEmailFocus(true)}
+                  onBlur={() => setEmailFocus(false)}
+                  autoComplete="email"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <p style={S.hint}>
+                We&apos;ll send you a magic link. No password needed. Your email is private and never shown publicly.
+              </p>
+
+              <button
+                type="submit"
+                style={{ ...S.btnPrimary, ...(sending ? S.btnDisabled : {}) }}
+                disabled={sending}
+              >
+                {sending ? 'Sending…' : 'Send Login Link →'}
+              </button>
+            </form>
+
+            <div style={{ textAlign: 'center', marginTop: 20 }}>
+              <Link href="/login" style={{ color: '#2A3A4A', fontSize: 12, textDecoration: 'underline' }}>
+                Already have an account? Sign in
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 0b: Email sent ─────────────────────────────────────────── */}
+        {step === 'email_sent' && (
+          <div style={S.card}>
+            <div style={S.sentWrap}>
+              <span style={S.sentIcon}>✉</span>
+              <h1 style={S.sentTitle}>Check Your Email</h1>
+              <p style={S.sentDesc}>
+                We sent a secure login link to{' '}
+                <strong style={{ color: '#A8C8D8' }}>{email.trim()}</strong>.
+                <br /><br />
+                Click the link in your email to continue. The link expires in 15 minutes.
+              </p>
+              <button style={S.backLink} onClick={() => { setStep('email'); setError(''); }}>
+                Try a different email
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Step 1: Username ────────────────────────────────────────────── */}
         {step === 'username' && (
           <div style={S.card}>
             <p style={S.eyebrow}>
-              STEP 01 <span style={S.eyebrowSlash}>//</span> IDENTITY
+              STEP 02 <span style={S.eyebrowSlash}>//</span> IDENTITY
             </p>
-            <h1 style={S.cardTitle}>Register Your Signal</h1>
+            <h1 style={S.cardTitle}>Choose Your Username</h1>
             <p style={S.cardDesc}>
-              Create your Community Identity Passport. Choose your DUAL&nbsp;//&nbsp;SIGNAL username.
+              Choose your public DUAL&nbsp;//&nbsp;SIGNAL username. This will appear on your Passport and leaderboard.
             </p>
 
             <form onSubmit={handleContinue}>
@@ -552,8 +713,8 @@ export default function JoinPage() {
               <AvailabilityIndicator />
 
               <p style={S.hint}>
-                Build your Signal through your participation in the DUAL community.
-                No wallet required.
+                3–24 characters. Letters, numbers, underscores and hyphens only.
+                Username cannot be changed after your Passport is minted.
               </p>
 
               {error && <p style={S.errorMsg}>{error}</p>}
@@ -566,7 +727,7 @@ export default function JoinPage() {
                 }}
                 disabled={avail !== 'available'}
               >
-                Initialize Signal →
+                Continue →
               </button>
             </form>
           </div>
@@ -576,11 +737,11 @@ export default function JoinPage() {
         {step === 'community' && (
           <div style={S.card}>
             <p style={S.eyebrow}>
-              STEP 02 <span style={S.eyebrowSlash}>//</span> COMMUNITY
+              STEP 03 <span style={S.eyebrowSlash}>//</span> COMMUNITY
             </p>
             <h1 style={S.cardTitle}>Connect Your Community</h1>
             <p style={S.cardDesc}>
-              Connect the places where you participate in DUAL. You can add or change these later.
+              Connect the places where you participate in DUAL. All optional — you can add or change these later from your dashboard.
             </p>
 
             {error && <p style={S.errorMsg}>{error}</p>}
@@ -646,7 +807,7 @@ export default function JoinPage() {
                 <div style={S.communityCard}>
                   <div style={S.communityLabel}>
                     <span style={S.communityIcon}>GOV</span>
-                    <span style={S.communityName}>Dual Forum</span>
+                    <span style={S.communityName}>DUAL Forum</span>
                   </div>
                   <p style={S.communityDesc}>Track participation in DUAL governance proposals.</p>
                   <input
@@ -655,24 +816,6 @@ export default function JoinPage() {
                     placeholder="forum username"
                     value={forum}
                     onChange={e => setForum(e.target.value)}
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                </div>
-
-                {/* Wallet Address */}
-                <div style={S.communityCard}>
-                  <div style={S.communityLabel}>
-                    <span style={S.communityIcon}>WALLET</span>
-                    <span style={S.communityName}>Wallet Address</span>
-                  </div>
-                  <p style={S.communityDesc}>Where you want to receive your Passport NFT (optional).</p>
-                  <input
-                    style={S.communityInput}
-                    type="text"
-                    placeholder="0x… or Solana address"
-                    value={walletAddress}
-                    onChange={e => setWalletAddress(e.target.value)}
                     autoComplete="off"
                     spellCheck={false}
                   />
@@ -700,7 +843,7 @@ export default function JoinPage() {
                   }}
                   disabled={submitting}
                 >
-                  Create Passport
+                  Mint Passport
                 </button>
               </div>
             </form>
@@ -712,7 +855,7 @@ export default function JoinPage() {
           <div style={S.card}>
             <div style={S.loadingWrap}>
               <div style={S.spinner} />
-              <p style={S.loadingText}>Creating your Passport…</p>
+              <p style={S.loadingText}>Minting your Passport…</p>
             </div>
           </div>
         )}
@@ -721,9 +864,9 @@ export default function JoinPage() {
         {step === 'done' && result && (
           <div style={S.card}>
             <div style={S.successIcon}>✓</div>
-            <h1 style={{ ...S.cardTitle, textAlign: 'center' }}>Your Signal is Live</h1>
+            <h1 style={{ ...S.cardTitle, textAlign: 'center' }}>Passport Minted</h1>
             <p style={{ ...S.cardDesc, textAlign: 'center' }}>
-              Your DUAL // SIGNAL Passport has been created.
+              Your DUAL&nbsp;//&nbsp;SIGNAL Community Identity Passport has been created on the DUAL protocol.
               Your Signal grows through your participation in the DUAL community.
             </p>
 
@@ -744,44 +887,31 @@ export default function JoinPage() {
 
             <a
               href={result.badgeUrl}
-              style={{ ...S.btnPrimary, display: 'block', textDecoration: 'none' }}
+              style={{ ...S.btnPrimary, display: 'block', textDecoration: 'none', marginTop: 0 }}
             >
-              View My Passport →
+              View Passport →
             </a>
 
-            <div style={S.linksRow}>
-              <Link href="/leaderboard" style={S.linkMuted}>Leaderboard</Link>
-              <span style={S.dot}>·</span>
-              <button
-                style={{
-                  background:     'none',
-                  border:         'none',
-                  color:          '#2A3A4A',
-                  fontSize:       12,
-                  cursor:         'pointer',
-                  padding:         0,
-                  fontFamily:     'inherit',
-                  textDecoration: 'underline',
-                }}
-                onClick={() => {
-                  setStep('username');
-                  setUsername('');
-                  setAvail('idle');
-                  setAvailMsg('');
-                  setX(''); setTelegram(''); setDiscord(''); setForum(''); setWalletAddress('');
-                  setResult(null);
-                  setError('');
-                }}
-              >
-                Register another
-              </button>
-            </div>
+            <a
+              href="/me"
+              style={{
+                ...S.btnPrimary,
+                display:     'block',
+                textDecoration: 'none',
+                background:  'transparent',
+                border:      '1px solid rgba(94,211,234,0.15)',
+                color:       '#5ED3EA',
+                marginTop:   10,
+              }}
+            >
+              Go to My Signal →
+            </a>
           </div>
         )}
 
       </main>
 
-      {/* Footer with separator lines */}
+      {/* Footer */}
       <footer style={S.footer}>
         <div style={S.footerLine} />
         <div style={S.footerCenter}>
