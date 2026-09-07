@@ -30,39 +30,85 @@ const S: Record<string, React.CSSProperties> = {
     display:       'flex',
     flexDirection: 'column',
     alignItems:    'center',
+    position:      'relative',
+    overflow:      'hidden',
+  },
+  bgGlow: {
+    position:      'absolute',
+    top:           '-8%',
+    left:          '50%',
+    transform:     'translateX(-50%)',
+    width:         '900px',
+    height:        '700px',
+    background:    'radial-gradient(ellipse at center, rgba(14,180,208,0.05) 0%, transparent 68%)',
+    pointerEvents: 'none',
+    zIndex:        0,
+  },
+  butterfly: {
+    position:      'absolute',
+    top:           '-60px',
+    left:          '50%',
+    transform:     'translateX(-50%)',
+    width:         '1060px',
+    maxWidth:      '96vw',
+    height:        'auto',
+    pointerEvents: 'none',
+    zIndex:        0,
+  },
+  cornerText: {
+    position:      'absolute',
+    zIndex:        1,
+    pointerEvents: 'none',
+    fontSize:      9,
+    letterSpacing: '0.16em',
+    color:         '#192A38',
+    textTransform: 'uppercase' as const,
+    lineHeight:    2.0,
+  },
+  cornerLineEl: {
+    display:    'block',
+    height:     1,
+    width:      22,
+    background: '#192A38',
+    marginTop:  7,
   },
   header: {
-    width:      '100%',
-    padding:    '40px 24px 0',
-    textAlign:  'center',
+    width:     '100%',
+    padding:   '52px 24px 0',
+    textAlign: 'center',
+    position:  'relative',
+    zIndex:    1,
   },
   logo: {
-    fontSize:      20,
+    fontSize:      22,
     fontWeight:    700,
-    letterSpacing: '0.12em',
+    letterSpacing: '0.22em',
     color:         '#E8F4FC',
+    textTransform: 'uppercase' as const,
   },
   logoSlash: { color: '#5ED3EA' },
   tagline: {
-    fontSize:      11,
-    letterSpacing: '0.2em',
-    color:         '#3A6070',
-    margin:        '6px 0 0',
-    textTransform: 'uppercase',
+    fontSize:      10,
+    letterSpacing: '0.26em',
+    color:         '#243545',
+    margin:        '9px 0 0',
+    textTransform: 'uppercase' as const,
   },
   main: {
     flex:           1,
     display:        'flex',
     alignItems:     'center',
     justifyContent: 'center',
-    padding:        '40px 16px',
+    padding:        '48px 16px',
     width:          '100%',
+    position:       'relative',
+    zIndex:         1,
   },
   card: {
-    background:    '#08182A',
-    border:        '1px solid rgba(94,211,234,0.12)',
-    borderRadius:  18,
-    padding:       '40px 36px',
+    background:    '#071525',
+    border:        '1px solid rgba(94,211,234,0.09)',
+    borderRadius:  16,
+    padding:       '40px 40px',
     width:         '100%',
     maxWidth:      480,
     display:       'flex',
@@ -71,101 +117,108 @@ const S: Record<string, React.CSSProperties> = {
     boxSizing:     'border-box' as const,
   },
   eyebrow: {
-    fontSize:      10,
-    letterSpacing: '0.2em',
-    color:         '#3A6070',
+    fontSize:      9,
+    letterSpacing: '0.24em',
+    color:         '#2A5060',
     textTransform: 'uppercase' as const,
-    marginBottom:  10,
+    marginBottom:  14,
   },
+  eyebrowSlash: { color: '#5ED3EA' },
   cardTitle: {
-    margin:        '0 0 8px',
-    fontSize:      22,
+    margin:        '0 0 10px',
+    fontSize:      26,
     fontWeight:    700,
     color:         '#E8F4FC',
+    letterSpacing: '-0.01em',
+    lineHeight:    1.2,
   },
   cardDesc: {
     margin:        '0 0 28px',
     fontSize:      14,
-    lineHeight:    1.65,
-    color:         '#5A7A8A',
+    lineHeight:    1.7,
+    color:         '#3A5A6A',
   },
   label: {
-    fontSize:      11,
+    fontSize:      10,
     fontWeight:    600,
-    letterSpacing: '0.08em',
-    color:         '#4A90A4',
+    letterSpacing: '0.18em',
+    color:         '#3A5A6A',
     textTransform: 'uppercase' as const,
-    marginBottom:  8,
+    marginBottom:  10,
     display:       'block',
   },
   inputWrap: {
-    position:  'relative' as const,
-    marginBottom: 6,
+    position:     'relative' as const,
+    marginBottom: 8,
   },
   input: {
-    width:        '100%',
-    background:   '#040E1A',
-    border:       '1px solid rgba(94,211,234,0.18)',
-    borderRadius:  9,
-    padding:      '13px 14px',
-    fontSize:     15,
-    color:        '#C8D8E8',
-    fontFamily:   'inherit',
-    outline:      'none',
-    boxSizing:    'border-box' as const,
+    width:       '100%',
+    background:  '#040E1A',
+    border:      '1px solid rgba(94,211,234,0.14)',
+    borderRadius: 8,
+    padding:     '13px 16px',
+    fontSize:    15,
+    color:       '#C8D8E8',
+    fontFamily:  'inherit',
+    outline:     'none',
+    boxSizing:   'border-box' as const,
   },
   inputFocused: {
-    border: '1px solid rgba(94,211,234,0.45)',
+    border: '1px solid rgba(94,211,234,0.38)',
   },
   availability: {
-    fontSize:   12,
-    marginTop:  6,
-    marginBottom: 20,
-    height:     16,
+    fontSize:     12,
+    marginTop:    4,
+    marginBottom: 16,
+    height:       18,
+    color:        '#3A5060',
   },
   availableText: { color: '#4AC89A' },
   takenText:     { color: '#F87171' },
-  checkingText:  { color: '#4A7A8A' },
+  checkingText:  { color: '#3A5A6A' },
   invalidText:   { color: '#F7C873' },
   hint: {
-    fontSize:   12,
-    color:      '#3A5060',
-    marginBottom: 28,
-    lineHeight: 1.55,
+    fontSize:     13,
+    color:        '#2A4050',
+    marginBottom: 24,
+    lineHeight:   1.65,
   },
   btnPrimary: {
     width:         '100%',
     marginTop:     16,
-    padding:       '14px 0',
-    background:    'linear-gradient(135deg, #0F3A55 0%, #0A5570 100%)',
-    border:        '1px solid rgba(94,211,234,0.3)',
+    padding:       '15px 0',
+    background:    '#0EB4D0',
+    border:        'none',
     borderRadius:  10,
-    color:         '#A8EDF9',
-    fontSize:      14,
-    fontWeight:    600,
+    color:         '#FFFFFF',
+    fontSize:      12,
+    fontWeight:    700,
     cursor:        'pointer',
     textAlign:     'center' as const,
-    letterSpacing: '0.05em',
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
     transition:    'opacity 0.15s',
+    fontFamily:    'inherit',
   },
   btnDisabled: {
-    opacity:  0.45,
-    cursor:   'not-allowed',
+    opacity: 0.35,
+    cursor:  'not-allowed',
   },
   btnSecondary: {
-    background:  'transparent',
-    border:      '1px solid rgba(94,211,234,0.12)',
-    borderRadius: 10,
-    color:       '#4A90A4',
-    fontSize:    13,
-    fontWeight:  600,
-    cursor:      'pointer',
-    padding:     '11px 20px',
-    fontFamily:  'inherit',
+    background:    'transparent',
+    border:        '1px solid rgba(94,211,234,0.10)',
+    borderRadius:   10,
+    color:         '#3A5A6A',
+    fontSize:      13,
+    fontWeight:    600,
+    cursor:        'pointer',
+    padding:       '12px 20px',
+    fontFamily:    'inherit',
+    letterSpacing: '0.04em',
   },
   btnRow: {
-    display:  'flex',
-    gap:      12,
+    display:   'flex',
+    gap:       12,
     marginTop: 16,
   },
   errorMsg: {
@@ -178,80 +231,81 @@ const S: Record<string, React.CSSProperties> = {
   communityList: {
     display:       'flex',
     flexDirection: 'column' as const,
-    gap:           12,
+    gap:           10,
     marginBottom:  8,
   },
   communityCard: {
     background:   '#040E1A',
-    border:       '1px solid rgba(94,211,234,0.1)',
+    border:       '1px solid rgba(94,211,234,0.08)',
     borderRadius:  10,
-    padding:      '16px 16px 14px',
+    padding:      '14px 16px 12px',
   },
   communityLabel: {
-    display:       'flex',
-    alignItems:    'center',
-    gap:           8,
-    marginBottom:  10,
+    display:      'flex',
+    alignItems:   'center',
+    gap:          8,
+    marginBottom: 8,
   },
   communityIcon: {
-    fontSize:    12,
-    fontWeight:  700,
+    fontSize:      11,
+    fontWeight:    700,
     letterSpacing: '0.04em',
-    color:       '#5ED3EA',
-    background:  'rgba(94,211,234,0.1)',
-    borderRadius: 4,
-    padding:     '2px 7px',
-    minWidth:    28,
-    textAlign:  'center' as const,
+    color:         '#5ED3EA',
+    background:    'rgba(94,211,234,0.07)',
+    borderRadius:   4,
+    padding:       '2px 7px',
+    minWidth:       28,
+    textAlign:     'center' as const,
   },
   communityName: {
     fontSize:   13,
     fontWeight: 600,
-    color:      '#C8D8E8',
+    color:      '#A8B8C8',
   },
   communityDesc: {
     fontSize:  11,
-    color:     '#3A6070',
-    margin:    '0 0 10px',
+    color:     '#2A3A4A',
+    margin:    '0 0 8px',
     lineHeight: 1.5,
   },
   communityInput: {
-    width:        '100%',
-    background:   '#08182A',
-    border:       '1px solid rgba(94,211,234,0.12)',
-    borderRadius:  7,
-    padding:      '10px 12px',
-    fontSize:     13,
-    color:        '#C8D8E8',
-    fontFamily:   'inherit',
-    outline:      'none',
-    boxSizing:    'border-box' as const,
+    width:       '100%',
+    background:  '#071525',
+    border:      '1px solid rgba(94,211,234,0.09)',
+    borderRadius: 6,
+    padding:     '9px 12px',
+    fontSize:    13,
+    color:       '#C8D8E8',
+    fontFamily:  'inherit',
+    outline:     'none',
+    boxSizing:   'border-box' as const,
   },
   optionalNote: {
-    fontSize:  12,
-    color:     '#3A5060',
-    textAlign: 'center' as const,
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize:      11,
+    color:         '#1E3040',
+    textAlign:     'center' as const,
+    marginTop:     8,
+    marginBottom:  4,
+    letterSpacing: '0.06em',
   },
   // Done screen
   successIcon: {
-    width:          56,
-    height:         56,
+    width:          52,
+    height:         52,
     borderRadius:   '50%',
-    background:     'rgba(94,211,234,0.08)',
-    border:         '1px solid rgba(94,211,234,0.25)',
+    background:     'rgba(94,211,234,0.06)',
+    border:         '1px solid rgba(94,211,234,0.20)',
     display:        'flex',
     alignItems:     'center',
     justifyContent: 'center',
-    fontSize:       24,
+    fontSize:       22,
     color:          '#5ED3EA',
     margin:         '0 auto 20px',
   },
   summaryBox: {
     width:        '100%',
     background:   '#040E1A',
-    border:       '1px solid rgba(94,211,234,0.1)',
+    border:       '1px solid rgba(94,211,234,0.08)',
     borderRadius:  10,
     padding:      '4px 16px',
     marginBottom: 20,
@@ -262,14 +316,14 @@ const S: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems:     'center',
     padding:        '10px 0',
-    borderBottom:   '1px solid rgba(94,211,234,0.07)',
+    borderBottom:   '1px solid rgba(94,211,234,0.06)',
     gap:             12,
   },
   summaryKey: {
-    fontSize:      11,
-    letterSpacing: '0.08em',
+    fontSize:      10,
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
-    color:         '#3A6070',
+    color:         '#2A3A4A',
     flexShrink:     0,
   },
   summaryVal: {
@@ -281,62 +335,86 @@ const S: Record<string, React.CSSProperties> = {
     display:        'flex',
     alignItems:     'center',
     gap:             8,
-    marginTop:       8,
+    marginTop:       10,
     justifyContent: 'center',
   },
   linkMuted: {
-    color:          '#3A6070',
+    color:          '#2A3A4A',
     fontSize:       12,
     textDecoration: 'none',
   },
-  dot: { color: '#1E3040', fontSize: 14 },
+  dot: { color: '#182830', fontSize: 12 },
   footer: {
-    padding:        '24px 16px',
+    position:       'relative',
+    zIndex:         1,
+    padding:        '16px 40px 32px',
     display:        'flex',
     alignItems:     'center',
-    gap:             8,
-    justifyContent: 'center',
+    width:          '100%',
+    maxWidth:       580,
+    gap:             0,
   },
-  footerText: { color: '#1E3040', fontSize: 12 },
+  footerLine: {
+    flex:       '1 1 0',
+    height:     1,
+    background: 'rgba(94,211,234,0.06)',
+  },
+  footerCenter: {
+    display:        'flex',
+    alignItems:     'center',
+    gap:             6,
+    padding:        '0 18px',
+    flexShrink:     0,
+  },
+  footerText: {
+    color:         '#172030',
+    fontSize:      10,
+    letterSpacing: '0.16em',
+    textTransform: 'uppercase' as const,
+  },
+  footerDot: {
+    color:    '#172030',
+    fontSize:  10,
+  },
   // Loading
   loadingWrap: {
-    display:        'flex',
-    flexDirection:  'column' as const,
-    alignItems:     'center',
-    gap:             16,
-    padding:        '40px 0',
+    display:       'flex',
+    flexDirection: 'column' as const,
+    alignItems:    'center',
+    gap:           16,
+    padding:       '40px 0',
   },
   spinner: {
-    width:        32,
-    height:       32,
-    border:       '2px solid rgba(94,211,234,0.15)',
-    borderTop:    '2px solid #5ED3EA',
+    width:       32,
+    height:      32,
+    border:      '2px solid rgba(94,211,234,0.12)',
+    borderTop:   '2px solid #5ED3EA',
     borderRadius: '50%',
-    animation:    'spin 0.8s linear infinite',
+    animation:   'spin 0.8s linear infinite',
   },
   loadingText: {
-    fontSize:  13,
-    color:     '#4A7A8A',
-    letterSpacing: '0.08em',
+    fontSize:      13,
+    color:         '#3A5A6A',
+    letterSpacing: '0.10em',
   },
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function JoinPage() {
-  const [step,       setStep]       = useState<Step>('username');
-  const [username,   setUsername]   = useState('');
-  const [avail,      setAvail]      = useState<AvailabilityState>('idle');
-  const [availMsg,   setAvailMsg]   = useState('');
-  const [x,          setX]          = useState('');
-  const [telegram,   setTelegram]   = useState('');
-  const [discord,    setDiscord]    = useState('');
-  const [forum,      setForum]      = useState('');
+  const [step,          setStep]          = useState<Step>('username');
+  const [username,      setUsername]      = useState('');
+  const [avail,         setAvail]         = useState<AvailabilityState>('idle');
+  const [availMsg,      setAvailMsg]      = useState('');
+  const [x,             setX]             = useState('');
+  const [telegram,      setTelegram]      = useState('');
+  const [discord,       setDiscord]       = useState('');
+  const [forum,         setForum]         = useState('');
   const [walletAddress, setWalletAddress] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error,      setError]      = useState('');
-  const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
-  const [inputFocus, setInputFocus] = useState(false);
+  const [submitting,    setSubmitting]    = useState(false);
+  const [error,         setError]         = useState('');
+  const [result,        setResult]        = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
+  const [inputFocus,    setInputFocus]    = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -440,9 +518,80 @@ export default function JoinPage() {
 
   return (
     <div style={S.page}>
-      {/* Spinner keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
+      {/* Keyframes + desktop-only corner text */}
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ds-corner { display: none; }
+        @media (min-width: 900px) { .ds-corner { display: block; } }
+      `}</style>
+
+      {/* Radial background glow */}
+      <div style={S.bgGlow} />
+
+      {/* Butterfly watermark — inline SVG */}
+      <div style={S.butterfly} aria-hidden="true">
+        <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+          {/* Left upper wing — wide dramatic sweep */}
+          <path
+            d="M500,390 C460,300 340,168 200,105 C128,72 58,86 42,148 C26,206 72,286 158,336 C244,386 370,398 500,390Z"
+            fill="#5ED3EA" fillOpacity="0.10" stroke="#5ED3EA" strokeWidth="1.4" strokeOpacity="0.30"
+          />
+          {/* Right upper wing */}
+          <path
+            d="M500,390 C540,300 660,168 800,105 C872,72 942,86 958,148 C974,206 928,286 842,336 C756,386 630,398 500,390Z"
+            fill="#5ED3EA" fillOpacity="0.10" stroke="#5ED3EA" strokeWidth="1.4" strokeOpacity="0.30"
+          />
+          {/* Left lower wing */}
+          <path
+            d="M500,402 C475,425 425,460 366,490 C302,522 252,534 234,560 C216,584 230,608 264,610 C312,613 392,580 442,548 C478,524 500,492 500,460Z"
+            fill="#5ED3EA" fillOpacity="0.07" stroke="#5ED3EA" strokeWidth="1.1" strokeOpacity="0.24"
+          />
+          {/* Right lower wing */}
+          <path
+            d="M500,402 C525,425 575,460 634,490 C698,522 748,534 766,560 C784,584 770,608 736,610 C688,613 608,580 558,548 C522,524 500,492 500,460Z"
+            fill="#5ED3EA" fillOpacity="0.07" stroke="#5ED3EA" strokeWidth="1.1" strokeOpacity="0.24"
+          />
+          {/* Wing veins — left upper */}
+          <path d="M500,390 C455,320 355,224 228,166" fill="none" stroke="#5ED3EA" strokeWidth="0.8" strokeOpacity="0.18"/>
+          <path d="M500,390 C420,308 280,214 130,178" fill="none" stroke="#5ED3EA" strokeWidth="0.7" strokeOpacity="0.13"/>
+          <path d="M500,390 C462,358 388,328 280,322" fill="none" stroke="#5ED3EA" strokeWidth="0.6" strokeOpacity="0.11"/>
+          {/* Wing veins — right upper */}
+          <path d="M500,390 C545,320 645,224 772,166" fill="none" stroke="#5ED3EA" strokeWidth="0.8" strokeOpacity="0.18"/>
+          <path d="M500,390 C580,308 720,214 870,178" fill="none" stroke="#5ED3EA" strokeWidth="0.7" strokeOpacity="0.13"/>
+          <path d="M500,390 C538,358 612,328 720,322" fill="none" stroke="#5ED3EA" strokeWidth="0.6" strokeOpacity="0.11"/>
+          {/* Wing veins — lower */}
+          <path d="M500,402 C468,442 394,476 300,496" fill="none" stroke="#5ED3EA" strokeWidth="0.6" strokeOpacity="0.15"/>
+          <path d="M500,402 C532,442 606,476 700,496" fill="none" stroke="#5ED3EA" strokeWidth="0.6" strokeOpacity="0.15"/>
+          {/* Antennae */}
+          <path d="M497,346 C490,310 470,268 450,222" fill="none" stroke="#5ED3EA" strokeWidth="1.0" strokeOpacity="0.22"/>
+          <path d="M503,346 C510,310 530,268 550,222" fill="none" stroke="#5ED3EA" strokeWidth="1.0" strokeOpacity="0.22"/>
+          <circle cx="448" cy="218" r="3.5" fill="#5ED3EA" fillOpacity="0.22"/>
+          <circle cx="552" cy="218" r="3.5" fill="#5ED3EA" fillOpacity="0.22"/>
+          {/* Body */}
+          <ellipse cx="500" cy="418" rx="5" ry="58" fill="#5ED3EA" fillOpacity="0.14"/>
+        </svg>
+      </div>
+
+      {/* Corner decorative text — desktop only via CSS class */}
+      <div className="ds-corner" style={{ ...S.cornerText, top: 44, left: 44 }}>
+        IDENTITY<br />BELONGS<br />FURTHER
+        <span style={S.cornerLineEl} />
+      </div>
+      <div className="ds-corner" style={{ ...S.cornerText, top: 44, right: 44, textAlign: 'right' }}>
+        DUAL<br />NETWORK
+        <span style={{ ...S.cornerLineEl, marginLeft: 'auto' }} />
+      </div>
+      <div className="ds-corner" style={{ ...S.cornerText, bottom: 60, left: 44 }}>
+        PEOPLE<br />IDEAS<br />IMPACT
+        <span style={S.cornerLineEl} />
+      </div>
+      <div className="ds-corner" style={{ ...S.cornerText, bottom: 60, right: 44, textAlign: 'right' }}>
+        MORE<br />TOGETHER
+        <span style={{ ...S.cornerLineEl, marginLeft: 'auto' }} />
+      </div>
+
+      {/* Header */}
       <header style={S.header}>
         <div style={S.logo}>DUAL <span style={S.logoSlash}>//</span> SIGNAL</div>
         <p style={S.tagline}>Community Identity Passport</p>
@@ -453,7 +602,9 @@ export default function JoinPage() {
         {/* ── Step 1: Username ────────────────────────────────────────────── */}
         {step === 'username' && (
           <div style={S.card}>
-            <p style={S.eyebrow}>Step 1 of 2</p>
+            <p style={S.eyebrow}>
+              STEP 01 <span style={S.eyebrowSlash}>//</span> IDENTITY
+            </p>
             <h1 style={S.cardTitle}>Register Your Signal</h1>
             <p style={S.cardDesc}>
               Create your Community Identity Passport. Choose your DUAL&nbsp;//&nbsp;SIGNAL username.
@@ -493,7 +644,7 @@ export default function JoinPage() {
                 }}
                 disabled={avail !== 'available'}
               >
-                Continue →
+                Initialize Signal →
               </button>
             </form>
           </div>
@@ -502,7 +653,9 @@ export default function JoinPage() {
         {/* ── Step 2: Community ───────────────────────────────────────────── */}
         {step === 'community' && (
           <div style={S.card}>
-            <p style={S.eyebrow}>Step 2 of 2</p>
+            <p style={S.eyebrow}>
+              STEP 02 <span style={S.eyebrowSlash}>//</span> COMMUNITY
+            </p>
             <h1 style={S.cardTitle}>Connect Your Community</h1>
             <p style={S.cardDesc}>
               Connect the places where you participate in DUAL. You can add or change these later.
@@ -619,7 +772,7 @@ export default function JoinPage() {
                   type="submit"
                   style={{
                     ...S.btnPrimary,
-                    flex: 1,
+                    flex:     1,
                     marginTop: 0,
                     ...(submitting ? S.btnDisabled : {}),
                   }}
@@ -681,7 +834,7 @@ export default function JoinPage() {
                 style={{
                   background:     'none',
                   border:         'none',
-                  color:          '#3A6070',
+                  color:          '#2A3A4A',
                   fontSize:       12,
                   cursor:         'pointer',
                   padding:         0,
@@ -706,13 +859,19 @@ export default function JoinPage() {
 
       </main>
 
+      {/* Footer with separator lines */}
       <footer style={S.footer}>
-        <Link href="/leaderboard" style={{ ...S.footerText, color: '#3A6070', textDecoration: 'none' }}>
-          Leaderboard
-        </Link>
-        <span style={S.dot}>·</span>
-        <span style={S.footerText}>DUAL Network · Chain 6301</span>
+        <div style={S.footerLine} />
+        <div style={S.footerCenter}>
+          <Link href="/leaderboard" style={{ ...S.footerText, textDecoration: 'none' }}>
+            Leaderboard
+          </Link>
+          <span style={S.footerDot}>·</span>
+          <span style={S.footerText}>DUAL Network · Chain 6301</span>
+        </div>
+        <div style={S.footerLine} />
       </footer>
+
     </div>
   );
 }
