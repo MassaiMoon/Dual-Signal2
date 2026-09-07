@@ -33,52 +33,27 @@ const S: Record<string, React.CSSProperties> = {
     position:      'relative',
     overflow:      'hidden',
   },
-  bgGlow: {
+  bgImage: {
     position:      'absolute',
-    top:           '-8%',
+    top:           0,
     left:          '50%',
     transform:     'translateX(-50%)',
-    width:         '900px',
-    height:        '700px',
-    background:    'radial-gradient(ellipse at center, rgba(14,180,208,0.05) 0%, transparent 68%)',
-    pointerEvents: 'none',
-    zIndex:        0,
-  },
-  butterfly: {
-    position:      'absolute',
-    top:           '-50px',
-    left:          '50%',
-    transform:     'translateX(-50%)',
-    width:         '1080px',
-    maxWidth:      '96vw',
+    width:         '100%',
+    maxWidth:      '1780px',
+    minWidth:      '1100px',
     height:        'auto',
+    display:       'block',
     pointerEvents: 'none',
+    userSelect:    'none' as const,
     zIndex:        0,
-    opacity:       0.78,
-  },
-  cornerText: {
-    position:      'absolute',
-    zIndex:        1,
-    pointerEvents: 'none',
-    fontSize:      9,
-    letterSpacing: '0.16em',
-    color:         '#192A38',
-    textTransform: 'uppercase' as const,
-    lineHeight:    2.0,
-  },
-  cornerLineEl: {
-    display:    'block',
-    height:     1,
-    width:      22,
-    background: '#192A38',
-    marginTop:  7,
   },
   header: {
-    width:     '100%',
-    padding:   '52px 24px 0',
-    textAlign: 'center',
-    position:  'relative',
-    zIndex:    1,
+    width:           '100%',
+    padding:         '52px 24px 28px',
+    textAlign:       'center',
+    position:        'relative',
+    zIndex:          1,
+    background:      'linear-gradient(to bottom, #040E1A 65%, transparent)',
   },
   logo: {
     fontSize:      22,
@@ -96,14 +71,11 @@ const S: Record<string, React.CSSProperties> = {
     textTransform: 'uppercase' as const,
   },
   main: {
-    flex:           1,
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'center',
-    padding:        '48px 16px',
-    width:          '100%',
-    position:       'relative',
-    zIndex:         1,
+    flex:     1,
+    display:  'flex',
+    width:    '100%',
+    position: 'relative',
+    zIndex:   1,
   },
   card: {
     background:    '#071525',
@@ -523,187 +495,23 @@ export default function JoinPage() {
       {/* Keyframes + desktop-only corner text */}
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        .ds-corner { display: none; }
-        @media (min-width: 900px) { .ds-corner { display: block; } }
+        .join-main { justify-content: center; align-items: center; padding: 48px 16px; }
+        @media (max-width: 768px) {
+          .join-bg-img { opacity: 0.55; }
+          .join-main { justify-content: flex-start; align-items: flex-start; padding: 12px 16px; }
+        }
       `}</style>
 
-      {/* Radial background glow */}
-      <div style={S.bgGlow} />
-
-      {/* Butterfly — realistic morpho, brand teal palette */}
-      <div style={S.butterfly} aria-hidden="true">
-        <svg viewBox="0 0 1000 630" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            {/* Thin glow for outlines and veins */}
-            <filter id="glo" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            {/* Fine glow for veins only */}
-            <filter id="vn" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            {/* Left upper wing: bright teal core → transparent edge */}
-            <radialGradient id="wgL" cx="58%" cy="55%" r="65%" gradientUnits="objectBoundingBox">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.38"/>
-              <stop offset="30%"  stopColor="#159DB8" stopOpacity="0.34"/>
-              <stop offset="62%"  stopColor="#1189A2" stopOpacity="0.24"/>
-              <stop offset="88%"  stopColor="#1189A2" stopOpacity="0.10"/>
-              <stop offset="100%" stopColor="#002433" stopOpacity="0.04"/>
-            </radialGradient>
-            {/* Right upper wing */}
-            <radialGradient id="wgR" cx="42%" cy="55%" r="65%" gradientUnits="objectBoundingBox">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.38"/>
-              <stop offset="30%"  stopColor="#159DB8" stopOpacity="0.34"/>
-              <stop offset="62%"  stopColor="#1189A2" stopOpacity="0.24"/>
-              <stop offset="88%"  stopColor="#1189A2" stopOpacity="0.10"/>
-              <stop offset="100%" stopColor="#002433" stopOpacity="0.04"/>
-            </radialGradient>
-            {/* Lower wings */}
-            <radialGradient id="hwL" cx="60%" cy="35%" r="72%" gradientUnits="objectBoundingBox">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.32"/>
-              <stop offset="45%"  stopColor="#159DB8" stopOpacity="0.22"/>
-              <stop offset="85%"  stopColor="#1189A2" stopOpacity="0.10"/>
-              <stop offset="100%" stopColor="#002433" stopOpacity="0.02"/>
-            </radialGradient>
-            <radialGradient id="hwR" cx="40%" cy="35%" r="72%" gradientUnits="objectBoundingBox">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.32"/>
-              <stop offset="45%"  stopColor="#159DB8" stopOpacity="0.22"/>
-              <stop offset="85%"  stopColor="#1189A2" stopOpacity="0.10"/>
-              <stop offset="100%" stopColor="#002433" stopOpacity="0.02"/>
-            </radialGradient>
-            {/* Iridescent diagonal sweep — left */}
-            <linearGradient id="irL" x1="92%" y1="4%" x2="8%" y2="82%">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.38"/>
-              <stop offset="32%"  stopColor="#5ED3EA" stopOpacity="0.16"/>
-              <stop offset="100%" stopColor="#159DB8" stopOpacity="0"/>
-            </linearGradient>
-            {/* Iridescent diagonal sweep — right */}
-            <linearGradient id="irR" x1="8%" y1="4%" x2="92%" y2="82%">
-              <stop offset="0%"   stopColor="#5ED3EA" stopOpacity="0.38"/>
-              <stop offset="32%"  stopColor="#5ED3EA" stopOpacity="0.16"/>
-              <stop offset="100%" stopColor="#159DB8" stopOpacity="0"/>
-            </linearGradient>
-            {/* Body highlight */}
-            <linearGradient id="bdG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="#1189A2" stopOpacity="0.22"/>
-              <stop offset="50%"  stopColor="#5ED3EA" stopOpacity="0.72"/>
-              <stop offset="100%" stopColor="#1189A2" stopOpacity="0.22"/>
-            </linearGradient>
-          </defs>
-
-          {/* ── LOWER WINGS (behind upper) ── */}
-          {/* Left hindwing — rounded fan below body */}
-          <path d="M500,395 C474,418 444,452 400,482 C350,514 290,534 248,554 C210,572 205,596 240,608 C285,618 362,590 422,558 C470,530 500,498 500,466Z"
-                fill="url(#hwL)"/>
-          <path d="M500,395 C474,418 444,452 400,482 C350,514 290,534 248,554 C210,572 205,596 240,608 C285,618 362,590 422,558 C470,530 500,498 500,466Z"
-                fill="none" stroke="#5ED3EA" strokeWidth="1.1" strokeOpacity="0.55" filter="url(#glo)"/>
-          {/* Right hindwing */}
-          <path d="M500,395 C526,418 556,452 600,482 C650,514 710,534 752,554 C790,572 795,596 760,608 C715,618 638,590 578,558 C530,530 500,498 500,466Z"
-                fill="url(#hwR)"/>
-          <path d="M500,395 C526,418 556,452 600,482 C650,514 710,534 752,554 C790,572 795,596 760,608 C715,618 638,590 578,558 C530,530 500,498 500,466Z"
-                fill="none" stroke="#5ED3EA" strokeWidth="1.1" strokeOpacity="0.55" filter="url(#glo)"/>
-
-          {/* ── UPPER FOREWINGS — swept morpho triangle, apex = upper-outer corner ── */}
-          {/* Left forewing */}
-          <path d="M500,350 C470,310 430,246 374,188 C330,144 270,108 196,88 C148,78 106,84 88,102 C65,122 68,158 86,200 C100,240 112,282 118,330 C124,368 140,402 172,418 C260,432 398,418 470,406 C486,402 496,398 500,392Z"
-                fill="url(#wgL)"/>
-          <path d="M500,350 C470,310 430,246 374,188 C330,144 270,108 196,88 C148,78 106,84 88,102 C65,122 68,158 86,200 C100,240 112,282 118,330 C124,368 140,402 172,418 C260,432 398,418 470,406 C486,402 496,398 500,392Z"
-                fill="url(#irL)"/>
-          <path d="M500,350 C470,310 430,246 374,188 C330,144 270,108 196,88 C148,78 106,84 88,102 C65,122 68,158 86,200 C100,240 112,282 118,330 C124,368 140,402 172,418 C260,432 398,418 470,406 C486,402 496,398 500,392Z"
-                fill="none" stroke="#5ED3EA" strokeWidth="1.4" strokeOpacity="0.65" filter="url(#glo)"/>
-
-          {/* Right forewing */}
-          <path d="M500,350 C530,310 570,246 626,188 C670,144 730,108 804,88 C852,78 894,84 912,102 C935,122 932,158 914,200 C900,240 888,282 882,330 C876,368 860,402 828,418 C740,432 602,418 530,406 C514,402 504,398 500,392Z"
-                fill="url(#wgR)"/>
-          <path d="M500,350 C530,310 570,246 626,188 C670,144 730,108 804,88 C852,78 894,84 912,102 C935,122 932,158 914,200 C900,240 888,282 882,330 C876,368 860,402 828,418 C740,432 602,418 530,406 C514,402 504,398 500,392Z"
-                fill="url(#irR)"/>
-          <path d="M500,350 C530,310 570,246 626,188 C670,144 730,108 804,88 C852,78 894,84 912,102 C935,122 932,158 914,200 C900,240 888,282 882,330 C876,368 860,402 828,418 C740,432 602,418 530,406 C514,402 504,398 500,392Z"
-                fill="none" stroke="#5ED3EA" strokeWidth="1.4" strokeOpacity="0.65" filter="url(#glo)"/>
-
-          {/* ── VENATION — left forewing (radiating from discal cell to outer margin) ── */}
-          <g fill="none" stroke="#5ED3EA" filter="url(#vn)">
-            {/* Sc+R1 — toward apex along costa */}
-            <path d="M497,364 C462,320 408,240 318,164 C264,120 196,94 154,90" strokeWidth="1.0" strokeOpacity="0.64"/>
-            {/* R3 — upper outer margin */}
-            <path d="M497,370 C454,322 386,248 300,198 C240,162 182,148 140,152" strokeWidth="0.9" strokeOpacity="0.55"/>
-            {/* R5/M1 — mid outer margin */}
-            <path d="M497,376 C448,340 368,286 270,258 C210,240 158,244 120,256" strokeWidth="0.85" strokeOpacity="0.47"/>
-            {/* M3 — lower outer margin */}
-            <path d="M497,382 C444,356 348,320 232,316 C176,316 128,330 102,350" strokeWidth="0.8" strokeOpacity="0.40"/>
-            {/* CuA1 — toward inner angle */}
-            <path d="M497,388 C440,372 330,356 196,378 C162,384 140,396 132,410" strokeWidth="0.75" strokeOpacity="0.33"/>
-            {/* CuA2 — along inner margin */}
-            <path d="M497,393 C436,390 310,392 194,416" strokeWidth="0.7" strokeOpacity="0.26"/>
-            {/* Discal cross-vein upper */}
-            <path d="M380,186 C368,208 360,236 362,268" strokeWidth="0.5" strokeOpacity="0.38"/>
-            {/* Discal cross-vein lower */}
-            <path d="M300,246 C288,268 280,296 284,326" strokeWidth="0.45" strokeOpacity="0.32"/>
-            {/* Inner discal vein */}
-            <path d="M216,302 C208,322 204,350 210,374" strokeWidth="0.4" strokeOpacity="0.26"/>
-          </g>
-
-          {/* ── VENATION — right forewing ── */}
-          <g fill="none" stroke="#5ED3EA" filter="url(#vn)">
-            <path d="M503,364 C538,320 592,240 682,164 C736,120 804,94 846,90" strokeWidth="1.0" strokeOpacity="0.64"/>
-            <path d="M503,370 C546,322 614,248 700,198 C760,162 818,148 860,152" strokeWidth="0.9" strokeOpacity="0.55"/>
-            <path d="M503,376 C552,340 632,286 730,258 C790,240 842,244 880,256" strokeWidth="0.85" strokeOpacity="0.47"/>
-            <path d="M503,382 C556,356 652,320 768,316 C824,316 872,330 898,350" strokeWidth="0.8" strokeOpacity="0.40"/>
-            <path d="M503,388 C560,372 670,356 804,378 C838,384 860,396 868,410" strokeWidth="0.75" strokeOpacity="0.33"/>
-            <path d="M503,393 C564,390 690,392 806,416" strokeWidth="0.7" strokeOpacity="0.26"/>
-            <path d="M620,186 C632,208 640,236 638,268" strokeWidth="0.5" strokeOpacity="0.38"/>
-            <path d="M700,246 C712,268 720,296 716,326" strokeWidth="0.45" strokeOpacity="0.32"/>
-            <path d="M784,302 C792,322 796,350 790,374" strokeWidth="0.4" strokeOpacity="0.26"/>
-          </g>
-
-          {/* ── VENATION — hindwings ── */}
-          <g fill="none" stroke="#5ED3EA" filter="url(#vn)">
-            <path d="M498,400 C470,428 430,462 372,490 C320,514 270,526 238,546" strokeWidth="0.75" strokeOpacity="0.50"/>
-            <path d="M498,406 C454,446 390,484 312,510 C258,530 216,542 205,562" strokeWidth="0.65" strokeOpacity="0.38"/>
-            <path d="M502,400 C530,428 570,462 628,490 C680,514 730,526 762,546" strokeWidth="0.75" strokeOpacity="0.50"/>
-            <path d="M502,406 C546,446 610,484 688,510 C742,530 784,542 795,562" strokeWidth="0.65" strokeOpacity="0.38"/>
-          </g>
-
-          {/* ── BODY ── */}
-          <circle cx="500" cy="344" r="9"  fill="url(#bdG)" filter="url(#glo)"/>
-          <circle cx="500" cy="344" r="5"  fill="#5ED3EA" fillOpacity="0.60"/>
-          <ellipse cx="500" cy="371" rx="10" ry="23" fill="url(#bdG)" filter="url(#glo)"/>
-          <ellipse cx="500" cy="371" rx="10" ry="23" fill="none" stroke="#5ED3EA" strokeWidth="0.9" strokeOpacity="0.58"/>
-          <path d="M491,392 C488,418 488,450 490,478 C491,496 509,496 510,478 C512,450 512,418 509,392Z"
-                fill="url(#bdG)" filter="url(#glo)"/>
-          <path d="M491,392 C488,418 488,450 490,478 C491,496 509,496 510,478 C512,450 512,418 509,392Z"
-                fill="none" stroke="#5ED3EA" strokeWidth="0.7" strokeOpacity="0.48"/>
-          {([408,420,432,444,456,469] as number[]).map((y, i) => (
-            <line key={y} x1={491} y1={y} x2={509} y2={y}
-                  stroke="#5ED3EA" strokeWidth="0.55" strokeOpacity={0.38 - i * 0.05}/>
-          ))}
-
-          {/* ── ANTENNAE ── */}
-          <path d="M496,338 C488,304 468,260 446,216" fill="none" stroke="#5ED3EA" strokeWidth="1.2" strokeOpacity="0.62" filter="url(#vn)"/>
-          <path d="M504,338 C512,304 532,260 554,216" fill="none" stroke="#5ED3EA" strokeWidth="1.2" strokeOpacity="0.62" filter="url(#vn)"/>
-          <ellipse cx="443" cy="210" rx="5.5" ry="10" fill="#5ED3EA" fillOpacity="0.68" transform="rotate(-28 443 210)" filter="url(#vn)"/>
-          <ellipse cx="557" cy="210" rx="5.5" ry="10" fill="#5ED3EA" fillOpacity="0.68" transform="rotate(28 557 210)" filter="url(#vn)"/>
-        </svg>
-      </div>
-
-      {/* Corner decorative text — desktop only via CSS class */}
-      <div className="ds-corner" style={{ ...S.cornerText, top: 44, left: 44 }}>
-        IDENTITY<br />BELONGS<br />FURTHER
-        <span style={S.cornerLineEl} />
-      </div>
-      <div className="ds-corner" style={{ ...S.cornerText, top: 44, right: 44, textAlign: 'right' }}>
-        DUAL<br />NETWORK
-        <span style={{ ...S.cornerLineEl, marginLeft: 'auto' }} />
-      </div>
-      <div className="ds-corner" style={{ ...S.cornerText, bottom: 60, left: 44 }}>
-        PEOPLE<br />IDEAS<br />IMPACT
-        <span style={S.cornerLineEl} />
-      </div>
-      <div className="ds-corner" style={{ ...S.cornerText, bottom: 60, right: 44, textAlign: 'right' }}>
-        MORE<br />TOGETHER
-        <span style={{ ...S.cornerLineEl, marginLeft: 'auto' }} />
-      </div>
+      {/* Background artwork — approved production asset */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/dual-signal/join-background.png"
+        className="join-bg-img"
+        style={S.bgImage}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
 
       {/* Header */}
       <header style={S.header}>
@@ -711,7 +519,7 @@ export default function JoinPage() {
         <p style={S.tagline}>Community Identity Passport</p>
       </header>
 
-      <main style={S.main}>
+      <main style={S.main} className="join-main">
 
         {/* ── Step 1: Username ────────────────────────────────────────────── */}
         {step === 'username' && (
