@@ -39,6 +39,7 @@ export const achievementAssets = {
 } as const;
 
 export const specialAssets = {
-  OG: '/assets/dual-signal/special/og.png',
+  OG:             '/assets/dual-signal/special/og.png',
+  GENESIS:        '/assets/dual-signal/special/genesis.png',
   cardBackground: '/assets/dual-signal/card/card-background.png',
 };

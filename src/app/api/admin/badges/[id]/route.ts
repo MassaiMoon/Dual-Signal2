@@ -16,6 +16,8 @@ interface PatchBody {
   discordHandle?:  string;
   telegramHandle?: string;
   xHandle?:        string;
+  isOG?:           boolean;
+  isGenesis?:      boolean;
 }
 
 export async function PATCH(
@@ -32,10 +34,12 @@ export async function PATCH(
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const data: Record<string, string> = {};
+  const data: Record<string, string | boolean> = {};
   if (body.discordHandle  !== undefined) data.discordHandle  = body.discordHandle.replace(/^@/, '').trim();
   if (body.telegramHandle !== undefined) data.telegramHandle = body.telegramHandle.replace(/^@/, '').trim();
   if (body.xHandle        !== undefined) data.xHandle        = body.xHandle.replace(/^@/, '').trim();
+  if (body.isOG           !== undefined) data.isOG           = body.isOG;
+  if (body.isGenesis      !== undefined) data.isGenesis      = body.isGenesis;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
@@ -48,5 +52,7 @@ export async function PATCH(
     discordHandle:  badge.discordHandle,
     telegramHandle: badge.telegramHandle,
     xHandle:        badge.xHandle,
+    isOG:           badge.isOG,
+    isGenesis:      badge.isGenesis,
   });
 }

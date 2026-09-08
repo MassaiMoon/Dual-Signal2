@@ -14,8 +14,9 @@ interface BadgeRow {
   discordHandle:  string;
   telegramHandle: string;
   xHandle:        string;
-  isOG:           boolean;
-  createdAt:      string;
+  isOG:       boolean;
+  isGenesis:  boolean;
+  createdAt:  string;
   xSignalLevel:    number;
   telegramLevel:   number;
   governanceLevel: number;
@@ -362,7 +363,7 @@ export default function AdminPage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['Member', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'OG', 'View'].map(h => (
+                    {['Member', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'GEN', 'OG', 'View'].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -431,7 +432,38 @@ export default function AdminPage() {
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.telegramLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.governanceLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.discordLevel}</td>
-                      <td style={{ ...styles.td, textAlign: 'center' }}>{b.isOG ? '⬡' : ''}</td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <button
+                          title="Toggle Genesis"
+                          onClick={async () => {
+                            await fetch(`/api/admin/badges/${b.id}`, {
+                              method: 'PATCH',
+                              headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+                              body: JSON.stringify({ isGenesis: !b.isGenesis }),
+                            });
+                            load(token);
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: b.isGenesis ? 1 : 0.2 }}
+                        >
+                          ◆
+                        </button>
+                      </td>
+                      <td style={{ ...styles.td, textAlign: 'center' }}>
+                        <button
+                          title="Toggle OG"
+                          onClick={async () => {
+                            await fetch(`/api/admin/badges/${b.id}`, {
+                              method: 'PATCH',
+                              headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+                              body: JSON.stringify({ isOG: !b.isOG }),
+                            });
+                            load(token);
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: b.isOG ? 1 : 0.2 }}
+                        >
+                          ⬡
+                        </button>
+                      </td>
                       <td style={styles.td}>
                         <a
                           href={`/badge/${b.dualObjectId}`}
@@ -445,7 +477,7 @@ export default function AdminPage() {
                     </tr>
                   ))}
                   {d.badges.length === 0 && (
-                    <tr><td colSpan={11} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
+                    <tr><td colSpan={12} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
                   )}
                 </tbody>
               </table>

@@ -44,6 +44,7 @@ export async function GET(
     discordLevel:    badge.discordLevel,
     governanceLevel: badge.governanceLevel,
     isOG:            badge.isOG,
+    isGenesis:       badge.isGenesis,
     walletAddress:   badge.walletAddress,
     username:        badge.user?.username ?? '',
     memberSince:     badge.memberSince,

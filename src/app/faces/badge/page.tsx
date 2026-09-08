@@ -33,7 +33,9 @@ const C = {
 
 const L = {
   tier:     { l: 10, t: 9, w: 42, h: 74 },
-  og:       { l: 41, t: 15.5, w: 10 },
+  // Genesis and OG prestige pins — bottom-left of tier art, in the two red-circle slots
+  genesis:  { l: 11, t: 64, w: 9.5 },
+  og:       { l: 25, t: 64, w: 9.5 },
   tierName: { l: 11, t: 73, w: 41 },
   wallet:   { l: 59.5, t: 24.5, w: 29, h: 6 },
   signal:   { l: 57.5, t: 35.5, w: 24, h: 8 },
@@ -51,7 +53,7 @@ const ACH = {
   l:  71,
   r:  4.5,
   h:  7.5,
-  cy: [57.5, 63.5, 69.5, 75.5] as const,
+  cy: [54.5, 60.5, 69.5, 75.5] as const,
   gap: '2%',
 } as const;
 
@@ -76,6 +78,7 @@ interface BadgeData {
   discordLevel:    number;
   governanceLevel: number;
   isOG:            boolean;
+  isGenesis:       boolean;
   walletAddress:   string;
   username:        string;
   memberSince:     string;
@@ -161,7 +164,15 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
         />
       </Slot>
 
-      {/* z=4 — OG prestige pin */}
+      {/* z=4 — Genesis prestige pin (left slot) */}
+      {data.isGenesis && (
+        <Slot cfg={L.genesis} debug={debug} debugColor="#f7c" style={{ zIndex: 4 }}>
+          <img src={specialAssets.GENESIS} alt="Genesis" draggable={false}
+            style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+        </Slot>
+      )}
+
+      {/* z=4 — OG prestige pin (right slot) */}
       {data.isOG && (
         <Slot cfg={L.og} debug={debug} debugColor="#fa0" style={{ zIndex: 4 }}>
           <img src={specialAssets.OG} alt="OG" draggable={false}
@@ -259,52 +270,52 @@ const MOCK_PROFILES: Record<string, BadgeData> = {
   initiate: {
     signalScore: 0, tier: 'INITIATE',
     xSignalLevel: 0, telegramLevel: 0, discordLevel: 0, governanceLevel: 0,
-    isOG: false, walletAddress: '', username: 'Preview', memberSince: '2025-01',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Preview', memberSince: '2025-01',
     xConnected: false, telegramConnected: false, discordConnected: false, governanceConnected: false,
   },
   explorer: {
     signalScore: 150, tier: 'EXPLORER',
     xSignalLevel: 1, telegramLevel: 1, discordLevel: 0, governanceLevel: 1,
-    isOG: false, walletAddress: '', username: 'Explorer', memberSince: '2025-03',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Explorer', memberSince: '2025-03',
     xConnected: true, telegramConnected: true, discordConnected: false, governanceConnected: true,
   },
   // Matches spec acceptance test: X=3, Telegram=2, Governance=1, Discord=4
   builder: {
     signalScore: 380, tier: 'BUILDER',
     xSignalLevel: 3, telegramLevel: 2, discordLevel: 4, governanceLevel: 1,
-    isOG: false, walletAddress: '', username: 'Builder', memberSince: '2025-04',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Builder', memberSince: '2025-04',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   stakeholder: {
     signalScore: 750, tier: 'STAKEHOLDER',
     xSignalLevel: 4, telegramLevel: 4, discordLevel: 4, governanceLevel: 4,
-    isOG: false, walletAddress: '', username: 'Stakeholder', memberSince: '2025-06',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Stakeholder', memberSince: '2025-06',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   genesis: {
     signalScore: 920, tier: 'GENESIS',
     xSignalLevel: 5, telegramLevel: 4, discordLevel: 4, governanceLevel: 5,
-    isOG: true, walletAddress: '', username: 'Genesis', memberSince: '2024-11',
+    isOG: true, isGenesis: true, walletAddress: '', username: 'Genesis', memberSince: '2024-11',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   legend: {
     signalScore: 1000, tier: 'LEGEND',
     xSignalLevel: 5, telegramLevel: 5, discordLevel: 5, governanceLevel: 5,
-    isOG: true, walletAddress: '', username: 'Legend', memberSince: '2024-09',
+    isOG: true, isGenesis: true, walletAddress: '', username: 'Legend', memberSince: '2024-09',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   // Mixed state: X=5, Telegram=3, Governance=2, Discord=4
   mixed: {
     signalScore: 640, tier: 'STAKEHOLDER',
     xSignalLevel: 5, telegramLevel: 3, discordLevel: 4, governanceLevel: 2,
-    isOG: false, walletAddress: '', username: 'Mixed', memberSince: '2025-05',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Mixed', memberSince: '2025-05',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
   // Connected at level 0 across all tracks (connected-but-not-yet-earned state)
   connected0: {
     signalScore: 0, tier: 'INITIATE',
     xSignalLevel: 0, telegramLevel: 0, discordLevel: 0, governanceLevel: 0,
-    isOG: false, walletAddress: '', username: 'Connected', memberSince: '2026-09',
+    isOG: false, isGenesis: false, walletAddress: '', username: 'Connected', memberSince: '2026-09',
     xConnected: true, telegramConnected: true, discordConnected: true, governanceConnected: true,
   },
 };

@@ -101,7 +101,8 @@ model Badge {
   governanceActivityPoints Int @default(0) @map("governance_activity_points")
 
   // Special status
-  isOG Boolean @default(false) @map("is_og")
+  isOG      Boolean @default(false) @map("is_og")
+  isGenesis Boolean @default(false) @map("is_genesis")
 
   // Display / identity fields
   walletAddress  String @default("") @map("wallet_address")
