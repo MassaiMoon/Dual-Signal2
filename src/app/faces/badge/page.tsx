@@ -35,7 +35,7 @@ const L = {
   tier:     { l: 10, t: 9, w: 42, h: 74 },
   // Genesis and OG prestige pins — bottom-left of tier art, in the two red-circle slots
   genesis:  { l: 11, t: 64, w: 9.5 },
-  og:       { l: 25, t: 64, w: 9.5 },
+  og:       { l: 50, t: 66, w: 9.5 },
   tierName: { l: 11, t: 73, w: 41 },
   wallet:   { l: 59.5, t: 24.5, w: 29, h: 6 },
   signal:   { l: 57.5, t: 35.5, w: 24, h: 8 },
@@ -53,7 +53,7 @@ const ACH = {
   l:  71,
   r:  4.5,
   h:  7.5,
-  cy: [54.5, 60.5, 69.5, 75.5] as const,
+  cy: [56, 62.5, 69.5, 75.5] as const,
   gap: '2%',
 } as const;
 
