@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { achievementConfig } from '@/lib/config';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,10 +18,11 @@ interface BadgeRow {
   isOG:       boolean;
   isGenesis:  boolean;
   createdAt:  string;
-  xSignalLevel:    number;
-  telegramLevel:   number;
-  governanceLevel: number;
-  discordLevel:    number;
+  xSignalLevel:             number;
+  telegramLevel:            number;
+  governanceLevel:          number;
+  governanceActivityPoints: number;
+  discordLevel:             number;
   user: {
     username:   string | null;
     memberAuth: { email: string } | null;
@@ -45,6 +47,17 @@ interface UpdateRow {
   attempts:  number;
   createdAt: string;
   badge:     { walletAddress: string; dualObjectId: string };
+}
+
+interface GovActivity {
+  id:           string;
+  activityType: string;
+  pointsAwarded: number;
+  occurredAt:   string;
+  topicUrl:     string;
+  source:       string;
+  status:       string;
+  adminNote:    string | null;
 }
 
 interface DashboardData {
@@ -132,10 +145,19 @@ export default function AdminPage() {
   const [updId,     setUpdId]     = useState('');
   const [updX,      setUpdX]      = useState('');
   const [updTg,     setUpdTg]     = useState('');
-  const [updGov,    setUpdGov]    = useState('');
   const [updDc,     setUpdDc]     = useState('');
   const [updating,  setUpdating]  = useState(false);
   const [updResult, setUpdResult] = useState('');
+
+  // Governance activity panel state
+  const [govEvidence,        setGovEvidence]        = useState<GovActivity[] | null>(null);
+  const [govEvidenceLoading, setGovEvidenceLoading] = useState(false);
+  const [govActType,         setGovActType]         = useState('');
+  const [govTopicUrl,        setGovTopicUrl]        = useState('');
+  const [govDate,            setGovDate]            = useState('');
+  const [govNote,            setGovNote]            = useState('');
+  const [govSubmitting,      setGovSubmitting]      = useState(false);
+  const [govResult,          setGovResult]          = useState('');
 
   // Restore token from sessionStorage
   useEffect(() => {
@@ -180,6 +202,82 @@ export default function AdminPage() {
     setTimeout(() => { setToasting(''); load(token); }, 3000);
   }
 
+  // ── Governance helpers ────────────────────────────────────────────────────
+
+  // Derive the current member's badge from the updId lookup field
+  const govBadge = data?.badges?.find(b => {
+    const q = updId.trim().toLowerCase();
+    return (b.user?.username ?? '').toLowerCase() === q || b.dualObjectId === updId.trim();
+  }) ?? null;
+
+  async function fetchGovEvidence(badgeId: string) {
+    setGovEvidenceLoading(true);
+    try {
+      const res = await fetch(`/api/admin/governance/evidence/${badgeId}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setGovEvidence((d.activities ?? []).filter((a: GovActivity) => a.status !== 'DELETED'));
+      }
+    } catch { /* ignore */ }
+    finally { setGovEvidenceLoading(false); }
+  }
+
+  async function handleAddGovActivity() {
+    if (!govBadge || !govActType || !govTopicUrl.trim()) return;
+    setGovSubmitting(true);
+    setGovResult('');
+    try {
+      const res = await fetch('/api/admin/governance/activity', {
+        method:  'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          badgeId:      govBadge.id,
+          activityType: govActType,
+          topicUrl:     govTopicUrl.trim(),
+          occurredAt:   govDate ? new Date(govDate).toISOString() : undefined,
+          adminNote:    govNote.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setGovResult(`Error: ${json.error}`); return; }
+      const pts = json.pointsAwarded ?? 0;
+      setGovResult(`✓ +${pts} pts · Total: ${json.totalPoints} pts · Level ${json.governanceLevel} · SIGNAL: ${json.signalScore}`);
+      setGovActType(''); setGovTopicUrl(''); setGovDate(''); setGovNote('');
+      await fetchGovEvidence(govBadge.id);
+      load(token);
+    } catch (e) { setGovResult(`Error: ${e}`); }
+    finally { setGovSubmitting(false); }
+  }
+
+  async function handleDeleteGovActivity(activityId: string) {
+    if (!govBadge) return;
+    setGovResult('');
+    try {
+      const res = await fetch(`/api/admin/governance/activity/${activityId}`, {
+        method:  'DELETE',
+        headers: { authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) { setGovResult(`Error: ${json.error}`); return; }
+      setGovResult(`Voided. Total: ${json.totalPoints} pts · Level ${json.governanceLevel} · SIGNAL: ${json.signalScore}`);
+      await fetchGovEvidence(govBadge.id);
+      load(token);
+    } catch (e) { setGovResult(`Error: ${e}`); }
+  }
+
+  // Auto-fetch evidence when the identified badge changes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!govBadge || !token || !authed) { setGovEvidence(null); return; }
+    void fetchGovEvidence(govBadge.id);
+  // fetchGovEvidence is stable per render; govBadge.id and authed are the real triggers
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [govBadge?.id, authed]);
+
+  // ── Score update ──────────────────────────────────────────────────────────
+
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault();
     setUpdating(true);
@@ -193,10 +291,9 @@ export default function AdminPage() {
           ? { dualObjectId: id }
           : { username: id };
 
-      if (updX   !== '') body.xPublicViews       = Number(updX);
-      if (updTg  !== '') body.telegramActiveDays  = Number(updTg);
-      if (updGov !== '') body.governanceVotes     = Number(updGov);
-      if (updDc  !== '') body.discordActiveDays   = Number(updDc);
+      if (updX  !== '') body.xPublicViews      = Number(updX);
+      if (updTg !== '') body.telegramActiveDays = Number(updTg);
+      if (updDc !== '') body.discordActiveDays  = Number(updDc);
 
       const res = await fetch('/api/admin/update-score', {
         method: 'POST',
@@ -211,7 +308,7 @@ export default function AdminPage() {
           ? 'No change — score already matches.'
           : `Updated → ${tier} · ${signalScore} SIGNAL${dualUpdateQueued ? ' · DUAL write queued' : ''}`,
       );
-      setUpdId(''); setUpdX(''); setUpdTg(''); setUpdGov(''); setUpdDc('');
+      setUpdId(''); setUpdX(''); setUpdTg(''); setUpdDc('');
       setTimeout(() => { setUpdResult(''); load(token); }, 3500);
     } catch (e) { setUpdResult(`Error: ${e}`); }
     finally { setUpdating(false); }
@@ -662,15 +759,6 @@ export default function AdminPage() {
                 value={updTg}
                 onChange={e => setUpdTg(e.target.value)}
               />
-              <label style={styles.label}>Governance Votes</label>
-              <input
-                style={styles.input}
-                type="number"
-                min={0}
-                placeholder="e.g. 5"
-                value={updGov}
-                onChange={e => setUpdGov(e.target.value)}
-              />
               <label style={styles.label}>Discord Active Days</label>
               <input
                 style={styles.input}
@@ -696,6 +784,141 @@ export default function AdminPage() {
               </button>
             </form>
           )}
+
+          {/* Governance Activity Panel — shown inside Update Score tab when member is identified */}
+          {rightPanel === 'update' && govBadge && (() => {
+            const govSignalPts = achievementConfig.governance[govBadge.governanceLevel - 1]?.points ?? 0;
+            const GOV_LABEL: Record<string, string> = {
+              POLL_PARTICIPATION: 'Poll/Vote',
+              COMMENT:            'Comment',
+              TOPIC_CREATED:      'Discussion',
+              FORMAL_PROPOSAL:    'Proposal',
+            };
+            return (
+              <div style={{ marginTop: 16, borderTop: '1px solid rgba(94,211,234,0.1)', paddingTop: 16 }}>
+                <div style={{ ...styles.label, color: '#5ED3EA', marginBottom: 10 }}>
+                  Governance — {govBadge.user?.username ?? govBadge.dualObjectId.slice(0, 8)}
+                </div>
+
+                {/* Stats row */}
+                <div style={{ display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, color: '#A0C8D8' }}>
+                  <span>Activity Pts: <strong style={{ color: '#D4E8F0' }}>{govBadge.governanceActivityPoints}</strong></span>
+                  <span>Signal: <strong style={{ color: '#D4E8F0' }}>{govSignalPts} / 250</strong></span>
+                  <span>Level: <strong style={{ color: '#D4E8F0' }}>{govBadge.governanceLevel}</strong></span>
+                </div>
+
+                {/* Evidence table */}
+                {govEvidenceLoading && (
+                  <div style={{ fontSize: 11, color: '#3A6070', marginBottom: 8 }}>Loading evidence…</div>
+                )}
+                {govEvidence && govEvidence.length > 0 && (
+                  <div style={{ overflowX: 'auto', marginBottom: 12 }}>
+                    <table style={{ ...styles.table, fontSize: 11 }}>
+                      <thead>
+                        <tr>
+                          {['Date', 'Type', 'Topic', 'Pts', ''].map(h => (
+                            <th key={h} style={{ ...styles.th, fontSize: 9, padding: '6px 8px' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {govEvidence.map(a => (
+                          <tr key={a.id} style={styles.tr}>
+                            <td style={{ ...styles.td, padding: '6px 8px', fontSize: 11, whiteSpace: 'nowrap' }}>
+                              {new Date(a.occurredAt).toLocaleDateString()}
+                            </td>
+                            <td style={{ ...styles.td, padding: '6px 8px', fontSize: 11 }}>
+                              {GOV_LABEL[a.activityType] ?? a.activityType}
+                            </td>
+                            <td style={{ ...styles.td, padding: '6px 8px', fontSize: 11 }}>
+                              {a.topicUrl ? (
+                                <a href={a.topicUrl} target="_blank" rel="noreferrer"
+                                  style={{ color: '#5ED3EA', textDecoration: 'none' }}>link ↗</a>
+                              ) : '—'}
+                            </td>
+                            <td style={{ ...styles.td, padding: '6px 8px', fontSize: 11 }}>
+                              +{a.pointsAwarded}
+                            </td>
+                            <td style={{ ...styles.td, padding: '4px 6px' }}>
+                              {a.source === 'MANUAL_ADMIN' && (
+                                <button
+                                  onClick={() => handleDeleteGovActivity(a.id)}
+                                  title="Void this evidence item"
+                                  style={{
+                                    background: 'transparent',
+                                    border:     '1px solid rgba(248,113,113,0.3)',
+                                    borderRadius: 4,
+                                    color:      '#F87171',
+                                    cursor:     'pointer',
+                                    fontSize:   10,
+                                    padding:    '1px 5px',
+                                  }}
+                                >×</button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {govEvidence?.length === 0 && !govEvidenceLoading && (
+                  <div style={{ fontSize: 11, color: '#3A6070', marginBottom: 10 }}>No governance evidence yet.</div>
+                )}
+
+                {/* Add Activity form */}
+                <div style={{ ...styles.label, marginBottom: 8 }}>+ Add Governance Activity</div>
+                <select
+                  style={{ ...styles.input, marginBottom: 8, cursor: 'pointer' }}
+                  value={govActType}
+                  onChange={e => setGovActType(e.target.value)}
+                >
+                  <option value="">— Activity type —</option>
+                  <option value="POLL_PARTICIPATION">Poll / Vote Participation (+5)</option>
+                  <option value="COMMENT">Comment / Reply (auto: +3 first · +1 additional)</option>
+                  <option value="TOPIC_CREATED">Governance Discussion Created (+10)</option>
+                  <option value="FORMAL_PROPOSAL">Formal Governance Proposal (+20)</option>
+                </select>
+                <input
+                  style={{ ...styles.input, marginBottom: 8 }}
+                  placeholder="Topic / Proposal URL *"
+                  value={govTopicUrl}
+                  onChange={e => setGovTopicUrl(e.target.value)}
+                />
+                <input
+                  style={{ ...styles.input, marginBottom: 8 }}
+                  type="date"
+                  value={govDate}
+                  onChange={e => setGovDate(e.target.value)}
+                />
+                <input
+                  style={{ ...styles.input, marginBottom: 8 }}
+                  placeholder="Admin note (optional)"
+                  value={govNote}
+                  onChange={e => setGovNote(e.target.value)}
+                />
+                <button
+                  onClick={handleAddGovActivity}
+                  style={{ ...styles.btnPrimary, marginBottom: 0 }}
+                  disabled={govSubmitting || !govActType || !govTopicUrl.trim()}
+                >
+                  {govSubmitting ? 'Adding…' : 'Add Activity'}
+                </button>
+                {govResult && (
+                  <div style={{
+                    fontSize:   11,
+                    marginTop:  8,
+                    padding:    '6px 10px',
+                    borderRadius: 6,
+                    background: 'rgba(94,211,234,0.05)',
+                    color:      govResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
+                  }}>
+                    {govResult}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

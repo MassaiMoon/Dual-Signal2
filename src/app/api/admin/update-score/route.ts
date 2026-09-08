@@ -35,7 +35,7 @@ interface UpdateScoreBody {
   xQualifyingPosts?:   number;
   telegramActiveDays?: number;
   discordActiveDays?:  number;
-  governanceVotes?:    number;
+  // governanceVotes removed — governance is evidence-based via /api/admin/governance/activity
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { walletAddress, dualObjectId, username, xPublicViews, xQualifyingPosts, telegramActiveDays, discordActiveDays, governanceVotes } = body;
+  const { walletAddress, dualObjectId, username, xPublicViews, xQualifyingPosts, telegramActiveDays, discordActiveDays } = body;
 
   if (!walletAddress && !dualObjectId && !username) {
     return NextResponse.json({ error: 'Provide walletAddress, dualObjectId, or username' }, { status: 400 });
@@ -73,12 +73,12 @@ export async function POST(req: NextRequest) {
   const newPosts = xQualifyingPosts   ?? badge.xQualifyingPosts;
   const newTg    = telegramActiveDays ?? badge.telegramActiveDays;
   const newDc    = discordActiveDays  ?? badge.discordActiveDays;
-  const newGov   = governanceVotes    ?? badge.governanceVotes;
 
+  // Governance level is derived from evidence-based activity points — not settable here
   const newXLvl   = resolveXSignalLevel(newViews, newPosts);
   const newTgLvl  = resolveTelegramLevel(newTg);
   const newDcLvl  = resolveDiscordLevel(newDc);
-  const newGovLvl = resolveGovernanceLevel(newGov);
+  const newGovLvl = resolveGovernanceLevel(badge.governanceActivityPoints);
   const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
   const newTier   = calculateTier(newScore);
 
@@ -97,7 +97,6 @@ export async function POST(req: NextRequest) {
         xQualifyingPosts:   newPosts,
         telegramActiveDays: newTg,
         discordActiveDays:  newDc,
-        governanceVotes:    newGov,
         xSignalLevel:       newXLvl,
         telegramLevel:      newTgLvl,
         discordLevel:       newDcLvl,
@@ -140,11 +139,10 @@ export async function POST(req: NextRequest) {
       governance: newGovLvl,
     },
     rawCounters: {
-      xPublicViews: newViews,
-      xQualifyingPosts: newPosts,
+      xPublicViews:       newViews,
+      xQualifyingPosts:   newPosts,
       telegramActiveDays: newTg,
-      discordActiveDays: newDc,
-      governanceVotes: newGov,
+      discordActiveDays:  newDc,
     },
     dualUpdateQueued: stateChanged,
   });

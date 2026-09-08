@@ -7,7 +7,7 @@
  */
 
 import { db } from './db';
-import { achievementConfig, calculateTier } from './config';
+import { achievementConfig, calculateTier, GOVERNANCE_COMMENT_POINTS_CAP, GOVERNANCE_ACTIVITY_POINTS } from './config';
 import { EventStatus, UpdateStatus, type Badge, type Event } from '@prisma/client';
 
 // ─── Level resolvers ──────────────────────────────────────────────────────────
@@ -40,6 +40,12 @@ export function resolveDiscordLevel(activeDays: number): number {
     if (activeDays >= l.activeDays) lvl = l.level;
   }
   return lvl;
+}
+
+export function computeCommentPoints(existingTopicCommentPoints: number): 0 | 1 | 3 {
+  if (existingTopicCommentPoints >= GOVERNANCE_COMMENT_POINTS_CAP) return 0;
+  if (existingTopicCommentPoints === 0) return GOVERNANCE_ACTIVITY_POINTS.firstComment as 3;
+  return GOVERNANCE_ACTIVITY_POINTS.additionalComment as 1;
 }
 
 export function resolveGovernanceLevel(activityPoints: number): number {

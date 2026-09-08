@@ -35,10 +35,11 @@ export async function GET(req: NextRequest) {
           isOG:       true,
           isGenesis:  true,
           createdAt:  true,
-          xSignalLevel:    true,
-          telegramLevel:   true,
-          governanceLevel: true,
-          discordLevel:    true,
+          xSignalLevel:             true,
+          telegramLevel:            true,
+          governanceLevel:          true,
+          governanceActivityPoints: true,
+          discordLevel:             true,
           user: {
             select: {
               username:   true,

@@ -5,6 +5,7 @@ import {
   resolveDiscordLevel,
   resolveGovernanceLevel,
   computeSignalScore,
+  computeCommentPoints,
 } from '../rules-engine';
 import { calculateTier } from '../config';
 
@@ -161,6 +162,42 @@ describe('calculateTier', () => {
   it('boundary: 149 is still INITIATE', () => expect(calculateTier(149)).toBe('INITIATE'));
   it('boundary: 349 is still EXPLORER', () => expect(calculateTier(349)).toBe('EXPLORER'));
   it('boundary: 1000 is LEGEND', () => expect(calculateTier(1000)).toBe('LEGEND'));
+});
+
+// ─── Governance comment cap ───────────────────────────────────────────────────
+
+describe('computeCommentPoints', () => {
+  it('returns 3 (first comment) when no prior comment points in topic', () => {
+    expect(computeCommentPoints(0)).toBe(3);
+  });
+
+  it('returns 1 (additional comment) when topic has existing points but under cap', () => {
+    expect(computeCommentPoints(3)).toBe(1); // after first comment
+    expect(computeCommentPoints(4)).toBe(1); // after first + one additional
+  });
+
+  it('returns 0 when topic comment points are at cap (5)', () => {
+    expect(computeCommentPoints(5)).toBe(0);
+  });
+
+  it('returns 0 when topic comment points exceed cap', () => {
+    expect(computeCommentPoints(6)).toBe(0);
+    expect(computeCommentPoints(100)).toBe(0);
+  });
+
+  it('max comment scenario: first(+3) + additional(+1) + additional(+1) = 5, then capped', () => {
+    // First comment
+    const after1 = 0 + computeCommentPoints(0);   // 3
+    expect(after1).toBe(3);
+    // Second comment
+    const after2 = after1 + computeCommentPoints(after1);  // 3 + 1 = 4
+    expect(after2).toBe(4);
+    // Third comment
+    const after3 = after2 + computeCommentPoints(after2);  // 4 + 1 = 5
+    expect(after3).toBe(5);
+    // Fourth comment — capped
+    expect(computeCommentPoints(after3)).toBe(0);
+  });
 });
 
 // ─── End-to-end score scenarios ───────────────────────────────────────────────
