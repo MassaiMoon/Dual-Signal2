@@ -536,14 +536,16 @@ function AccountRow({
   label,
   placeholder,
   handle,
+  labelSuffix,
   onUpdated,
 }: {
-  provider:    string;
-  icon:        string;
-  label:       string;
-  placeholder: string;
-  handle:      string;
-  onUpdated:   (handle: string | null) => void;
+  provider:     string;
+  icon:         string;
+  label:        string;
+  placeholder:  string;
+  handle:       string;
+  labelSuffix?: React.ReactNode;
+  onUpdated:    (handle: string | null) => void;
 }) {
   const [editing,       setEditing]       = useState(false);
   const [currentHandle, setCurrentHandle] = useState(handle);
@@ -569,7 +571,10 @@ function AccountRow({
           />
         ) : (
           <div>
-            <p style={S.accountName}>{label}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <p style={{ ...S.accountName, marginBottom: 0 }}>{label}</p>
+              {labelSuffix}
+            </div>
             {currentHandle ? (
               <p style={S.accountHandle}>@{currentHandle}</p>
             ) : (
@@ -756,6 +761,18 @@ export default function MePage() {
       <header style={S.header}>
         <a href="/" style={S.logo}>DUAL <span style={S.logoSlash}>//</span> SIGNAL</a>
         <div style={S.headerRight}>
+          <span style={{
+            fontSize:      9,
+            fontWeight:    700,
+            letterSpacing: '0.18em',
+            color:         'rgba(94,211,234,0.45)',
+            textTransform: 'uppercase' as const,
+            border:        '1px solid rgba(94,211,234,0.15)',
+            borderRadius:  4,
+            padding:       '3px 8px',
+          }}>
+            Alpha
+          </span>
           <a href="/leaderboard" style={S.navLink}>Leaderboard</a>
           {badge && (
             <a href={`/badge/${badge.dualObjectId}`} target="_blank" rel="noreferrer" style={S.navLink}>
@@ -835,6 +852,7 @@ export default function MePage() {
             label="Discord"
             placeholder="username"
             handle={badge?.discordHandle ?? getHandle('DISCORD')}
+            labelSuffix={<span style={{ fontSize: 9, letterSpacing: '0.14em', color: 'rgba(94,211,234,0.35)', textTransform: 'uppercase' as const, fontWeight: 600 }}>Scoring Coming Soon</span>}
             onUpdated={val => {
               updateHandle('DISCORD', val);
               setData(prev => prev && badge ? { ...prev, badge: { ...prev.badge!, discordHandle: val ?? '' } } : prev);
@@ -852,7 +870,24 @@ export default function MePage() {
 
           {badge ? (
             <>
-              <div style={S.mintedBadge}>✓ Passport Minted</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, marginBottom: 16 }}>
+                <div style={S.mintedBadge}>✓ Passport Minted</div>
+                <div style={{
+                  display:    'inline-flex',
+                  alignItems: 'center',
+                  gap:        6,
+                  fontSize:   11,
+                  color:      C.cyan,
+                  background: 'rgba(94,211,234,0.06)',
+                  border:     '1px solid rgba(94,211,234,0.18)',
+                  borderRadius: 6,
+                  padding:    '3px 10px',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                }}>
+                  ACTIVE ON DUAL
+                </div>
+              </div>
 
               <p style={S.metaLabel}>Object ID</p>
               <p style={S.metaValue}>{badge.dualObjectId}</p>
@@ -867,6 +902,14 @@ export default function MePage() {
               <div style={S.passportLinks}>
                 <a href={`/badge/${badge.dualObjectId}`} style={S.viewPassportBtn}>
                   View Passport →
+                </a>
+                <a
+                  href={`https://explorer.dual.network/objects/${badge.dualObjectId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ ...S.viewPassportBtn, background: 'transparent', border: `1px solid ${C.border}`, color: C.textLabel }}
+                >
+                  View on DUAL →
                 </a>
               </div>
             </>

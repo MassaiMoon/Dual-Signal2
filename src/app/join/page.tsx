@@ -597,6 +597,16 @@ export default function JoinPage() {
       <header style={S.header}>
         <div style={S.logo}>DUAL <span style={S.logoSlash}>//</span> SIGNAL</div>
         <p style={S.tagline}>Community Identity Passport</p>
+        <p style={{
+          fontSize:      9,
+          letterSpacing: '0.22em',
+          color:         'rgba(94,211,234,0.35)',
+          textTransform: 'uppercase' as const,
+          margin:        '8px 0 0',
+          fontWeight:    700,
+        }}>
+          Public Alpha — Signal calculations evolving
+        </p>
       </header>
 
       <main style={S.main} className="join-main">
@@ -790,6 +800,9 @@ export default function JoinPage() {
                   <div style={S.communityLabel}>
                     <span style={S.communityIcon}>DC</span>
                     <span style={S.communityName}>Discord</span>
+                    <span style={{ fontSize: 9, letterSpacing: '0.16em', color: 'rgba(94,211,234,0.38)', textTransform: 'uppercase' as const, fontWeight: 700, marginLeft: 4 }}>
+                      Scoring Coming Soon
+                    </span>
                   </div>
                   <p style={S.communityDesc}>Track active days in the DUAL Discord.</p>
                   <input

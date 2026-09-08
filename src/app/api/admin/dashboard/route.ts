@@ -38,6 +38,13 @@ export async function GET(req: NextRequest) {
           telegramLevel:   true,
           governanceLevel: true,
           discordLevel:    true,
+          user: {
+            select: {
+              username:   true,
+              memberAuth: { select: { email: true } },
+              externalAccounts: { select: { requiresReview: true } },
+            },
+          },
         },
       }),
       db.event.count({ where: { status: EventStatus.PENDING } }),

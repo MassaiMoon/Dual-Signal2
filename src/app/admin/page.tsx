@@ -20,6 +20,11 @@ interface BadgeRow {
   telegramLevel:   number;
   governanceLevel: number;
   discordLevel:    number;
+  user: {
+    username:   string | null;
+    memberAuth: { email: string } | null;
+    externalAccounts: { requiresReview: boolean }[];
+  } | null;
 }
 
 interface EventRow {
@@ -357,7 +362,7 @@ export default function AdminPage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['Wallet / Username', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'OG', 'View'].map(h => (
+                    {['Member', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'OG', 'View'].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -366,9 +371,26 @@ export default function AdminPage() {
                   {d.badges.map(b => (
                     <tr key={b.id} style={styles.tr}>
                       <td style={styles.td}>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                          {short(b.walletAddress) !== '—' ? short(b.walletAddress) : '—'}
-                        </span>
+                        {b.user?.username && (
+                          <div style={{ fontSize: 12, color: '#5ED3EA', fontWeight: 600, marginBottom: 2 }}>
+                            {b.user.username}
+                          </div>
+                        )}
+                        {b.user?.memberAuth?.email && (
+                          <div style={{ fontSize: 11, color: '#4A7A8A', fontFamily: 'monospace' }}>
+                            {b.user.memberAuth.email}
+                          </div>
+                        )}
+                        {b.user?.externalAccounts.some(a => a.requiresReview) && (
+                          <div style={{ fontSize: 10, color: '#F7C873', marginTop: 2, letterSpacing: 1 }}>
+                            ⚠ REVIEW
+                          </div>
+                        )}
+                        {!b.user?.memberAuth && (
+                          <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#2A4050' }}>
+                            {short(b.walletAddress) !== '—' ? short(b.walletAddress) : 'no auth'}
+                          </span>
+                        )}
                       </td>
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
