@@ -22,6 +22,7 @@ interface BadgeRow {
   telegramLevel:            number;
   governanceLevel:          number;
   governanceActivityPoints: number;
+  discordActiveDays:        number;
   discordLevel:             number;
   user: {
     username:   string | null;
@@ -532,7 +533,7 @@ export default function AdminPage() {
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.xSignalLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.telegramLevel}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>{b.governanceLevel}</td>
-                      <td style={{ ...styles.td, textAlign: 'center' }}>{b.discordLevel}</td>
+                      <td style={{ ...styles.td, textAlign: 'center' }} title={`${b.discordActiveDays} active days`}>{b.discordLevel}{b.discordActiveDays > 0 ? <span style={{ fontSize: 9, color: '#4A7A8A', marginLeft: 2 }}>({b.discordActiveDays}d)</span> : null}</td>
                       <td style={{ ...styles.td, textAlign: 'center' }}>
                         <button
                           title="Toggle Genesis"

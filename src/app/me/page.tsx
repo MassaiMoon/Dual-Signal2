@@ -33,8 +33,9 @@ interface BadgeData {
   xSignalLevel:    number;
   telegramLevel:   number;
   governanceLevel: number;
-  discordLevel:    number;
-  isOG:            boolean;
+  discordLevel:      number;
+  discordActiveDays: number;
+  isOG:              boolean;
   createdAt:       string;
 }
 
@@ -852,7 +853,11 @@ export default function MePage() {
             label="Discord"
             placeholder="username"
             handle={badge?.discordHandle ?? getHandle('DISCORD')}
-            labelSuffix={<span style={{ fontSize: 9, letterSpacing: '0.14em', color: 'rgba(94,211,234,0.35)', textTransform: 'uppercase' as const, fontWeight: 600 }}>Scoring Coming Soon</span>}
+            labelSuffix={badge && badge.discordActiveDays > 0
+              ? <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#5ED3EA', textTransform: 'uppercase' as const, fontWeight: 600 }}>
+                  {badge.discordLevel > 0 ? `Lvl ${badge.discordLevel} · ` : ''}{badge.discordActiveDays} active day{badge.discordActiveDays !== 1 ? 's' : ''}
+                </span>
+              : undefined}
             onUpdated={val => {
               updateHandle('DISCORD', val);
               setData(prev => prev && badge ? { ...prev, badge: { ...prev.badge!, discordHandle: val ?? '' } } : prev);

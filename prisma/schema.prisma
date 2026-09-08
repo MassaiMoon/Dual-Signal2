@@ -183,11 +183,14 @@ model TelegramActiveDay {
 }
 
 model DiscordActiveDay {
-  id        String   @id @default(cuid())
-  badgeId   String   @map("badge_id")
-  badge     Badge    @relation(fields: [badgeId], references: [id])
-  day       DateTime @map("day") @db.Date
-  createdAt DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  badgeId       String   @map("badge_id")
+  badge         Badge    @relation(fields: [badgeId], references: [id])
+  day           DateTime @map("day") @db.Date
+  discordHandle String   @default("") @map("discord_handle")
+  guildId       String   @default("") @map("guild_id")
+  channelId     String   @default("") @map("channel_id")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@unique([badgeId, day])
   @@map("discord_active_days")

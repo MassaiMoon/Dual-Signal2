@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
           telegramLevel:            true,
           governanceLevel:          true,
           governanceActivityPoints: true,
+          discordActiveDays:        true,
           discordLevel:             true,
           user: {
             select: {

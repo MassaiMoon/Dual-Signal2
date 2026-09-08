@@ -1,20 +1,20 @@
 /**
- * Telegram Active-Day Recalculation
+ * Discord Active-Day Recalculation
  *
- * After any import that touches TelegramActiveDay rows, call this to
+ * After the bot records a new DiscordActiveDay row, call this to
  * recount days from evidence, resolve the new level/score/tier, persist
  * badge state, and enqueue a DUAL update if anything changed.
  *
- * Architecture: TelegramActiveDay rows are the source of truth.
- * Badge.telegramActiveDays is a cached counter derived from that table.
+ * Architecture: DiscordActiveDay rows are the source of truth.
+ * Badge.discordActiveDays is a cached counter derived from that table.
  */
 
 import { db } from './db';
 import { calculateTier } from './config';
 import {
-  resolveTelegramLevel,
-  resolveXSignalLevel,
   resolveDiscordLevel,
+  resolveXSignalLevel,
+  resolveTelegramLevel,
   resolveGovernanceLevel,
   computeSignalScore,
   buildRequestedState,
@@ -33,45 +33,41 @@ export interface RecalcResult {
 }
 
 /**
- * Recount TelegramActiveDay rows for a badge, update badge state, and
+ * Recount DiscordActiveDay rows for a badge, update badge state, and
  * queue a DUAL update if the level or score changed.
- *
- * Safe to call inside or outside an existing transaction — when tx is
- * provided it uses that client, otherwise opens its own.
  */
-export async function recalculateTelegramForBadge(
+export async function recalculateDiscordForBadge(
   badgeId: string,
 ): Promise<RecalcResult> {
   const badge = await db.badge.findUnique({ where: { id: badgeId } });
   if (!badge) throw new Error(`Badge not found: ${badgeId}`);
 
-  // Count unique active days from evidence table
-  const dayCount = await db.telegramActiveDay.count({ where: { badgeId } });
+  const dayCount = await db.discordActiveDay.count({ where: { badgeId } });
 
-  const newTgLvl  = resolveTelegramLevel(dayCount);
+  const newDcLvl  = resolveDiscordLevel(dayCount);
   const newXLvl   = resolveXSignalLevel(badge.xSignalPublicViews, badge.xQualifyingPosts);
-  const newDcLvl  = resolveDiscordLevel(badge.discordActiveDays);
+  const newTgLvl  = resolveTelegramLevel(badge.telegramActiveDays);
   const newGovLvl = resolveGovernanceLevel(badge.governanceActivityPoints);
   const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
   const newTier   = calculateTier(newScore);
 
   const stateChanged =
-    dayCount      !== badge.telegramActiveDays ||
-    newTgLvl      !== badge.telegramLevel      ||
-    newScore      !== badge.signalScore;
+    dayCount  !== badge.discordActiveDays ||
+    newDcLvl  !== badge.discordLevel      ||
+    newScore  !== badge.signalScore;
 
   if (stateChanged) {
     await db.$transaction(async (tx) => {
       await tx.badge.update({
         where: { id: badgeId },
         data: {
-          telegramActiveDays: dayCount,
-          telegramLevel:      newTgLvl,
-          xSignalLevel:       newXLvl,
-          discordLevel:       newDcLvl,
-          governanceLevel:    newGovLvl,
-          signalScore:        newScore,
-          cachedTier:         newTier as never,
+          discordActiveDays: dayCount,
+          discordLevel:      newDcLvl,
+          xSignalLevel:      newXLvl,
+          telegramLevel:     newTgLvl,
+          governanceLevel:   newGovLvl,
+          signalScore:       newScore,
+          cachedTier:        newTier as never,
         },
       });
 
@@ -84,34 +80,32 @@ export async function recalculateTelegramForBadge(
       });
     });
 
-    // Fire-and-forget DUAL sync if credentials are available
     if (process.env.DUAL_EMAIL && process.env.DUAL_PASSWORD) {
       runPendingUpdates().catch((err) =>
-        console.error('[tg-recalc] DUAL flush error:', err),
+        console.error('[dc-recalc] DUAL flush error:', err),
       );
     }
   } else {
-    // Counter might still be stale even if level/score didn't change
-    if (dayCount !== badge.telegramActiveDays) {
+    if (dayCount !== badge.discordActiveDays) {
       await db.badge.update({
         where: { id: badgeId },
-        data: { telegramActiveDays: dayCount },
+        data: { discordActiveDays: dayCount },
       });
     }
   }
 
   console.log(
-    `[tg-recalc] badge=${badgeId} days=${badge.telegramActiveDays}→${dayCount}` +
-    ` lvl=${badge.telegramLevel}→${newTgLvl} score=${badge.signalScore}→${newScore}` +
+    `[dc-recalc] badge=${badgeId} days=${badge.discordActiveDays}→${dayCount}` +
+    ` lvl=${badge.discordLevel}→${newDcLvl} score=${badge.signalScore}→${newScore}` +
     ` changed=${stateChanged}`,
   );
 
   return {
     badgeId,
-    previousDays:  badge.telegramActiveDays,
+    previousDays:  badge.discordActiveDays,
     newDays:       dayCount,
-    previousLevel: badge.telegramLevel,
-    newLevel:      newTgLvl,
+    previousLevel: badge.discordLevel,
+    newLevel:      newDcLvl,
     previousScore: badge.signalScore,
     newScore,
     stateChanged,
