@@ -51,7 +51,7 @@ const L = {
 
 const ACH = {
   l:  71,
-  r:  6,
+  r:  8,
   h:  7.5,
   cy: [56, 62.5, 69.5, 75.5] as const,
   gap: '2%',
@@ -166,7 +166,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
 
       {/* z=4 — Genesis prestige pin (left slot) */}
       {data.isGenesis && (
-        <Slot cfg={L.genesis} debug={debug} debugColor="#f7c" style={{ zIndex: 4 }}>
+        <Slot cfg={L.genesis} debug={debug} debugColor="#f7c" style={{ zIndex: 4, opacity: 0.8 }}>
           <img src={specialAssets.GENESIS} alt="" draggable={false}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </Slot>
@@ -174,7 +174,7 @@ function BadgeCard({ data, debug }: { data: BadgeData; debug: boolean }) {
 
       {/* z=4 — OG prestige pin (right slot) */}
       {data.isOG && (
-        <Slot cfg={L.og} debug={debug} debugColor="#fa0" style={{ zIndex: 4 }}>
+        <Slot cfg={L.og} debug={debug} debugColor="#fa0" style={{ zIndex: 4, opacity: 0.8 }}>
           <img src={specialAssets.OG} alt="" draggable={false}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </Slot>
