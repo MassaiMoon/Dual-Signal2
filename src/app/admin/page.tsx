@@ -123,6 +123,7 @@ export default function AdminPage() {
   const [mintTg,       setMintTg]       = useState('');
   const [mintDiscord,  setMintDiscord]  = useState('');
   const [mintOG,       setMintOG]       = useState(false);
+  const [mintGenesis,  setMintGenesis]  = useState(false);
   const [minting,      setMinting]      = useState(false);
   const [mintResult,   setMintResult]   = useState('');
 
@@ -230,12 +231,13 @@ export default function AdminPage() {
           telegramHandle: mintTg.trim(),
           discordHandle:  mintDiscord.trim(),
           isOG:           mintOG,
+          isGenesis:      mintGenesis,
         }),
       });
       const json = await res.json();
       if (!res.ok) { setMintResult(`Error: ${json.error}`); return; }
       setMintResult(`Minted! Object: ${json.dualObjectId}`);
-      setMintUsername(''); setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false);
+      setMintUsername(''); setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false); setMintGenesis(false);
       setTimeout(() => { setMintResult(''); load(token); }, 3000);
     } catch (e) { setMintResult(`Error: ${e}`); }
     finally { setMinting(false); }
@@ -615,11 +617,20 @@ export default function AdminPage() {
               <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
+                  checked={mintGenesis}
+                  onChange={e => setMintGenesis(e.target.checked)}
+                  style={{ accentColor: '#5ED3EA' }}
+                />
+                Genesis member
+              </label>
+              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
                   checked={mintOG}
                   onChange={e => setMintOG(e.target.checked)}
                   style={{ accentColor: '#5ED3EA' }}
                 />
-                Genesis OG member
+                OG member
               </label>
               {mintResult && (
                 <div style={{

@@ -25,6 +25,7 @@ interface MintRequest {
   telegramHandle?: string;
   discordHandle?:  string;
   isOG?:           boolean;
+  isGenesis?:      boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
     telegramHandle = '',
     discordHandle  = '',
     isOG           = false,
+    isGenesis      = false,
   } = body;
 
   if (!rawUsername && !rawWallet) {
@@ -140,6 +142,7 @@ export async function POST(req: NextRequest) {
         telegramHandle:  telegramHandle.replace(/^@/, ''),
         discordHandle:   discordHandle.replace(/^@/, ''),
         isOG,
+        isGenesis,
         signalScore:     0,
         cachedTier:      'INITIATE',
         xSignalLevel:    0,
