@@ -117,8 +117,9 @@ export default function AdminPage() {
   const [rightPanel, setRightPanel] = useState<'mint' | 'update'>('mint');
 
   // Mint form state
-  const [mintUsername, setMintUsername] = useState('');
-  const [mintXSig,     setMintXSig]     = useState(false);
+  const [mintUsername,    setMintUsername]    = useState('');
+  const [mintMemberSince, setMintMemberSince] = useState('');
+  const [mintXSig,        setMintXSig]        = useState(false);
   const [mintTgConn,   setMintTgConn]   = useState(false);
   const [mintGovConn,  setMintGovConn]  = useState(false);
   const [mintDcConn,   setMintDcConn]   = useState(false);
@@ -225,19 +226,20 @@ export default function AdminPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          username:   mintUsername.trim() || undefined,
-          xSignal:    mintXSig,
-          telegram:   mintTgConn,
-          governance: mintGovConn,
-          discord:    mintDcConn,
-          isOG:       mintOG,
-          isGenesis:  mintGenesis,
+          username:     mintUsername.trim() || undefined,
+          memberSince:  mintMemberSince.trim() || undefined,
+          xSignal:      mintXSig,
+          telegram:     mintTgConn,
+          governance:   mintGovConn,
+          discord:      mintDcConn,
+          isOG:         mintOG,
+          isGenesis:    mintGenesis,
         }),
       });
       const json = await res.json();
       if (!res.ok) { setMintResult(`Error: ${json.error}`); return; }
       setMintResult(`Minted! Object: ${json.dualObjectId}`);
-      setMintUsername(''); setMintXSig(false); setMintTgConn(false); setMintGovConn(false); setMintDcConn(false); setMintOG(false); setMintGenesis(false);
+      setMintUsername(''); setMintMemberSince(''); setMintXSig(false); setMintTgConn(false); setMintGovConn(false); setMintDcConn(false); setMintOG(false); setMintGenesis(false);
       setTimeout(() => { setMintResult(''); load(token); }, 3000);
     } catch (e) { setMintResult(`Error: ${e}`); }
     finally { setMinting(false); }
@@ -585,6 +587,13 @@ export default function AdminPage() {
                 placeholder="Username"
                 value={mintUsername}
                 onChange={e => setMintUsername(e.target.value)}
+              />
+              <label style={styles.label}>Member Since (optional)</label>
+              <input
+                style={styles.input}
+                placeholder="YYYY-MM (leave blank = today)"
+                value={mintMemberSince}
+                onChange={e => setMintMemberSince(e.target.value)}
               />
               {([
                 ['X Signal',    mintXSig,    setMintXSig],

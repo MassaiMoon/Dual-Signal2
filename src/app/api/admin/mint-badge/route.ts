@@ -19,13 +19,14 @@ export const dynamic = 'force-dynamic';
 const USERNAME_RE = /^[A-Za-z0-9_-]{3,24}$/;
 
 interface MintRequest {
-  username?:   string;
-  xSignal?:    boolean;
-  telegram?:   boolean;
-  governance?: boolean;
-  discord?:    boolean;
-  isOG?:       boolean;
-  isGenesis?:  boolean;
+  username?:    string;
+  memberSince?: string;
+  xSignal?:     boolean;
+  telegram?:    boolean;
+  governance?:  boolean;
+  discord?:     boolean;
+  isOG?:        boolean;
+  isGenesis?:   boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -43,7 +44,8 @@ export async function POST(req: NextRequest) {
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const {
-    username:   rawUsername,
+    username:    rawUsername,
+    memberSince: rawMemberSince,
     xSignal    = false,
     telegram   = false,
     governance = false,
@@ -80,7 +82,10 @@ export async function POST(req: NextRequest) {
   }
 
   const now         = new Date();
-  const memberSince = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const MEMBER_SINCE_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+  const memberSince = (rawMemberSince && MEMBER_SINCE_RE.test(rawMemberSince.trim()))
+    ? rawMemberSince.trim()
+    : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const displayName = username || 'Member';
 
   // ── Mint on DUAL ─────────────────────────────────────────────────────────────
