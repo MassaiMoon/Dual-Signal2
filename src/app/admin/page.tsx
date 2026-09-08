@@ -118,10 +118,10 @@ export default function AdminPage() {
 
   // Mint form state
   const [mintUsername, setMintUsername] = useState('');
-  const [mintWallet,   setMintWallet]   = useState('');
-  const [mintX,        setMintX]        = useState('');
-  const [mintTg,       setMintTg]       = useState('');
-  const [mintDiscord,  setMintDiscord]  = useState('');
+  const [mintXSig,     setMintXSig]     = useState(false);
+  const [mintTgConn,   setMintTgConn]   = useState(false);
+  const [mintGovConn,  setMintGovConn]  = useState(false);
+  const [mintDcConn,   setMintDcConn]   = useState(false);
   const [mintOG,       setMintOG]       = useState(false);
   const [mintGenesis,  setMintGenesis]  = useState(false);
   const [minting,      setMinting]      = useState(false);
@@ -225,19 +225,19 @@ export default function AdminPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          username:       mintUsername.trim() || undefined,
-          walletAddress:  mintWallet.trim()   || undefined,
-          xHandle:        mintX.trim(),
-          telegramHandle: mintTg.trim(),
-          discordHandle:  mintDiscord.trim(),
-          isOG:           mintOG,
-          isGenesis:      mintGenesis,
+          username:   mintUsername.trim() || undefined,
+          xSignal:    mintXSig,
+          telegram:   mintTgConn,
+          governance: mintGovConn,
+          discord:    mintDcConn,
+          isOG:       mintOG,
+          isGenesis:  mintGenesis,
         }),
       });
       const json = await res.json();
       if (!res.ok) { setMintResult(`Error: ${json.error}`); return; }
       setMintResult(`Minted! Object: ${json.dualObjectId}`);
-      setMintUsername(''); setMintWallet(''); setMintX(''); setMintTg(''); setMintDiscord(''); setMintOG(false); setMintGenesis(false);
+      setMintUsername(''); setMintXSig(false); setMintTgConn(false); setMintGovConn(false); setMintDcConn(false); setMintOG(false); setMintGenesis(false);
       setTimeout(() => { setMintResult(''); load(token); }, 3000);
     } catch (e) { setMintResult(`Error: ${e}`); }
     finally { setMinting(false); }
@@ -586,52 +586,24 @@ export default function AdminPage() {
                 value={mintUsername}
                 onChange={e => setMintUsername(e.target.value)}
               />
-              <label style={styles.label}>Wallet (optional)</label>
-              <input
-                style={styles.input}
-                placeholder="0x..."
-                value={mintWallet}
-                onChange={e => setMintWallet(e.target.value)}
-              />
-              <label style={styles.label}>𝕏 Handle</label>
-              <input
-                style={styles.input}
-                placeholder="@handle"
-                value={mintX}
-                onChange={e => setMintX(e.target.value)}
-              />
-              <label style={styles.label}>Telegram Handle</label>
-              <input
-                style={styles.input}
-                placeholder="@handle"
-                value={mintTg}
-                onChange={e => setMintTg(e.target.value)}
-              />
-              <label style={styles.label}>Discord Handle</label>
-              <input
-                style={styles.input}
-                placeholder="@handle"
-                value={mintDiscord}
-                onChange={e => setMintDiscord(e.target.value)}
-              />
-              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={mintGenesis}
-                  onChange={e => setMintGenesis(e.target.checked)}
-                  style={{ accentColor: '#5ED3EA' }}
-                />
-                Genesis member
-              </label>
-              <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={mintOG}
-                  onChange={e => setMintOG(e.target.checked)}
-                  style={{ accentColor: '#5ED3EA' }}
-                />
-                OG member
-              </label>
+              {([
+                ['X Signal',    mintXSig,    setMintXSig],
+                ['Telegram',    mintTgConn,  setMintTgConn],
+                ['Governance',  mintGovConn, setMintGovConn],
+                ['Discord',     mintDcConn,  setMintDcConn],
+                ['Genesis member', mintGenesis, setMintGenesis],
+                ['OG member',   mintOG,      setMintOG],
+              ] as [string, boolean, (v: boolean) => void][]).map(([label, val, set]) => (
+                <label key={label} style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={val}
+                    onChange={e => set(e.target.checked)}
+                    style={{ accentColor: '#5ED3EA' }}
+                  />
+                  {label}
+                </label>
+              ))}
               {mintResult && (
                 <div style={{
                   fontSize: 12,

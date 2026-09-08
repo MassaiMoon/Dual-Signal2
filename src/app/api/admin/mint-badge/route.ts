@@ -19,13 +19,13 @@ export const dynamic = 'force-dynamic';
 const USERNAME_RE = /^[A-Za-z0-9_-]{3,24}$/;
 
 interface MintRequest {
-  username?:       string;
-  walletAddress?:  string;
-  xHandle?:        string;
-  telegramHandle?: string;
-  discordHandle?:  string;
-  isOG?:           boolean;
-  isGenesis?:      boolean;
+  username?:   string;
+  xSignal?:    boolean;
+  telegram?:   boolean;
+  governance?: boolean;
+  discord?:    boolean;
+  isOG?:       boolean;
+  isGenesis?:  boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -43,21 +43,21 @@ export async function POST(req: NextRequest) {
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const {
-    username:       rawUsername,
-    walletAddress:  rawWallet = '',
-    xHandle        = '',
-    telegramHandle = '',
-    discordHandle  = '',
-    isOG           = false,
-    isGenesis      = false,
+    username:   rawUsername,
+    xSignal    = false,
+    telegram   = false,
+    governance = false,
+    discord    = false,
+    isOG       = false,
+    isGenesis  = false,
   } = body;
 
-  if (!rawUsername && !rawWallet) {
-    return NextResponse.json({ error: 'username or walletAddress is required' }, { status: 400 });
+  if (!rawUsername) {
+    return NextResponse.json({ error: 'username is required' }, { status: 400 });
   }
 
-  const username          = rawUsername?.trim() ?? '';
-  const walletAddress     = rawWallet.trim();
+  const username      = rawUsername.trim();
+  const walletAddress = '';
 
   if (username && !USERNAME_RE.test(username)) {
     return NextResponse.json({ error: 'Invalid username format' }, { status: 422 });
@@ -77,19 +77,11 @@ export async function POST(req: NextRequest) {
         );
       }
     }
-  } else if (walletAddress) {
-    const existingBadge = await db.badge.findFirst({ where: { walletAddress } });
-    if (existingBadge) {
-      return NextResponse.json(
-        { error: 'A Passport already exists for this wallet', badgeId: existingBadge.id },
-        { status: 409 },
-      );
-    }
   }
 
   const now         = new Date();
   const memberSince = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const displayName = username || (walletAddress ? `${walletAddress.slice(0, 6)}···${walletAddress.slice(-4)}` : 'Member');
+  const displayName = username || 'Member';
 
   // ── Mint on DUAL ─────────────────────────────────────────────────────────────
   let mintResult: Awaited<ReturnType<typeof ebus.mint>>;
@@ -99,12 +91,12 @@ export async function POST(req: NextRequest) {
       {
         signal_score:     '0',
         identity_tier:    'INITIATE',
-        x_signal_level:   '0',
-        telegram_level:   '0',
-        governance_level: '0',
-        discord_level:    '0',
+        x_signal_level:   xSignal    ? '1' : '0',
+        telegram_level:   telegram   ? '1' : '0',
+        governance_level: governance ? '1' : '0',
+        discord_level:    discord    ? '1' : '0',
         username:         username,
-        wallet_address:   walletAddress,
+        wallet_address:   '',
         member_since:     memberSince,
       },
       { name: `DUAL // SIGNAL — ${displayName}` },
@@ -126,9 +118,7 @@ export async function POST(req: NextRequest) {
   // ── Create DB records ─────────────────────────────────────────────────────────
   const { user, badge } = await db.$transaction(async (tx) => {
     const user = await tx.user.create({
-      data: username
-        ? { username, usernameNormalized: username.toLowerCase() }
-        : {},
+      data: { username, usernameNormalized: username.toLowerCase() },
     });
 
     const badge = await tx.badge.create({
@@ -136,19 +126,16 @@ export async function POST(req: NextRequest) {
         userId:          user.id,
         dualObjectId,
         dualTemplateId:  templateId,
-        walletAddress,
+        walletAddress:   '',
         memberSince,
-        xHandle:         xHandle.replace(/^@/, ''),
-        telegramHandle:  telegramHandle.replace(/^@/, ''),
-        discordHandle:   discordHandle.replace(/^@/, ''),
         isOG,
         isGenesis,
         signalScore:     0,
         cachedTier:      'INITIATE',
-        xSignalLevel:    0,
-        telegramLevel:   0,
-        governanceLevel: 0,
-        discordLevel:    0,
+        xSignalLevel:    xSignal    ? 1 : 0,
+        telegramLevel:   telegram   ? 1 : 0,
+        governanceLevel: governance ? 1 : 0,
+        discordLevel:    discord    ? 1 : 0,
       },
     });
 
