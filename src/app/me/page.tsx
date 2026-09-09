@@ -1139,7 +1139,7 @@ export default function MePage() {
           return (
             <div style={S.section}>
               <span style={S.sectionTitle}>How to Level Up</span>
-              <p style={{ fontSize: 12, color: C.textDim, marginBottom: 20, lineHeight: 1.65, marginTop: -8 }}>
+              <p style={{ fontSize: 12, color: '#7A9AAA', marginBottom: 20, lineHeight: 1.65, marginTop: -8 }}>
                 Each channel contributes up to 250 pts. Reach Level 5 in all four to maximize your Signal Score.
               </p>
 
@@ -1169,7 +1169,7 @@ export default function MePage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         <span style={{ fontSize: 12, fontWeight: 600, color: '#A8C8D8' }}>{ch.label}</span>
-                        <span style={{ fontSize: 10, color: C.textDim }}>
+                        <span style={{ fontSize: 10, color: '#6A8A9A' }}>
                           {ch.level > 0 ? `Level ${ch.level} / 5` : 'Level 0 / 5'}
                         </span>
                         {ch.level >= 5 && (
@@ -1200,7 +1200,7 @@ export default function MePage() {
                       <div style={{ fontSize: 15, fontWeight: 700, color: ch.level > 0 ? '#E8F4FC' : C.textDim, fontVariantNumeric: 'tabular-nums' }}>
                         {ch.level > 0 ? `+${ch.levels[ch.level - 1]?.points ?? 0}` : '—'}
                       </div>
-                      <div style={{ fontSize: 9, color: C.textDim, letterSpacing: '0.1em' }}>PTS</div>
+                      <div style={{ fontSize: 9, color: '#6A8A9A', letterSpacing: '0.1em' }}>PTS</div>
                     </div>
                   </div>
 
@@ -1211,7 +1211,7 @@ export default function MePage() {
                       paddingLeft:  12,
                       marginLeft:   42,
                       fontSize:     12,
-                      color:        '#8AABBB',
+                      color:        '#C8D8E8',
                       lineHeight:   1.65,
                     }}>
                       <span style={{ fontWeight: 600, color: ch.color }}>Next → </span>
