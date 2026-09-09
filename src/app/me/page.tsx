@@ -30,13 +30,27 @@ interface BadgeData {
   xHandle:         string;
   telegramHandle:  string;
   discordHandle:   string;
-  xSignalLevel:    number;
-  telegramLevel:   number;
-  governanceLevel: number;
-  discordLevel:      number;
-  discordActiveDays: number;
-  isOG:              boolean;
+  xSignalLevel:         number;
+  xQualifyingPosts:     number;
+  xSignalPublicViews:   number;
+  telegramLevel:        number;
+  telegramActiveDays:   number;
+  governanceLevel:      number;
+  governanceVotes:      number;
+  governanceActivityPoints: number;
+  discordLevel:         number;
+  discordActiveDays:    number;
+  isOG:                 boolean;
+  isGenesis:            boolean;
   createdAt:       string;
+}
+
+interface ActivityItem {
+  id:      string;
+  source:  'X' | 'TELEGRAM' | 'DISCORD' | 'GOV_ACTIVITY' | 'GOV_VOTE';
+  date:    string;
+  label:   string;
+  detail?: string;
 }
 
 interface MeData {
@@ -691,9 +705,58 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
+// ── Scoring config (mirrors src/lib/config.ts) ────────────────────────────────
+
+const X_LEVELS = [
+  { level: 1, name: 'FIRST_SIGNAL', points: 50  },
+  { level: 2, name: 'SPARK',        points: 100 },
+  { level: 3, name: 'PULSE',        points: 150 },
+  { level: 4, name: 'WAVE',         points: 200 },
+  { level: 5, name: 'IMPACT',       points: 250 },
+];
+const TG_LEVELS = [
+  { level: 1, name: 'FIRST_CONTACT', points: 50,  activeDays: 1   },
+  { level: 2, name: 'REGULAR',       points: 100, activeDays: 7   },
+  { level: 3, name: 'CONNECTED',     points: 150, activeDays: 30  },
+  { level: 4, name: 'CORE_MEMBER',   points: 200, activeDays: 90  },
+  { level: 5, name: 'PILLAR',        points: 250, activeDays: 180 },
+];
+const DC_LEVELS = TG_LEVELS;
+const GOV_LEVELS = [
+  { level: 1, name: 'FIRST_VOICE',  points: 50,  activityPoints: 10  },
+  { level: 2, name: 'CONTRIBUTOR',  points: 100, activityPoints: 30  },
+  { level: 3, name: 'PARTICIPANT',  points: 150, activityPoints: 75  },
+  { level: 4, name: 'GOVERNOR',     points: 200, activityPoints: 150 },
+  { level: 5, name: 'STEWARD',      points: 250, activityPoints: 300 },
+];
+
+const SOURCE_ICON: Record<string, string> = {
+  X:            '𝕏',
+  TELEGRAM:     'TG',
+  DISCORD:      'DC',
+  GOV_ACTIVITY: 'GOV',
+  GOV_VOTE:     'GOV',
+};
+const SOURCE_COLOR: Record<string, string> = {
+  X:            '#E8F4FC',
+  TELEGRAM:     '#5ED3EA',
+  DISCORD:      '#7B83EB',
+  GOV_ACTIVITY: '#F7C873',
+  GOV_VOTE:     '#F7C873',
+};
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
 export default function MePage() {
-  const [data,    setData]    = useState<MeData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data,       setData]       = useState<MeData | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [actLoading, setActLoading] = useState(false);
+  const [actExpanded] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -708,7 +771,21 @@ export default function MePage() {
     }
   }, []);
 
+  const loadActivity = useCallback(async () => {
+    setActLoading(true);
+    try {
+      const res = await fetch('/api/me/activity');
+      if (res.ok) {
+        const json = await res.json();
+        setActivities(json.activities ?? []);
+      }
+    } finally {
+      setActLoading(false);
+    }
+  }, []);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadActivity(); }, [loadActivity]);
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -820,6 +897,170 @@ export default function MePage() {
             </a>
           )}
         </div>
+
+        {/* Score Breakdown */}
+        {badge && (
+          <div style={S.section}>
+            <span style={S.sectionTitle}>How You Earned Points</span>
+
+            {[
+              {
+                key:   'x',
+                icon:  '𝕏',
+                label: 'X Signal',
+                level: badge.xSignalLevel,
+                pts:   X_LEVELS[badge.xSignalLevel - 1]?.points ?? 0,
+                name:  X_LEVELS[badge.xSignalLevel - 1]?.name,
+                metric: badge.xSignalLevel > 0
+                  ? `${badge.xQualifyingPosts} qualifying post${badge.xQualifyingPosts !== 1 ? 's' : ''} · ${Number(badge.xSignalPublicViews).toLocaleString()} views`
+                  : 'No qualifying posts yet',
+                nextName:  X_LEVELS[badge.xSignalLevel]?.name,
+                color: '#E8F4FC',
+              },
+              {
+                key:   'tg',
+                icon:  'TG',
+                label: 'Telegram',
+                level: badge.telegramLevel,
+                pts:   TG_LEVELS[badge.telegramLevel - 1]?.points ?? 0,
+                name:  TG_LEVELS[badge.telegramLevel - 1]?.name,
+                metric: badge.telegramActiveDays > 0
+                  ? `${badge.telegramActiveDays} active day${badge.telegramActiveDays !== 1 ? 's' : ''}`
+                  : 'No activity yet',
+                nextDays: TG_LEVELS[badge.telegramLevel]?.activeDays,
+                color: '#5ED3EA',
+              },
+              {
+                key:   'dc',
+                icon:  'DC',
+                label: 'Discord',
+                level: badge.discordLevel,
+                pts:   DC_LEVELS[badge.discordLevel - 1]?.points ?? 0,
+                name:  DC_LEVELS[badge.discordLevel - 1]?.name,
+                metric: badge.discordActiveDays > 0
+                  ? `${badge.discordActiveDays} active day${badge.discordActiveDays !== 1 ? 's' : ''}`
+                  : 'No activity yet',
+                nextDays: DC_LEVELS[badge.discordLevel]?.activeDays,
+                color: '#7B83EB',
+              },
+              {
+                key:   'gov',
+                icon:  'GOV',
+                label: 'Governance',
+                level: badge.governanceLevel,
+                pts:   GOV_LEVELS[badge.governanceLevel - 1]?.points ?? 0,
+                name:  GOV_LEVELS[badge.governanceLevel - 1]?.name,
+                metric: badge.governanceActivityPoints > 0
+                  ? `${badge.governanceActivityPoints} activity pts · ${badge.governanceVotes} vote${badge.governanceVotes !== 1 ? 's' : ''}`
+                  : 'No forum activity yet',
+                nextPts: GOV_LEVELS[badge.governanceLevel]?.activityPoints,
+                color: '#F7C873',
+              },
+            ].map(ch => (
+              <div key={ch.key} style={{
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'space-between',
+                padding:        '14px 0',
+                borderBottom:   `1px solid ${C.border}`,
+                gap:            12,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    background: 'rgba(94,211,234,0.06)',
+                    border: `1px solid ${C.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: ch.color,
+                    letterSpacing: '0.04em', flexShrink: 0,
+                  }}>{ch.icon}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#A8C8D8', marginBottom: 2 }}>
+                      {ch.label}
+                      {ch.level > 0 && (
+                        <span style={{ marginLeft: 8, fontSize: 10, letterSpacing: '0.12em', color: ch.color, fontWeight: 700 }}>
+                          Lvl {ch.level} · {ch.name}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>{ch.metric}</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: ch.level > 0 ? '#E8F4FC' : C.textDim, fontVariantNumeric: 'tabular-nums' }}>
+                    {ch.level > 0 ? `+${ch.pts}` : '—'}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.textDim }}>pts</div>
+                </div>
+              </div>
+            ))}
+
+            {/* OG / Genesis bonuses */}
+            {(badge.isOG || badge.isGenesis) && (
+              <div style={{ display: 'flex', gap: 12, paddingTop: 14 }}>
+                {badge.isOG && (
+                  <div style={{ fontSize: 11, color: '#F7C873', background: 'rgba(247,200,115,0.08)', border: '1px solid rgba(247,200,115,0.2)', borderRadius: 6, padding: '4px 10px', fontWeight: 600 }}>
+                    OG Bonus
+                  </div>
+                )}
+                {badge.isGenesis && (
+                  <div style={{ fontSize: 11, color: '#F7C873', background: 'rgba(247,200,115,0.08)', border: '1px solid rgba(247,200,115,0.2)', borderRadius: 6, padding: '4px 10px', fontWeight: 600 }}>
+                    Genesis Bonus
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Activity History */}
+        {badge && (
+          <div style={S.section}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <span style={{ ...S.sectionTitle, marginBottom: 0 }}>Activity History</span>
+            </div>
+
+            {actLoading && (
+              <p style={{ fontSize: 12, color: C.textDim, textAlign: 'center', padding: '16px 0' }}>Loading…</p>
+            )}
+
+            {!actLoading && actExpanded && activities.length === 0 && (
+              <p style={{ fontSize: 12, color: C.textDim, textAlign: 'center', padding: '16px 0' }}>No activity recorded yet.</p>
+            )}
+
+            {activities.length > 0 && (
+              <div>
+                {activities.map((a, i) => (
+                  <div key={a.id} style={{
+                    display:      'flex',
+                    alignItems:   'center',
+                    gap:          12,
+                    padding:      '10px 0',
+                    borderBottom: i < activities.length - 1 ? `1px solid ${C.border}` : 'none',
+                  }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                      background: 'rgba(94,211,234,0.04)', border: `1px solid ${C.border}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 8, fontWeight: 700, color: SOURCE_COLOR[a.source],
+                      letterSpacing: '0.04em',
+                    }}>
+                      {SOURCE_ICON[a.source]}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: '#A8C8D8', fontWeight: 500 }}>{a.label}</div>
+                      {a.detail && <div style={{ fontSize: 11, color: C.textMuted }}>{a.detail}</div>}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textDim, flexShrink: 0, textAlign: 'right' }}>
+                      {fmtDate(a.date)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        )}
 
         {/* Connected accounts */}
         <div style={S.section}>
