@@ -163,6 +163,21 @@ export const ebus = {
     ebus.execute({ transfer: { id: objectId, to: toDualWalletId } }),
 };
 
+// ─── Apple Wallet (pkpass) ────────────────────────────────────────────────────
+
+/**
+ * Fetches the raw pkpass binary for a DUAL Object.
+ * Returns the native fetch Response so the caller can proxy the binary stream.
+ * Uses the org-JWT auth flow — never exposes credentials to the browser.
+ * READ-ONLY: no mutations of any kind.
+ */
+export async function fetchPkpassResponse(objectId: string): Promise<Response> {
+  const token = await getJwt();
+  return fetch(`${BASE}/integrations/objects/${objectId}/pkpass`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 // ─── Webhooks ─────────────────────────────────────────────────────────────────
 
 export const webhooks = {

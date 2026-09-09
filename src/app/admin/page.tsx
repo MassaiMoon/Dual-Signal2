@@ -153,6 +153,38 @@ export default function AdminPage() {
   // Username rename state
   const [renameTarget,  setRenameTarget]  = useState<{ badgeId: string; currentUsername: string } | null>(null);
 
+  // Apple Wallet download state
+  const [walletLoading, setWalletLoading] = useState<string | null>(null); // badgeId currently downloading
+  const [walletError,   setWalletError]   = useState<Record<string, string>>({}); // badgeId → error
+
+  async function downloadAppleWallet(badgeId: string, username: string | null | undefined) {
+    setWalletLoading(badgeId);
+    setWalletError(prev => { const n = { ...prev }; delete n[badgeId]; return n; });
+    try {
+      const res = await fetch(`/api/admin/badges/${badgeId}/apple-wallet`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setWalletError(prev => ({ ...prev, [badgeId]: json.error ?? `HTTP ${res.status}` }));
+        return;
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `dual-signal-${(username ?? 'passport').replace(/[^A-Za-z0-9_-]/g, '') || 'passport'}.pkpass`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setWalletError(prev => ({ ...prev, [badgeId]: String(e) }));
+    } finally {
+      setWalletLoading(null);
+    }
+  }
+
   // Reset modal state
   const [resetTarget,   setResetTarget]   = useState<{ badgeId: string; username: string | null; email: string | null; dualObjectId: string; signalScore: number; tier: string } | null>(null);
   const [resetConfirmText, setResetConfirmText] = useState('');
@@ -712,7 +744,33 @@ export default function AdminPage() {
                           ↗
                         </a>
                       </td>
-                      <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                      <td style={{ ...styles.td, whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {b.dualObjectId && b.dualObjectId !== 'MOCK-OBJECT-ID' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <button
+                              title="Download Apple Wallet Pass (admin test)"
+                              disabled={walletLoading === b.id}
+                              onClick={() => downloadAppleWallet(b.id, b.user?.username)}
+                              style={{
+                                background:   'transparent',
+                                border:       '1px solid rgba(94,211,234,0.3)',
+                                borderRadius: 5,
+                                color:        walletLoading === b.id ? '#3A6070' : '#5ED3EA',
+                                cursor:       walletLoading === b.id ? 'wait' : 'pointer',
+                                fontSize:     10,
+                                letterSpacing: 1,
+                                padding:      '2px 7px',
+                              }}
+                            >
+                              {walletLoading === b.id ? '…' : '🍎 PASS'}
+                            </button>
+                            {walletError[b.id] && (
+                              <span style={{ color: '#F87171', fontSize: 9, maxWidth: 90, wordBreak: 'break-word' }}>
+                                {walletError[b.id]}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <button
                           title="Reset Alpha Member"
                           onClick={() => {
