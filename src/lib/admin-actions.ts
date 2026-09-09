@@ -142,7 +142,13 @@ export async function resetMember(
       console.log(`[admin-actions] Burned DUAL Object ${dualObjectId}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(`DUAL burn failed — reset aborted to prevent inconsistency. Error: ${msg}`);
+      // 404 "object not found" means DUAL Object is already gone — treat as burned
+      if (msg.includes('→ 404') && msg.toLowerCase().includes('object not found')) {
+        dualBurned = true;
+        console.log(`[admin-actions] DUAL Object ${dualObjectId} already absent (404) — treating as burned`);
+      } else {
+        throw new Error(`DUAL burn failed — reset aborted to prevent inconsistency. Error: ${msg}`);
+      }
     }
   }
 

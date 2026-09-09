@@ -347,4 +347,15 @@ describe('resetMember', () => {
     // Transaction must NOT have been called
     expect(mockDb.$transaction).not.toHaveBeenCalled();
   });
+
+  // 23. 404 "object not found" on burn is treated as already-burned (proceed)
+  it('23: burn 404 object-not-found proceeds as if burned', async () => {
+    setupReset();
+    mockEbus.execute.mockRejectedValue(
+      new Error('DUAL API POST /ebus/execute → 404: {"code":5,"message":"object not found"}'),
+    );
+    const result = await resetMember('badge-1', true);
+    expect(result.dualBurned).toBe(true);
+    expect(mockDb.$transaction).toHaveBeenCalled();
+  });
 });
