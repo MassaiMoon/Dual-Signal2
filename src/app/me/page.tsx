@@ -1062,6 +1062,168 @@ export default function MePage() {
           </div>
         )}
 
+        {/* ── How to Level Up ──────────────────────────────────────────── */}
+        {badge && (() => {
+          const channels = [
+            {
+              key:   'x',
+              icon:  '𝕏',
+              label: 'X Signal',
+              color: '#E8F4FC',
+              level: badge.xSignalLevel,
+              levels: X_LEVELS,
+              nextStep: (() => {
+                if (badge.xSignalLevel === 0)
+                  return 'Post on X mentioning DUAL or SIGNAL with relevant keywords. Your first qualifying post earns 50 pts and unlocks FIRST_SIGNAL.';
+                if (badge.xSignalLevel >= 5)
+                  return null;
+                const next = X_LEVELS[badge.xSignalLevel];
+                return `Keep posting qualifying X content to reach ${next.name} (Level ${next.level}) and earn ${next.points} pts.`;
+              })(),
+            },
+            {
+              key:   'tg',
+              icon:  'TG',
+              label: 'Telegram',
+              color: '#5ED3EA',
+              level: badge.telegramLevel,
+              levels: TG_LEVELS,
+              nextStep: (() => {
+                if (badge.telegramLevel === 0)
+                  return 'Send a message in the DUAL Telegram group. Just 1 active day earns your first 50 pts (FIRST_CONTACT).';
+                if (badge.telegramLevel >= 5)
+                  return null;
+                const next = TG_LEVELS[badge.telegramLevel];
+                const remaining = next.activeDays - badge.telegramActiveDays;
+                return `${remaining} more active day${remaining !== 1 ? 's' : ''} in the DUAL Telegram to reach Level ${next.level} (${next.name}) and earn ${next.points} pts. You have ${badge.telegramActiveDays} of ${next.activeDays} needed.`;
+              })(),
+            },
+            {
+              key:   'dc',
+              icon:  'DC',
+              label: 'Discord',
+              color: '#7B83EB',
+              level: badge.discordLevel,
+              levels: DC_LEVELS,
+              nextStep: (() => {
+                if (badge.discordLevel === 0)
+                  return 'Participate in the DUAL Discord server. Your first active day earns 50 pts (FIRST_CONTACT).';
+                if (badge.discordLevel >= 5)
+                  return null;
+                const next = DC_LEVELS[badge.discordLevel];
+                const remaining = next.activeDays - badge.discordActiveDays;
+                return `${remaining} more active day${remaining !== 1 ? 's' : ''} in DUAL Discord to reach Level ${next.level} (${next.name}) and earn ${next.points} pts. You have ${badge.discordActiveDays} of ${next.activeDays} needed.`;
+              })(),
+            },
+            {
+              key:   'gov',
+              icon:  'GOV',
+              label: 'Governance',
+              color: '#F7C873',
+              level: badge.governanceLevel,
+              levels: GOV_LEVELS,
+              nextStep: (() => {
+                if (badge.governanceLevel === 0)
+                  return 'Join the DUAL governance forum and comment on a topic or vote on a proposal. Just 10 activity points earns your first 50 pts (FIRST_VOICE).';
+                if (badge.governanceLevel >= 5)
+                  return null;
+                const next = GOV_LEVELS[badge.governanceLevel];
+                const remaining = next.activityPoints - badge.governanceActivityPoints;
+                return `${remaining} more governance activity point${remaining !== 1 ? 's' : ''} to reach Level ${next.level} (${next.name}) and earn ${next.points} pts. Post topics, comment on proposals, or vote to accumulate points.`;
+              })(),
+            },
+          ];
+
+          const allMaxed = channels.every(ch => ch.level >= 5);
+
+          return (
+            <div style={S.section}>
+              <span style={S.sectionTitle}>How to Level Up</span>
+              <p style={{ fontSize: 12, color: C.textDim, marginBottom: 20, lineHeight: 1.65, marginTop: -8 }}>
+                Each channel contributes up to 250 pts. Reach Level 5 in all four to maximize your Signal Score.
+              </p>
+
+              {allMaxed && (
+                <div style={{ fontSize: 13, color: C.green, padding: '12px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>✓</span> All channels at max level — your passport is fully powered.
+                </div>
+              )}
+
+              {channels.map((ch, ci) => (
+                <div key={ch.key} style={{
+                  paddingBottom: 18,
+                  marginBottom:  ci < channels.length - 1 ? 18 : 0,
+                  borderBottom:  ci < channels.length - 1 ? `1px solid ${C.border}` : 'none',
+                }}>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+                      background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 9, fontWeight: 700, color: ch.color, letterSpacing: '0.04em',
+                    }}>
+                      {ch.icon}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#A8C8D8' }}>{ch.label}</span>
+                        <span style={{ fontSize: 10, color: C.textDim }}>
+                          {ch.level > 0 ? `Level ${ch.level} / 5` : 'Level 0 / 5'}
+                        </span>
+                        {ch.level >= 5 && (
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', color: C.green,
+                            background: 'rgba(74,200,154,0.08)', border: '1px solid rgba(74,200,154,0.2)',
+                            borderRadius: 4, padding: '1px 6px' }}>MAX</span>
+                        )}
+                      </div>
+
+                      {/* 5-segment level bar */}
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {[1, 2, 3, 4, 5].map(l => (
+                          <div key={l} style={{
+                            flex: 1, height: 5, borderRadius: 3,
+                            background: l <= ch.level
+                              ? ch.color
+                              : 'rgba(94,211,234,0.07)',
+                            border: l <= ch.level
+                              ? 'none'
+                              : `1px solid ${C.border}`,
+                            transition: 'background 0.3s',
+                          }} />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: ch.level > 0 ? '#E8F4FC' : C.textDim, fontVariantNumeric: 'tabular-nums' }}>
+                        {ch.level > 0 ? `+${ch.levels[ch.level - 1]?.points ?? 0}` : '—'}
+                      </div>
+                      <div style={{ fontSize: 9, color: C.textDim, letterSpacing: '0.1em' }}>PTS</div>
+                    </div>
+                  </div>
+
+                  {/* Next step callout */}
+                  {ch.nextStep && (
+                    <div style={{
+                      borderLeft:   `2px solid ${ch.color}`,
+                      paddingLeft:  12,
+                      marginLeft:   42,
+                      fontSize:     12,
+                      color:        '#8AABBB',
+                      lineHeight:   1.65,
+                    }}>
+                      <span style={{ fontWeight: 600, color: ch.color }}>Next → </span>
+                      {ch.nextStep}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Connected accounts */}
         <div style={S.section}>
           <span style={S.sectionTitle}>Connected Accounts</span>
