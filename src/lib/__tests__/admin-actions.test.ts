@@ -335,7 +335,7 @@ describe('resetMember', () => {
     setupReset();
     await resetMember('badge-1', true);
     expect(mockEbus.execute).toHaveBeenCalledWith(
-      expect.objectContaining({ burn: { object_id: 'dual-obj-1' } }),
+      expect.objectContaining({ burn: { id: 'dual-obj-1' } }),
     );
   });
 

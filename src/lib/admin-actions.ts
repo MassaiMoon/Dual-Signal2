@@ -137,7 +137,7 @@ export async function resetMember(
 
   if (burnDualObject && dualObjectId && dualObjectId !== 'MOCK-OBJECT-ID') {
     try {
-      await ebus.execute({ burn: { object_id: dualObjectId } });
+      await ebus.execute({ burn: { id: dualObjectId } });
       dualBurned = true;
       console.log(`[admin-actions] Burned DUAL Object ${dualObjectId}`);
     } catch (err) {
