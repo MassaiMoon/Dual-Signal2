@@ -150,6 +150,40 @@ export default function AdminPage() {
   const [updating,  setUpdating]  = useState(false);
   const [updResult, setUpdResult] = useState('');
 
+  // Username rename state
+  const [renameTarget,  setRenameTarget]  = useState<{ badgeId: string; currentUsername: string } | null>(null);
+
+  // Reset modal state
+  const [resetTarget,   setResetTarget]   = useState<{ badgeId: string; username: string | null; email: string | null; dualObjectId: string; signalScore: number; tier: string } | null>(null);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetBurn,     setResetBurn]     = useState(false);
+  const [resetting,     setResetting]     = useState(false);
+  const [resetResult,   setResetResult]   = useState('');
+
+  async function handleReset() {
+    if (!resetTarget || resetConfirmText !== 'RESET') return;
+    setResetting(true);
+    setResetResult('');
+    try {
+      const res = await fetch(`/api/admin/badges/${resetTarget.badgeId}/reset`, {
+        method:  'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ confirmed: true, burnDualObject: resetBurn }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setResetResult(`Error: ${json.error}`); return; }
+      setResetResult(`✓ Reset complete. Old DUAL Object: ${json.oldDualObjectId}${json.dualBurned ? ' (burned)' : ' (preserved)'}`);
+      setTimeout(() => {
+        setResetTarget(null);
+        setResetConfirmText('');
+        setResetBurn(false);
+        setResetResult('');
+        load(token);
+      }, 2500);
+    } catch (e) { setResetResult(`Error: ${e}`); }
+    finally { setResetting(false); }
+  }
+
   // Governance activity panel state
   const [govEvidence,        setGovEvidence]        = useState<GovActivity[] | null>(null);
   const [govEvidenceLoading, setGovEvidenceLoading] = useState(false);
@@ -402,6 +436,104 @@ export default function AdminPage() {
         <div style={styles.toast}>{toasting}</div>
       )}
 
+      {/* Reset confirmation modal */}
+      {resetTarget && (
+        <div style={{
+          position:   'fixed', inset: 0,
+          background: 'rgba(0,6,12,0.88)',
+          display:    'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex:     200,
+        }}>
+          <div style={{
+            background:   '#00111E',
+            border:       '1px solid rgba(248,113,113,0.4)',
+            borderRadius: 14,
+            padding:      '32px 36px',
+            width:        420,
+            maxWidth:     '90vw',
+          }}>
+            <div style={{ fontSize: 13, letterSpacing: 3, color: '#F87171', textTransform: 'uppercase', marginBottom: 20 }}>
+              ⚠ Reset Alpha Member
+            </div>
+
+            <div style={{ fontSize: 13, color: '#A0C8D8', marginBottom: 16, lineHeight: 1.7 }}>
+              <div><span style={{ color: '#3A6070' }}>Username:</span> <strong style={{ color: '#D4E8F0' }}>{resetTarget.username ?? '—'}</strong></div>
+              <div><span style={{ color: '#3A6070' }}>Tier:</span> <strong style={{ color: '#D4E8F0' }}>{resetTarget.tier}</strong></div>
+              <div><span style={{ color: '#3A6070' }}>Signal:</span> <strong style={{ color: '#D4E8F0' }}>{resetTarget.signalScore}</strong></div>
+              <div><span style={{ color: '#3A6070' }}>DUAL Object:</span> <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#4A7A8A' }}>{resetTarget.dualObjectId}</span></div>
+            </div>
+
+            <div style={{
+              fontSize:     12,
+              color:        '#F87171',
+              background:   'rgba(248,113,113,0.05)',
+              border:       '1px solid rgba(248,113,113,0.15)',
+              borderRadius: 8,
+              padding:      '12px 14px',
+              marginBottom: 20,
+              lineHeight:   1.6,
+            }}>
+              This will remove this SIGNAL Alpha account and all its data. The same email address will be able to register again from zero and mint a new Passport.
+            </div>
+
+            <label style={{ ...styles.label, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 16 }}>
+              <input
+                type="checkbox"
+                checked={resetBurn}
+                onChange={e => setResetBurn(e.target.checked)}
+                style={{ accentColor: '#F87171' }}
+              />
+              Burn DUAL Passport (default: OFF — old Passport preserved as historical test object)
+            </label>
+
+            <div style={{ fontSize: 11, color: '#3A6070', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Type RESET to confirm
+            </div>
+            <input
+              style={{ ...styles.input, marginBottom: 14, borderColor: resetConfirmText === 'RESET' ? 'rgba(248,113,113,0.5)' : 'rgba(94,211,234,0.15)' }}
+              placeholder="RESET"
+              value={resetConfirmText}
+              onChange={e => setResetConfirmText(e.target.value)}
+              autoFocus
+            />
+
+            {resetResult && (
+              <div style={{
+                fontSize: 12, marginBottom: 12, padding: '8px 12px', borderRadius: 6,
+                background: 'rgba(94,211,234,0.05)',
+                color: resetResult.startsWith('Error') ? '#F87171' : '#5ED3EA',
+              }}>
+                {resetResult}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleReset}
+                disabled={resetting || resetConfirmText !== 'RESET'}
+                style={{
+                  ...styles.btnPrimary,
+                  flex:        1,
+                  borderColor: 'rgba(248,113,113,0.5)',
+                  color:       '#F87171',
+                  opacity:     resetConfirmText !== 'RESET' ? 0.4 : 1,
+                  cursor:      resetConfirmText !== 'RESET' ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {resetting ? 'Resetting…' : 'Confirm Reset'}
+              </button>
+              <button
+                onClick={() => { setResetTarget(null); setResetConfirmText(''); setResetBurn(false); setResetResult(''); }}
+                style={{ ...styles.btnGhost, flex: 1 }}
+                disabled={resetting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats row */}
       {d && (
         <div style={styles.statsRow}>
@@ -465,7 +597,7 @@ export default function AdminPage() {
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {['Member', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'GEN', 'OG', 'View'].map(h => (
+                    {['Member', 'Handles', 'Tier', 'Signal', 'Since', 'xS', 'TG', 'GOV', 'DC', 'GEN', 'OG', 'View', ''].map(h => (
                       <th key={h} style={styles.th}>{h}</th>
                     ))}
                   </tr>
@@ -474,13 +606,17 @@ export default function AdminPage() {
                   {d.badges.map(b => (
                     <tr key={b.id} style={styles.tr}>
                       <td style={styles.td}>
-                        {b.user?.username && (
-                          <div style={{ fontSize: 12, color: '#5ED3EA', fontWeight: 600, marginBottom: 2 }}>
-                            {b.user.username}
-                          </div>
-                        )}
+                        <UsernameEditor
+                          badgeId={b.id}
+                          username={b.user?.username ?? null}
+                          token={token}
+                          onSaved={(u) => setData(prev => prev ? {
+                            ...prev,
+                            badges: prev.badges.map(x => x.id === b.id ? { ...x, user: x.user ? { ...x.user, username: u } : x.user } : x),
+                          } : prev)}
+                        />
                         {b.user?.memberAuth?.email && (
-                          <div style={{ fontSize: 11, color: '#4A7A8A', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: 11, color: '#4A7A8A', fontFamily: 'monospace', marginTop: 2 }}>
                             {b.user.memberAuth.email}
                           </div>
                         )}
@@ -576,10 +712,40 @@ export default function AdminPage() {
                           ↗
                         </a>
                       </td>
+                      <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
+                        <button
+                          title="Reset Alpha Member"
+                          onClick={() => {
+                            setResetTarget({
+                              badgeId:     b.id,
+                              username:    b.user?.username ?? null,
+                              email:       b.user?.memberAuth?.email ?? null,
+                              dualObjectId: b.dualObjectId,
+                              signalScore: b.signalScore,
+                              tier:        b.cachedTier,
+                            });
+                            setResetConfirmText('');
+                            setResetBurn(false);
+                            setResetResult('');
+                          }}
+                          style={{
+                            background:   'transparent',
+                            border:       '1px solid rgba(248,113,113,0.25)',
+                            borderRadius: 5,
+                            color:        '#F87171',
+                            cursor:       'pointer',
+                            fontSize:     10,
+                            letterSpacing: 1,
+                            padding:      '2px 7px',
+                          }}
+                        >
+                          ⚠ RESET
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {d.badges.length === 0 && (
-                    <tr><td colSpan={12} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
+                    <tr><td colSpan={13} style={{ ...styles.td, color: '#3A6070', textAlign: 'center' }}>No badges yet</td></tr>
                   )}
                 </tbody>
               </table>
@@ -945,6 +1111,92 @@ function StatCard({ label, value, color, warn }: {
       <div style={{ fontSize: 10, letterSpacing: 2, color: '#3A6070', textTransform: 'uppercase', marginTop: 4 }}>
         {label}
       </div>
+    </div>
+  );
+}
+
+function UsernameEditor({
+  badgeId, username, token, onSaved,
+}: {
+  badgeId:  string;
+  username: string | null;
+  token:    string;
+  onSaved:  (newUsername: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(username ?? '');
+  const [saving,  setSaving]  = useState(false);
+  const [err,     setErr]     = useState('');
+  const [note,    setNote]    = useState('');
+
+  async function save() {
+    if (!draft.trim()) { setErr('Username required'); return; }
+    setSaving(true);
+    setErr('');
+    setNote('');
+    try {
+      const res = await fetch(`/api/admin/badges/${badgeId}/rename-username`, {
+        method:  'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ newUsername: draft.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setErr(json.error ?? 'Error'); return; }
+      onSaved(json.newUsername);
+      setNote(json.dualCustomUpdated ? '✓ DUAL custom updated' : '⚠ DUAL not synced');
+      setEditing(false);
+      setTimeout(() => setNote(''), 3000);
+    } catch (e) { setErr(String(e)); }
+    finally { setSaving(false); }
+  }
+
+  if (editing) {
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditing(false); setDraft(username ?? ''); setErr(''); } }}
+            style={{
+              width:      100,
+              fontSize:   12,
+              background: 'rgba(0,17,30,0.8)',
+              border:     '1px solid rgba(94,211,234,0.3)',
+              borderRadius: 4,
+              padding:    '2px 6px',
+              color:      '#D4E8F0',
+              outline:    'none',
+            }}
+          />
+          <button onClick={save} disabled={saving} style={{ background: 'none', border: 'none', color: '#5ED3EA', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+            {saving ? '…' : '✓'}
+          </button>
+          <button onClick={() => { setEditing(false); setDraft(username ?? ''); setErr(''); }} style={{ background: 'none', border: 'none', color: '#4A7A8A', cursor: 'pointer', fontSize: 13, padding: 0 }}>
+            ✕
+          </button>
+        </div>
+        {err && <div style={{ fontSize: 10, color: '#F87171', marginTop: 2 }}>{err}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div
+        onClick={() => { setDraft(username ?? ''); setEditing(true); }}
+        title="Click to edit username"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+      >
+        {username ? (
+          <span style={{ fontSize: 12, color: '#5ED3EA', fontWeight: 600 }}>{username}</span>
+        ) : (
+          <span style={{ fontSize: 11, color: '#2A4050', fontStyle: 'italic' }}>+ username</span>
+        )}
+        <span style={{ fontSize: 9, color: '#1E3A48' }}>✎</span>
+      </div>
+      {note && <div style={{ fontSize: 10, color: '#5ED3EA', marginTop: 1 }}>{note}</div>}
     </div>
   );
 }
