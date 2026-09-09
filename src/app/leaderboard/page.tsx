@@ -91,6 +91,7 @@ export default async function LeaderboardPage() {
       telegramLevel:   true,
       governanceLevel: true,
       discordLevel:    true,
+      user:            { select: { username: true } },
     },
   });
 
@@ -106,6 +107,27 @@ export default async function LeaderboardPage() {
 
   return (
     <main style={s.page}>
+
+      {/* Back to dashboard */}
+      <div style={{ marginBottom: 28 }}>
+        <Link href="/me" style={{
+          display:       'inline-flex',
+          alignItems:    'center',
+          gap:           6,
+          fontSize:      11,
+          fontWeight:    600,
+          letterSpacing: '0.12em',
+          color:         '#4A8A9A',
+          textDecoration: 'none',
+          textTransform: 'uppercase' as const,
+          background:    'rgba(94,211,234,0.04)',
+          border:        '1px solid rgba(94,211,234,0.1)',
+          borderRadius:  7,
+          padding:       '7px 14px',
+        }}>
+          ← Dashboard
+        </Link>
+      </div>
 
       {/* Header */}
       <div style={s.header}>
@@ -169,7 +191,9 @@ export default async function LeaderboardPage() {
                     {/* Identity */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={s.wallet}>{short(b.walletAddress)}</span>
+                        <span style={b.user?.username ? s.username : s.wallet}>
+                          {b.user?.username ?? short(b.walletAddress)}
+                        </span>
                         {b.isOG && <span style={s.ogPill}>OG</span>}
                         {b.memberSince && (
                           <span style={s.since}>since {b.memberSince}</span>
@@ -339,11 +363,16 @@ const s = {
     textAlign: 'center' as const,
     flexShrink: 0,
   },
-  wallet: {
-    fontFamily:  'monospace',
+  username: {
     fontSize:    14,
     color:       '#C0D8E4',
     fontWeight:  600,
+  },
+  wallet: {
+    fontFamily:  'monospace',
+    fontSize:    13,
+    color:       '#5A8A9A',
+    fontWeight:  500,
   },
   ogPill: {
     fontSize:    9,
