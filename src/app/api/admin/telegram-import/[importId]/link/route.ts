@@ -49,9 +49,15 @@ export async function POST(
     return NextResponse.json({ error: 'Identity is already matched — cannot re-link' }, { status: 409 });
   }
 
-  // Verify the target user exists and has a badge
-  const user = await db.user.findUnique({
-    where: { id: userId },
+  // Verify the target user exists and has a badge.
+  // Accept either User.id (cuid) or username (case-insensitive).
+  const user = await db.user.findFirst({
+    where: {
+      OR: [
+        { id: userId },
+        { usernameNormalized: userId.toLowerCase() },
+      ],
+    },
     include: { badge: { select: { id: true } } },
   });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

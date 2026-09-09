@@ -566,7 +566,7 @@ export default function TelegramImportPage() {
                                       style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                       <input
                                         style={{ ...S.input, width: 200, fontSize: 12, padding: '5px 8px' }}
-                                        placeholder="User ID (cuid…)"
+                                        placeholder="username or user ID"
                                         value={linkUserId}
                                         onChange={e => setLinkUserId(e.target.value)}
                                         required
