@@ -49,12 +49,41 @@ export default async function Home() {
         .ds-step-card:hover { border-color: rgba(94,211,234,0.16) !important; }
         .ds-ch-card:hover { border-color: rgba(94,211,234,0.16) !important; }
         .ds-tier:hover { border-color: rgba(94,211,234,0.16) !important; background: rgba(94,211,234,0.05) !important; }
+
+        @media (max-width: 768px) {
+          .ds-nav        { padding: 0 20px !important; }
+          .ds-nav-extra  { display: none !important; }
+          .ds-hero       { padding: 88px 20px 60px !important; }
+          .ds-h1         { font-size: 48px !important; }
+          .ds-sub        { font-size: 15px !important; }
+          .ds-ctas       { flex-direction: column !important; width: 100% !important; }
+          .ds-ctas a     { width: 100% !important; justify-content: center !important; }
+          .ds-stats      { gap: 24px !important; }
+          .ds-section    { padding: 0 20px !important; }
+          .ds-step-grid  { grid-template-columns: 1fr !important; }
+          .ds-ch-grid    { grid-template-columns: 1fr !important; }
+          .ds-tiers      { flex-wrap: wrap !important; }
+          .ds-tiers > *  { flex: 0 0 calc(33.33% - 4px) !important; min-width: 0 !important; }
+          .ds-cta-box    { padding: 48px 24px !important; }
+          .ds-footer     { padding: 20px !important; flex-direction: column !important; gap: 6px !important; }
+          .ds-sec        { padding: 64px 0 !important; }
+        }
+        @media (max-width: 480px) {
+          .ds-nav        { padding: 0 16px !important; }
+          .ds-hero       { padding: 80px 16px 48px !important; }
+          .ds-h1         { font-size: 38px !important; }
+          .ds-stats      { gap: 16px !important; flex-wrap: wrap !important; justify-content: center !important; }
+          .ds-section    { padding: 0 16px !important; }
+          .ds-tiers > *  { flex: 0 0 calc(50% - 3px) !important; }
+          .ds-cta-box    { padding: 40px 16px !important; }
+          .ds-footer     { padding: 16px !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: "'Inter','SF Pro Display',system-ui,sans-serif" }}>
 
         {/* ── Nav ── */}
-        <nav style={{
+        <nav className="ds-nav" style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
           background: 'rgba(4,14,26,0.88)',
           backdropFilter: 'blur(16px)',
@@ -68,8 +97,8 @@ export default async function Home() {
             DUAL <span style={{ color: C.cyan }}>//</span> SIGNAL
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(94,211,234,0.4)', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
-            <Link href="/leaderboard" className="ds-nav-link" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#3A5A6A', textDecoration: 'none' }}>Leaderboard</Link>
+            <span className="ds-nav-extra" style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(94,211,234,0.4)', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
+            <Link href="/leaderboard" className="ds-nav-link ds-nav-extra" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#3A5A6A', textDecoration: 'none' }}>Leaderboard</Link>
             <Link href="/login" className="ds-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', background: C.cyanDim, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 8, textDecoration: 'none', transition: 'opacity 0.15s' }}>
               Get Passport →
             </Link>
@@ -77,7 +106,7 @@ export default async function Home() {
         </nav>
 
         {/* ── Hero ── */}
-        <section style={{
+        <section className="ds-hero" style={{
           minHeight: '100vh',
           padding: '100px 48px 80px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -100,7 +129,7 @@ export default async function Home() {
               <span style={{ display: 'block', width: 28, height: 1, background: 'rgba(94,211,234,0.35)' }} />
             </div>
 
-            <h1 className="ds-h1" style={{ fontSize: 74, fontWeight: 900, lineHeight: 1.04, letterSpacing: '-0.03em', color: '#F0F8FC', maxWidth: 700, marginBottom: 22 }}>
+            <h1 className="ds-h1" style={{ fontSize: 74, fontWeight: 900, lineHeight: 1.04, letterSpacing: '-0.03em', color: '#F0F8FC', maxWidth: 700, marginBottom: 22, width: '100%' }}>
               Build Your<br />
               <span style={{ color: C.cyan }}>On-Chain Identity</span>
             </h1>
@@ -141,15 +170,15 @@ export default async function Home() {
         <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
         {/* ── How It Works ── */}
-        <section style={{ padding: '96px 0' }}>
-          <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
+        <section className="ds-sec" style={{ padding: '96px 0' }}>
+          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>How It Works</div>
               <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>Three steps to your Passport</h2>
               <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>Your identity is built from real community activity — not self-reported claims.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
+            <div className="ds-step-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
               {[
                 {
                   n: '01', title: 'Join with Email',
@@ -195,15 +224,15 @@ export default async function Home() {
         <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
         {/* ── Four Channels ── */}
-        <section style={{ padding: '96px 0' }}>
-          <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
+        <section className="ds-sec" style={{ padding: '96px 0' }}>
+          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>Four Channels</div>
               <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>Every dimension of community</h2>
               <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>SIGNAL is earned across four channels, each with five levels and up to 250 points.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+            <div className="ds-ch-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
               {[
                 { icon: '𝕏',   label: 'X Signal',   color: '#D0E8F4', desc: 'Post qualifying content mentioning DUAL or SIGNAL. Earn levels as your posts accumulate views — from first post to 1M+.' },
                 { icon: 'TG',  label: 'Telegram',   color: '#5ED3EA', desc: 'Stay active in the DUAL Telegram group. Progress from 1 active day to 180 days of regular participation.' },
@@ -231,15 +260,15 @@ export default async function Home() {
         <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
         {/* ── Tiers ── */}
-        <section style={{ padding: '96px 0' }}>
-          <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
+        <section className="ds-sec" style={{ padding: '96px 0' }}>
+          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>Six Tiers</div>
               <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>From Initiate to Legend</h2>
               <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>Your SIGNAL score places you in a tier. Each one marks a new level of community standing.</p>
             </div>
 
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className="ds-tiers" style={{ display: 'flex', gap: 6 }}>
               {[
                 { name: 'INITIATE',    range: '0–149',    color: '#4A7A8A', bg: 'transparent' },
                 { name: 'EXPLORER',    range: '150–349',  color: '#5ED3EA', bg: 'transparent' },
@@ -261,9 +290,9 @@ export default async function Home() {
         <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
 
         {/* ── CTA ── */}
-        <section style={{ padding: '96px 0 80px' }}>
-          <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
-            <div style={{
+        <section className="ds-sec" style={{ padding: '96px 0 80px' }}>
+          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
+            <div className="ds-cta-box" style={{
               background: `radial-gradient(ellipse 700px 300px at 50% 100%, rgba(14,180,208,0.05) 0%, transparent 70%), ${C.bgCard}`,
               border: `1px solid ${C.border}`,
               borderRadius: 24, padding: '72px 64px',
@@ -294,7 +323,7 @@ export default async function Home() {
         </section>
 
         {/* ── Footer ── */}
-        <footer style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '28px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <footer className="ds-footer" style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '28px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#1A2E3A' }}>
             DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
           </div>
