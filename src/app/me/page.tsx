@@ -639,7 +639,7 @@ export default function MePage() {
               My Passport
             </a>
           )}
-          <button onClick={logout} style={{ background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 7, padding: '7px 14px', color: C.textMuted, fontSize: 11, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
+          <button onClick={logout} style={{ background: 'transparent', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 8, padding: '8px 16px', color: '#3A5A6A', fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit', transition: 'border-color 0.15s' }}>
             Sign Out
           </button>
         </div>
@@ -974,12 +974,27 @@ export default function MePage() {
               <p style={{ fontSize: 13, color: C.cyan, fontWeight: 600, marginBottom: 16 }}>{data.username}</p>
             </>
           )}
-          <button onClick={logout} style={{ padding: '11px 20px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, fontSize: 11, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
+          <button onClick={logout} style={{ padding: '11px 20px', background: 'transparent', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 8, color: '#3A5A6A', fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
             Sign Out
           </button>
         </div>
 
       </div>
+
+      {/* ── Footer ── */}
+      <footer style={{
+        borderTop: `1px solid rgba(94,211,234,0.06)`,
+        padding: '24px 48px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#1A2E3A' }}>
+          DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
+        </span>
+        <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#12202C' }}>
+          DUAL Network · Chain 6301
+        </span>
+      </footer>
+
     </div>
   );
 }
