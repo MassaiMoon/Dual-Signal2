@@ -484,8 +484,8 @@ const card: React.CSSProperties = {
   marginBottom: 16,
 };
 const sectionTitle: React.CSSProperties = {
-  fontSize: 9, fontWeight: 700, letterSpacing: '0.22em',
-  color: C.textDim, textTransform: 'uppercase' as const,
+  fontSize: 9, fontWeight: 700, letterSpacing: '0.28em',
+  color: C.cyan, textTransform: 'uppercase' as const,
   marginBottom: 20, display: 'block',
 };
 const metaLabel: React.CSSProperties = {
@@ -608,7 +608,7 @@ export default function MePage() {
   ] : [];
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: "'Inter','SF Pro Display',system-ui,sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: `radial-gradient(ellipse 900px 500px at 50% 0%, rgba(14,180,208,0.05) 0%, transparent 60%), ${C.bg}`, color: C.text, fontFamily: "'Inter','SF Pro Display',system-ui,sans-serif" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
