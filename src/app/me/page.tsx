@@ -563,6 +563,18 @@ export default function MePage() {
         }
         @media (max-width: 640px) { .ds-sec { padding: 40px 16px; } }
         a.ds-btn:hover { opacity: 0.82; }
+        @media (max-width: 768px) {
+          .ds-nav { padding: 0 20px !important; }
+          .ds-nav-extra { display: none !important; }
+          .ds-hero-wrap { padding: 80px 20px 48px !important; }
+          .ds-score { font-size: 60px !important; }
+        }
+        @media (max-width: 480px) {
+          .ds-nav { padding: 0 16px !important; }
+          .ds-hero-wrap { padding: 64px 16px 40px !important; }
+          .ds-score { font-size: 48px !important; }
+          .ds-footer { padding: 16px !important; flex-direction: column !important; gap: 6px !important; }
+        }
       `}</style>
 
       {/* ── Nav ── */}

@@ -150,11 +150,25 @@ export default async function LeaderboardPage() {
           .lb-tracks { display: none !important; }
           .lb-score-col { min-width: 64px !important; }
           .lb-rank { width: 32px !important; }
+          .lb-nav { padding: 0 20px !important; }
+          .lb-nav-label { display: none !important; }
+          .lb-hero { padding: 72px 20px 40px !important; }
+          .lb-hero h1 { font-size: 36px !important; }
+          .lb-stats { gap: 8px !important; }
+          .lb-content { padding: 40px 20px 80px !important; }
+          .lb-footer { padding: 16px 20px !important; flex-direction: column !important; gap: 4px !important; }
+        }
+        @media (max-width: 480px) {
+          .lb-nav { padding: 0 16px !important; }
+          .lb-hero { padding: 64px 16px 36px !important; }
+          .lb-hero h1 { font-size: 28px !important; }
+          .lb-content { padding: 32px 16px 72px !important; }
+          .lb-footer { padding: 14px 16px !important; }
         }
       `}</style>
 
       {/* ── Fixed Nav ── */}
-      <nav style={{
+      <nav className="lb-nav" style={{
         position:       'fixed',
         top:            0,
         left:           0,
@@ -182,7 +196,7 @@ export default async function LeaderboardPage() {
           </span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span style={{
+          <span className="lb-nav-label" style={{
             fontSize:      9,
             fontWeight:    700,
             letterSpacing: '0.18em',
@@ -192,7 +206,7 @@ export default async function LeaderboardPage() {
             borderRadius:  4,
             padding:       '3px 8px',
           }}>ALPHA</span>
-          <span style={{
+          <span className="lb-nav-label" style={{
             fontSize:      11,
             fontWeight:    500,
             letterSpacing: '0.14em',
@@ -222,7 +236,7 @@ export default async function LeaderboardPage() {
       }}>
 
         {/* ── Hero ── */}
-        <div style={{
+        <div className="lb-hero" style={{
           background: 'radial-gradient(ellipse 1200px 600px at 50% -60px, rgba(14,180,208,0.07) 0%, transparent 65%)',
           padding:    '64px 48px 56px',
         }}>
@@ -240,7 +254,7 @@ export default async function LeaderboardPage() {
               <span style={{ display: 'block', width: 32, height: 1, background: 'rgba(94,211,234,0.3)' }} />
             </div>
 
-            <h1 style={{
+            <h1 className="lb-hero" style={{
               fontSize:      52,
               fontWeight:    900,
               color:         '#F0F8FC',
@@ -261,7 +275,7 @@ export default async function LeaderboardPage() {
             </p>
 
             {/* Stats row */}
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="lb-stats" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <StatCard label="Members"     value={String(totalMembers)}        valueColor="#E8F4FC" />
               <StatCard label="Top Signal"  value={topScore.toLocaleString()}   valueColor="#5ED3EA" />
               {TIER_ORDER.filter(t => byTier[t] > 0).map(t => (
@@ -281,7 +295,7 @@ export default async function LeaderboardPage() {
         <hr style={{ border: 'none', borderTop: '1px solid rgba(94,211,234,0.06)', margin: 0 }} />
 
         {/* ── Leaderboard Content ── */}
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 48px 96px' }}>
+        <div className="lb-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 48px 96px' }}>
 
           {tiersWithMembers.map(tier => {
             const members = badges.filter(b => b.cachedTier === tier);
@@ -515,7 +529,7 @@ export default async function LeaderboardPage() {
         </div>
 
         {/* ── Footer ── */}
-        <footer style={{
+        <footer className="lb-footer" style={{
           borderTop:      '1px solid rgba(94,211,234,0.06)',
           padding:        '24px 48px',
           display:        'flex',
