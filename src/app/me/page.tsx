@@ -620,20 +620,22 @@ export default function MePage() {
 
       {/* ── Header ── */}
       <header style={{
-        background: '#050F1C', borderBottom: `1px solid ${C.border}`,
-        padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky' as const, top: 0, zIndex: 50,
+        background: 'rgba(4,14,26,0.88)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: `1px solid ${C.border}`,
+        padding: '0 48px', height: 64,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'fixed' as const, top: 0, left: 0, right: 0, zIndex: 100,
       }}>
-        <a href="/" style={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.2em', color: '#E8F4FC', textTransform: 'uppercase' as const, textDecoration: 'none' }}>
+        <a href="/" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase' as const, textDecoration: 'none' }}>
           DUAL <span style={{ color: C.cyan }}>//</span> SIGNAL
         </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(94,211,234,0.45)', textTransform: 'uppercase' as const, border: '1px solid rgba(94,211,234,0.15)', borderRadius: 4, padding: '3px 8px' }}>
-            Alpha
-          </span>
-          <a href="/leaderboard" style={{ fontSize: 11, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>Leaderboard</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(94,211,234,0.4)', textTransform: 'uppercase' as const, border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
+          <a href="/leaderboard" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>Leaderboard</a>
           {badge && (
-            <a href={`/badge/${badge.dualObjectId}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>
+            <a href={`/badge/${badge.dualObjectId}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>
               My Passport
             </a>
           )}
@@ -643,7 +645,7 @@ export default function MePage() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px 80px' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '100px 20px 80px' }}>
 
         {/* ── S01 + S02: Hero ── */}
         <div className="ds-hero" style={{ marginBottom: 16 }}>

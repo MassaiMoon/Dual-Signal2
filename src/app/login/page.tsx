@@ -1,15 +1,9 @@
 'use client';
 
-/**
- * /login — Magic-link authentication.
- *
- * Sends a secure login link to the member's email.
- * Never reveals whether an email is registered.
- */
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import Link from 'next/link';
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -25,36 +19,13 @@ const S: Record<string, React.CSSProperties> = {
     position:      'relative',
     overflow:      'hidden',
   },
-  header: {
-    width:      '100%',
-    padding:    '52px 24px 28px',
-    textAlign:  'center',
-    position:   'relative',
-    zIndex:     1,
-    background: 'linear-gradient(to bottom, #040E1A 70%, transparent)',
-  },
-  logo: {
-    fontSize:      22,
-    fontWeight:    700,
-    letterSpacing: '0.22em',
-    color:         '#E8F4FC',
-    textTransform: 'uppercase' as const,
-  },
-  logoSlash: { color: '#5ED3EA' },
-  tagline: {
-    fontSize:      10,
-    letterSpacing: '0.26em',
-    color:         '#243545',
-    margin:        '9px 0 0',
-    textTransform: 'uppercase' as const,
-  },
   main: {
     flex:           1,
     display:        'flex',
     alignItems:     'center',
     justifyContent: 'center',
     width:          '100%',
-    padding:        '48px 16px',
+    padding:        '96px 16px 48px',
     position:       'relative',
     zIndex:         1,
     boxSizing:      'border-box' as const,
@@ -274,10 +245,25 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <div style={S.page}>
-      <header style={S.header}>
-        <div style={S.logo}>DUAL <span style={S.logoSlash}>//</span> SIGNAL</div>
-        <p style={S.tagline}>Community Identity Passport</p>
-      </header>
+      {/* ── Nav (matches landing page) ── */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        background: 'rgba(4,14,26,0.88)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(94,211,234,0.09)',
+        height: 64,
+        padding: '0 48px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <Link href="/" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase', textDecoration: 'none' }}>
+          DUAL <span style={{ color: '#5ED3EA' }}>//</span> SIGNAL
+        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(94,211,234,0.4)', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
+          <Link href="/leaderboard" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#3A5A6A', textDecoration: 'none' }}>Leaderboard</Link>
+        </div>
+      </nav>
 
       <main style={S.main}>
         <Suspense fallback={<div style={S.card}><p style={{ color: '#3A5A6A', textAlign: 'center' }}>Loading…</p></div>}>
@@ -286,13 +272,19 @@ export default function LoginPage() {
       </main>
 
       <footer style={{
-        padding:        '20px 40px 32px',
-        fontSize:       11,
-        color:          '#1A2A38',
-        letterSpacing:  '0.12em',
-        textTransform:  'uppercase' as const,
+        borderTop:     '1px solid rgba(94,211,234,0.06)',
+        width:         '100%',
+        padding:       '24px 48px',
+        display:       'flex',
+        alignItems:    'center',
+        justifyContent:'space-between',
       }}>
-        DUAL Network · Chain 6301
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#1A2E3A' }}>
+          DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
+        </span>
+        <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#12202C' }}>
+          DUAL Network · Chain 6301
+        </span>
       </footer>
     </div>
   );
