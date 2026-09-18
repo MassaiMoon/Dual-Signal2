@@ -180,10 +180,11 @@ function HandleEditor({
   placeholder:   string;
   onSaved:       (handle: string | null) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft,   setDraft]   = useState(currentHandle);
-  const [saving,  setSaving]  = useState(false);
-  const [err,     setErr]     = useState('');
+  const [editing,    setEditing]    = useState(false);
+  const [draft,      setDraft]      = useState(currentHandle);
+  const [saving,     setSaving]     = useState(false);
+  const [err,        setErr]        = useState('');
+  const [confirming, setConfirming] = useState(false);
 
   async function save() {
     const value = draft.replace(/^@/, '').trim();
@@ -202,12 +203,11 @@ function HandleEditor({
   }
 
   async function remove() {
-    if (!window.confirm(`Remove your ${label} connection?`)) return;
     setSaving(true); setErr('');
     try {
       const res = await fetch(`/api/me/accounts/${provider}`, { method: 'DELETE' });
       if (!res.ok) { const d = await res.json(); setErr(d.error ?? 'Remove failed.'); return; }
-      onSaved(null); setEditing(false); setDraft('');
+      onSaved(null); setEditing(false); setDraft(''); setConfirming(false);
     } catch { setErr('Network error. Please try again.'); }
     finally  { setSaving(false); }
   }
@@ -215,26 +215,43 @@ function HandleEditor({
   if (editing) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, flex: 1 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            autoFocus value={draft} onChange={e => setDraft(e.target.value)}
-            placeholder={placeholder}
-            onKeyDown={e => {
-              if (e.key === 'Enter')  save();
-              if (e.key === 'Escape') { setEditing(false); setDraft(currentHandle); setErr(''); }
-            }}
-            style={{ flex: 1, background: C.bg, border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none' }}
-          />
-          <button onClick={save} disabled={saving} style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 14px', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
-            {saving ? '…' : 'Save'}
-          </button>
-          <button onClick={() => { setEditing(false); setDraft(currentHandle); setErr(''); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
-        </div>
-        {err && <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{err}</p>}
-        {currentHandle && (
-          <button onClick={remove} disabled={saving} style={{ background: 'none', border: 'none', color: C.red, fontSize: 11, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>
-            Remove {label}
-          </button>
+        {confirming ? (
+          <div style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8, padding: '12px 14px' }}>
+            <p style={{ fontSize: 12, color: C.red, margin: '0 0 10px', fontWeight: 600 }}>Remove {label} connection?</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={remove} disabled={saving} style={{ background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '6px 14px', color: C.red, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+                {saving ? 'Removing…' : 'Remove'}
+              </button>
+              <button onClick={() => setConfirming(false)} disabled={saving} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 14px', color: C.textLabel, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Cancel
+              </button>
+            </div>
+            {err && <p style={{ fontSize: 12, color: C.red, margin: '8px 0 0' }}>{err}</p>}
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                autoFocus value={draft} onChange={e => setDraft(e.target.value)}
+                placeholder={placeholder}
+                onKeyDown={e => {
+                  if (e.key === 'Enter')  save();
+                  if (e.key === 'Escape') { setEditing(false); setDraft(currentHandle); setErr(''); }
+                }}
+                style={{ flex: 1, background: C.bg, border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none' }}
+              />
+              <button onClick={save} disabled={saving} style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 14px', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+              <button onClick={() => { setEditing(false); setDraft(currentHandle); setErr(''); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
+            </div>
+            {err && <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{err}</p>}
+            {currentHandle && (
+              <button onClick={() => setConfirming(true)} disabled={saving} style={{ background: 'none', border: 'none', color: C.red, fontSize: 11, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>
+                Remove {label}
+              </button>
+            )}
+          </>
         )}
       </div>
     );
@@ -315,6 +332,7 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
   const [draft,         setDraft]         = useState(handle);
   const [saving,        setSaving]        = useState(false);
   const [err,           setErr]           = useState('');
+  const [confirming,    setConfirming]    = useState(false);
 
   async function save() {
     const value = draft.replace(/^@/, '').trim();
@@ -329,13 +347,12 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
   }
 
   async function remove() {
-    if (!window.confirm('Remove your DUAL Forum connection?')) return;
     setSaving(true);
     try {
       const res = await fetch('/api/me/accounts/forum', { method: 'DELETE' });
-      if (!res.ok) return;
-      setCurrentHandle(''); onUpdated(null); setEditing(false);
-    } catch { /**/ } finally { setSaving(false); }
+      if (!res.ok) { setErr('Remove failed.'); return; }
+      setCurrentHandle(''); onUpdated(null); setEditing(false); setConfirming(false);
+    } catch { setErr('Network error.'); } finally { setSaving(false); }
   }
 
   return (
@@ -343,15 +360,32 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
       <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: C.gold, letterSpacing: '0.04em', flexShrink: 0 }}>GOV</div>
       {editing ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} placeholder="forum-username"
-              onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditing(false); setDraft(currentHandle); } }}
-              style={{ flex: 1, background: C.bg, border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none' }} />
-            <button onClick={save} disabled={saving} style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 14px', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>{saving ? '…' : 'Save'}</button>
-            <button onClick={() => { setEditing(false); setDraft(currentHandle); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
-          </div>
-          {err && <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{err}</p>}
-          {currentHandle && <button onClick={remove} style={{ background: 'none', border: 'none', color: C.red, fontSize: 11, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>Remove Forum</button>}
+          {confirming ? (
+            <div style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8, padding: '12px 14px' }}>
+              <p style={{ fontSize: 12, color: C.red, margin: '0 0 10px', fontWeight: 600 }}>Remove Forum connection?</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={remove} disabled={saving} style={{ background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 6, padding: '6px 14px', color: C.red, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>
+                  {saving ? 'Removing…' : 'Remove'}
+                </button>
+                <button onClick={() => setConfirming(false)} disabled={saving} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 14px', color: C.textLabel, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Cancel
+                </button>
+              </div>
+              {err && <p style={{ fontSize: 12, color: C.red, margin: '8px 0 0' }}>{err}</p>}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} placeholder="forum-username"
+                  onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setEditing(false); setDraft(currentHandle); } }}
+                  style={{ flex: 1, background: C.bg, border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none' }} />
+                <button onClick={save} disabled={saving} style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 14px', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>{saving ? 'Saving…' : 'Save'}</button>
+                <button onClick={() => { setEditing(false); setDraft(currentHandle); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
+              </div>
+              {err && <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{err}</p>}
+              {currentHandle && <button onClick={() => setConfirming(true)} style={{ background: 'none', border: 'none', color: C.red, fontSize: 11, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>Remove Forum</button>}
+            </>
+          )}
         </div>
       ) : (
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -927,9 +961,6 @@ export default function MePage() {
                 <span style={{ ...metaVal, fontFamily: 'inherit', color: C.cyan, fontWeight: 600 }}>{data.username}</span>
               </>
             )}
-            <button onClick={logout} style={{ padding: '11px 22px', background: 'transparent', border: `1px solid ${C.borderMid}`, borderRadius: 8, color: '#3A5A6A', fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
-              Sign Out
-            </button>
           </div>
         </div>
       </div>
