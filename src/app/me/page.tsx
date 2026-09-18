@@ -578,7 +578,7 @@ export default function MePage() {
       `}</style>
 
       {/* ── Nav ── */}
-      <header style={{
+      <header className="ds-nav" style={{
         background: 'rgba(4,14,26,0.88)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderBottom: `1px solid ${C.border}`, padding: '0 48px', height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -588,10 +588,10 @@ export default function MePage() {
           DUAL <span style={{ color: C.cyan }}>//</span> SIGNAL
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(94,211,234,0.4)', textTransform: 'uppercase' as const, border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
-          <a href="/leaderboard" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>Leaderboard</a>
+          <span className="ds-nav-extra" style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(94,211,234,0.4)', textTransform: 'uppercase' as const, border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
+          <a href="/leaderboard" className="ds-nav-extra" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>Leaderboard</a>
           {badge && (
-            <a href={`/badge/${badge.dualObjectId}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>
+            <a href={`/badge/${badge.dualObjectId}`} className="ds-nav-extra" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>
               My Passport
             </a>
           )}
@@ -935,7 +935,7 @@ export default function MePage() {
       </div>
 
       {/* ── Footer ── */}
-      <footer style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <footer className="ds-footer" style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#1A2E3A' }}>
           DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
         </span>
