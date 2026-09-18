@@ -20,7 +20,7 @@ const C = {
   cyan:    '#5ED3EA',
   cyanDim: '#0EB4D0',
   text:    '#C8D8E8',
-  textDim: '#4A6A7A',
+  textDim: '#6A8A9A',
 };
 
 export default async function Home() {
@@ -158,7 +158,7 @@ export default async function Home() {
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 48 }}>
                   <div style={{ textAlign: 'center' }}>
                     <span style={{ display: 'block', fontSize: 24, fontWeight: 800, color: '#D0E8F4', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{s.value}</span>
-                    <span style={{ display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#1E3A4A', marginTop: 5 }}>{s.label}</span>
+                    <span style={{ display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A7A8A', marginTop: 5 }}>{s.label}</span>
                   </div>
                   {i < arr.length - 1 && <div style={{ width: 1, height: 32, background: 'rgba(94,211,234,0.08)' }} />}
                 </div>
@@ -175,7 +175,7 @@ export default async function Home() {
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>How It Works</div>
               <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>Three steps to your Passport</h2>
-              <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>Your identity is built from real community activity — not self-reported claims.</p>
+              <p style={{ fontSize: 15, color: '#6A8A9A', marginTop: 12, lineHeight: 1.7 }}>Your identity is built from real community activity — not self-reported claims.</p>
             </div>
 
             <div className="ds-step-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
@@ -280,7 +280,7 @@ export default async function Home() {
                 <div key={t.name} className="ds-tier" style={{ flex: 1, background: t.bg, border: `1px solid rgba(94,211,234,0.08)`, borderRadius: 10, padding: '22px 12px 20px', textAlign: 'center', transition: 'all 0.15s' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.color, margin: '0 auto 10px' }} />
                   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: t.color, marginBottom: 6 }}>{t.name}</div>
-                  <div style={{ fontSize: 10, color: '#1E3040', fontVariantNumeric: 'tabular-nums' }}>{t.range}</div>
+                  <div style={{ fontSize: 10, color: '#5A7A8A', fontVariantNumeric: 'tabular-nums' }}>{t.range}</div>
                 </div>
               ))}
             </div>
@@ -310,13 +310,13 @@ export default async function Home() {
                 <h2 style={{ fontSize: 46, fontWeight: 900, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 14 }}>
                   Ready to build your<br />community identity?
                 </h2>
-                <p style={{ fontSize: 15, color: '#4A6A7A', marginBottom: 36 }}>Enter your email. We&apos;ll send a secure link to get started.</p>
+                <p style={{ fontSize: 15, color: '#6A8A9A', marginBottom: 36 }}>Enter your email. We&apos;ll send a secure link to get started.</p>
 
                 <Link href="/login" className="ds-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: C.cyanDim, color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '17px 36px', borderRadius: 12, textDecoration: 'none', transition: 'opacity 0.15s' }}>
                   Get Your Passport →
                 </Link>
 
-                <p style={{ fontSize: 11, color: '#1A2E3A', marginTop: 16 }}>New here? Your Passport will be created automatically.</p>
+                <p style={{ fontSize: 11, color: '#4A6A7A', marginTop: 16 }}>New here? Your Passport will be created automatically.</p>
               </div>
             </div>
           </div>
@@ -324,10 +324,10 @@ export default async function Home() {
 
         {/* ── Footer ── */}
         <footer className="ds-footer" style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '28px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#1A2E3A' }}>
-            DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#3A5A6A' }}>
+            DUAL <span style={{ color: '#3A6A7A' }}>//</span> SIGNAL
           </div>
-          <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#12202C' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3A5A6A' }}>
             DUAL Network · Chain 6301
           </div>
         </footer>

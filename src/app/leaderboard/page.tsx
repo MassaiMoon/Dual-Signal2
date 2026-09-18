@@ -153,7 +153,7 @@ export default async function LeaderboardPage() {
           .lb-nav { padding: 0 20px !important; }
           .lb-nav-label { display: none !important; }
           .lb-hero { padding: 72px 20px 40px !important; }
-          .lb-hero h1 { font-size: 36px !important; }
+          .lb-h1 { font-size: 36px !important; }
           .lb-stats { gap: 8px !important; }
           .lb-content { padding: 40px 20px 80px !important; }
           .lb-footer { padding: 16px 20px !important; flex-direction: column !important; gap: 4px !important; }
@@ -161,7 +161,7 @@ export default async function LeaderboardPage() {
         @media (max-width: 480px) {
           .lb-nav { padding: 0 16px !important; }
           .lb-hero { padding: 64px 16px 36px !important; }
-          .lb-hero h1 { font-size: 28px !important; }
+          .lb-h1 { font-size: 28px !important; }
           .lb-content { padding: 32px 16px 72px !important; }
           .lb-footer { padding: 14px 16px !important; }
         }
@@ -231,7 +231,7 @@ export default async function LeaderboardPage() {
         minHeight:  '100vh',
         background: '#040E1A',
         color:      '#C8D8E8',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontFamily: "'Inter','SF Pro Display',system-ui,sans-serif",
         paddingTop: 64,
       }}>
 
@@ -254,7 +254,7 @@ export default async function LeaderboardPage() {
               <span style={{ display: 'block', width: 32, height: 1, background: 'rgba(94,211,234,0.3)' }} />
             </div>
 
-            <h1 className="lb-hero" style={{
+            <h1 className="lb-h1" style={{
               fontSize:      52,
               fontWeight:    900,
               color:         '#F0F8FC',
@@ -541,15 +541,15 @@ export default async function LeaderboardPage() {
             fontWeight:    700,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
-            color:         '#1A2E3A',
+            color:         '#3A5A6A',
           }}>
-            DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
+            DUAL <span style={{ color: '#3A6A7A' }}>//</span> SIGNAL
           </span>
           <span style={{
             fontSize:      10,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color:         '#12202C',
+            color:         '#3A5A6A',
           }}>DUAL Network · Chain 6301</span>
         </footer>
 

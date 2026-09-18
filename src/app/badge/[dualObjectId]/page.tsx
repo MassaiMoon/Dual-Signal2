@@ -83,15 +83,62 @@ export default async function BadgePage({ params }: Props) {
       display:         'flex',
       flexDirection:   'column',
       alignItems:      'center',
-      padding:         '48px 24px 80px',
-      fontFamily:      '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      padding:         '96px 24px 80px',
+      fontFamily:      "'Inter','SF Pro Display',system-ui,sans-serif",
       color:           '#D4E8F0',
     }}>
-      {/* Header */}
-      <div style={{ marginBottom: 8, fontSize: 13, letterSpacing: 4, color: '#5ED3EA', textTransform: 'uppercase' }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .badge-stats { flex-wrap: wrap !important; justify-content: center !important; gap: 16px !important; }
+          .badge-actions { flex-direction: column !important; align-items: stretch !important; }
+          .badge-actions a { text-align: center; }
+          .badge-footer { padding: 16px 20px !important; flex-direction: column !important; gap: 4px !important; }
+        }
+      `}</style>
+
+      {/* ── Nav ── */}
+      <nav style={{
+        position:           'fixed',
+        top:                0,
+        left:               0,
+        right:              0,
+        height:             64,
+        background:         'rgba(0,17,30,0.88)',
+        backdropFilter:     'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom:       '1px solid rgba(94,211,234,0.09)',
+        display:            'flex',
+        alignItems:         'center',
+        justifyContent:     'space-between',
+        padding:            '0 32px',
+        zIndex:             100,
+      }}>
+        <a href="/" style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase', textDecoration: 'none' }}>
+          DUAL <span style={{ color: '#5ED3EA' }}>//</span> SIGNAL
+        </a>
+        <a href="/login" style={{
+          display:        'inline-flex',
+          alignItems:     'center',
+          gap:            6,
+          background:     '#0EB4D0',
+          color:          '#fff',
+          fontSize:       11,
+          fontWeight:     700,
+          letterSpacing:  '0.1em',
+          textTransform:  'uppercase',
+          padding:        '9px 18px',
+          borderRadius:   8,
+          textDecoration: 'none',
+        }}>
+          Get Your Passport →
+        </a>
+      </nav>
+
+      {/* Eyebrow */}
+      <div style={{ marginBottom: 6, fontSize: 11, letterSpacing: '0.28em', color: '#5ED3EA', textTransform: 'uppercase', fontWeight: 700 }}>
         DUAL // SIGNAL
       </div>
-      <div style={{ fontSize: 13, color: '#4A7A8A', marginBottom: 40 }}>
+      <div style={{ fontSize: 12, color: '#4A7A8A', marginBottom: 36, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
         Community Identity Passport
       </div>
 
@@ -114,12 +161,13 @@ export default async function BadgePage({ params }: Props) {
       </div>
 
       {/* Stats row */}
-      <div style={{
-        display:      'flex',
-        gap:          32,
-        marginBottom: 36,
-        fontSize:     14,
-        color:        '#7BA8B8',
+      <div className="badge-stats" style={{
+        display:        'flex',
+        gap:            32,
+        marginBottom:   36,
+        fontSize:       14,
+        color:          '#7BA8B8',
+        justifyContent: 'center',
       }}>
         <Stat label="TIER"     value={tier} accent />
         <Stat label="SIGNAL"   value={score.toLocaleString()} />
@@ -135,9 +183,30 @@ export default async function BadgePage({ params }: Props) {
         flexDirection:'column',
         gap:          16,
       }}>
-        <ShareButton url={pageUrl} label={`${displayId} — ${tier} on DUAL // SIGNAL`} />
+        <div className="badge-actions" style={{ display: 'flex', gap: 10 }}>
+          <ShareButton url={pageUrl} label={`${displayId} — ${tier} on DUAL // SIGNAL`} />
+          <a href="/login" style={{
+            display:        'inline-flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            6,
+            background:     'rgba(94,211,234,0.08)',
+            border:         '1px solid rgba(94,211,234,0.2)',
+            color:          '#5ED3EA',
+            fontSize:       12,
+            fontWeight:     700,
+            letterSpacing:  '0.08em',
+            textTransform:  'uppercase',
+            padding:        '10px 16px',
+            borderRadius:   8,
+            textDecoration: 'none',
+            flex:           1,
+          }}>
+            Build Your Score →
+          </a>
+        </div>
 
-        <details style={{
+        <details style={{ marginTop: 8,
           background:   'rgba(94,211,234,0.04)',
           border:       '1px solid rgba(94,211,234,0.12)',
           borderRadius: 10,
@@ -170,9 +239,9 @@ export default async function BadgePage({ params }: Props) {
       </div>
 
       {/* Footer */}
-      <div style={{ marginTop: 56, fontSize: 12, color: '#2A4A5A', textAlign: 'center' }}>
+      <div className="badge-footer" style={{ marginTop: 56, padding: '0 24px', fontSize: 11, color: '#3A5A6A', textAlign: 'center', letterSpacing: '0.08em' }}>
         Powered by{' '}
-        <span style={{ color: '#3A7A8A' }}>DUAL Network</span>
+        <span style={{ color: '#4A7A8A' }}>DUAL Network</span>
         {' · '}
         On-chain identity layer for community contributors
       </div>
@@ -183,7 +252,7 @@ export default async function BadgePage({ params }: Props) {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-      <span style={{ fontSize: 10, letterSpacing: 2, color: '#3A6070', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 10, letterSpacing: 2, color: '#4A7A8A', textTransform: 'uppercase' }}>
         {label}
       </span>
       <span style={{ fontSize: 14, fontWeight: 600, color: accent ? '#5ED3EA' : '#A0C8D8' }}>

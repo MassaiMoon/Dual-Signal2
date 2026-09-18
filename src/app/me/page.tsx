@@ -168,8 +168,8 @@ function TierBar({ tier }: { tier: string }) {
           const isActive = t.name === tier;
           const color    = TIER_COLOR[t.name] ?? C.cyan;
           return (
-            <span key={t.name} style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: isActive ? color : C.textDim, fontWeight: isActive ? 700 : 400 }}>
-              {t.name === 'STAKEHOLDER' ? 'STKHDR' : t.name.slice(0, 4).toUpperCase()}
+            <span key={t.name} style={{ fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: isActive ? color : C.textDim, fontWeight: isActive ? 700 : 400 }}>
+              {t.name.slice(0, 1).toUpperCase()}
             </span>
           );
         })}
@@ -750,7 +750,7 @@ export default function MePage() {
               alt="" aria-hidden={true} width={220} height={220}
               style={{ position: 'absolute' as const, right: -40, bottom: -40, opacity: 0.1, filter: 'saturate(0.1) brightness(0.6)', pointerEvents: 'none' as const, userSelect: 'none' as const }}
             />
-            <span style={{ ...eyebrow, marginBottom: 6 }}>Welcome Back</span>
+            <span style={{ ...eyebrow, marginBottom: 6 }}>{badge ? 'Your Passport' : 'Community Member'}</span>
             <h1 style={{ fontSize: 36, fontWeight: 900, color: '#E8F4FC', letterSpacing: '-0.02em', margin: '0 0 16px', lineHeight: 1.05 }}>
               {data.username ?? data.email}
             </h1>
@@ -807,7 +807,7 @@ export default function MePage() {
               {channels.map(ch => (
                 <div key={ch.key} style={card}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: ch.color, letterSpacing: '0.04em', flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: ch.color, letterSpacing: '0.04em', flexShrink: 0 }}>
                       {ch.icon}
                     </div>
                     <div style={{ flex: 1 }}>
@@ -872,9 +872,12 @@ export default function MePage() {
                   </div>
                 ))}
                 {activities.length > 10 && (
-                  <button onClick={() => setShowAllAct(v => !v)} style={{ marginTop: 12, background: 'none', border: 'none', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>
-                    {showAllAct ? 'Show less' : `Show ${activities.length - 10} more`}
-                  </button>
+                  <>
+                    <div style={{ borderTop: `1px solid ${C.border}`, margin: '8px 0 0' }} />
+                    <button onClick={() => setShowAllAct(v => !v)} style={{ marginTop: 8, background: 'none', border: `1px solid rgba(94,211,234,0.12)`, borderRadius: 6, color: C.cyan, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', cursor: 'pointer', fontFamily: 'inherit', padding: '8px 0', width: '100%', textAlign: 'center' as const }}>
+                      {showAllAct ? 'Show less' : `Show ${activities.length - 10} more`}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -892,7 +895,7 @@ export default function MePage() {
                 {levelUpChannels.map((ch, ci) => (
                   <div key={ch.key} style={{ paddingBottom: 18, marginBottom: ci < levelUpChannels.length - 1 ? 18 : 0, borderBottom: ci < levelUpChannels.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: ch.color }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, background: 'rgba(94,211,234,0.06)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: ch.color }}>
                         {ch.icon}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1006,7 +1009,7 @@ export default function MePage() {
             </div>
 
             {/* Wallet coming soon */}
-            <div style={{ marginTop: 16, background: 'rgba(7,21,37,0.4)', border: `1px dashed rgba(94,211,234,0.12)`, borderRadius: 12, padding: '20px 24px' }}>
+            <div style={{ marginTop: 16, background: 'rgba(7,21,37,0.4)', border: `1px solid rgba(94,211,234,0.08)`, borderRadius: 12, padding: '20px 24px' }}>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: C.textDim, display: 'block', marginBottom: 5 }}>Coming Soon</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: C.textMuted, display: 'block', marginBottom: 5 }}>DUAL Wallet Integration</span>
               <span style={{ fontSize: 11, color: C.textDim, lineHeight: 1.65, display: 'block' }}>Your SIGNAL Passport and reputation will continue building in the meantime.</span>
@@ -1037,10 +1040,10 @@ export default function MePage() {
 
       {/* ── Footer ── */}
       <footer className="ds-footer" style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#1A2E3A' }}>
-          DUAL <span style={{ color: '#1E3A4A' }}>//</span> SIGNAL
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#3A5A6A' }}>
+          DUAL <span style={{ color: '#3A6A7A' }}>//</span> SIGNAL
         </span>
-        <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#12202C' }}>
+        <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: '#3A5A6A' }}>
           DUAL Network · Chain 6301
         </span>
       </footer>
