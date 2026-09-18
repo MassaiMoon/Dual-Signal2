@@ -134,8 +134,8 @@ export default async function Home() {
               <span style={{ color: C.cyan }}>On-Chain Identity</span>
             </h1>
 
-            <p className="ds-sub" style={{ fontSize: 17, color: '#4A6A7A', lineHeight: 1.75, maxWidth: 460, marginBottom: 44 }}>
-              Earn SIGNAL through community activity. Level up through six tiers. Mint your Passport on the DUAL Network.
+            <p className="ds-sub" style={{ fontSize: 17, color: '#6A8A9A', lineHeight: 1.75, maxWidth: 460, marginBottom: 44 }}>
+              The reputation layer for the DUAL Network community. Earn SIGNAL through real activity. Mint your verified Passport on-chain.
             </p>
 
             <div className="ds-ctas" style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 64 }}>
