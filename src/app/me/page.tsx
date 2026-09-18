@@ -168,8 +168,8 @@ function TierBar({ tier }: { tier: string }) {
           const isActive = t.name === tier;
           const color    = TIER_COLOR[t.name] ?? C.cyan;
           return (
-            <span key={t.name} style={{ fontSize: 7, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: isActive ? color : C.textDim, fontWeight: isActive ? 700 : 400 }}>
-              {t.name === 'STAKEHOLDER' ? 'S.HLDR' : t.name.slice(0, 4).toUpperCase()}
+            <span key={t.name} style={{ fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: isActive ? color : C.textDim, fontWeight: isActive ? 700 : 400 }}>
+              {t.name === 'STAKEHOLDER' ? 'STKHDR' : t.name.slice(0, 4).toUpperCase()}
             </span>
           );
         })}
@@ -418,17 +418,21 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export default function MePage() {
-  const [data,       setData]       = useState<MeData | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [actLoading, setActLoading] = useState(false);
+  const [data,        setData]        = useState<MeData | null>(null);
+  const [loading,     setLoading]     = useState(true);
+  const [loadErr,     setLoadErr]     = useState(false);
+  const [activities,  setActivities]  = useState<ActivityItem[]>([]);
+  const [actLoading,  setActLoading]  = useState(false);
+  const [showAllAct,  setShowAllAct]  = useState(false);
 
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/me');
       if (res.status === 401) { window.location.href = '/login'; return; }
       if (res.ok) setData(await res.json());
-    } finally { setLoading(false); }
+      else setLoadErr(true);
+    } catch { setLoadErr(true); }
+    finally { setLoading(false); }
   }, []);
 
   const loadActivity = useCallback(async () => {
@@ -470,6 +474,25 @@ export default function MePage() {
           <div style={{ width: 32, height: 32, border: '2px solid rgba(94,211,234,0.12)', borderTop: `2px solid ${C.cyan}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <p style={{ color: C.textLabel, fontSize: 13, letterSpacing: '0.1em' }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadErr) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' as const, maxWidth: 360, padding: '0 24px' }}>
+          <p style={{ fontSize: 32, marginBottom: 16 }}>⚠️</p>
+          <p style={{ color: '#E8F4FC', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Couldn't load your profile</p>
+          <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>
+            There was a problem connecting to the server. Please check your connection and try again.
+          </p>
+          <button
+            onClick={() => { setLoadErr(false); setLoading(true); load(); }}
+            style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 8, padding: '10px 24px', color: C.cyan, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -637,6 +660,7 @@ export default function MePage() {
             <a href={`/badge/${badge.dualObjectId}`} className="ds-nav-extra" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', color: C.textMuted, textDecoration: 'none', textTransform: 'uppercase' as const }}>
               My Passport
             </a>
+
           )}
           <button onClick={logout} style={{ background: 'transparent', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 8, padding: '8px 16px', color: '#3A5A6A', fontSize: 11, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase' as const, fontFamily: 'inherit' }}>
             Sign Out
@@ -835,8 +859,8 @@ export default function MePage() {
                 {!actLoading && activities.length === 0 && (
                   <p style={{ fontSize: 12, color: C.textDim, textAlign: 'center' as const, padding: '16px 0' }}>No activity recorded yet.</p>
                 )}
-                {activities.map((a, i) => (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < activities.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                {(showAllAct ? activities : activities.slice(0, 10)).map((a, i, arr) => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                     <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(94,211,234,0.04)', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: SOURCE_COLOR[a.source], letterSpacing: '0.04em', flexShrink: 0 }}>
                       {SOURCE_ICON[a.source]}
                     </div>
@@ -847,6 +871,11 @@ export default function MePage() {
                     <div style={{ fontSize: 10, color: C.textDim, flexShrink: 0, textAlign: 'right' as const }}>{fmtDate(a.date)}</div>
                   </div>
                 ))}
+                {activities.length > 10 && (
+                  <button onClick={() => setShowAllAct(v => !v)} style={{ marginTop: 12, background: 'none', border: 'none', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}>
+                    {showAllAct ? 'Show less' : `Show ${activities.length - 10} more`}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -953,7 +982,7 @@ export default function MePage() {
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.green, background: 'rgba(74,200,154,0.08)', border: '1px solid rgba(74,200,154,0.2)', borderRadius: 6, padding: '3px 10px', fontWeight: 600, letterSpacing: '0.06em' }}>✓ Minted</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.cyan, background: 'rgba(94,211,234,0.06)', border: `1px solid rgba(94,211,234,0.18)`, borderRadius: 6, padding: '3px 10px', fontWeight: 600, letterSpacing: '0.06em' }}>Active on DUAL</span>
                   </div>
-                  <span style={metaLbl}>Object ID</span>
+                  <span style={metaLbl}>Object ID <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: C.textDim }}>— your on-chain passport address</span></span>
                   <span style={{ ...metaVal, fontFamily: 'monospace', fontSize: 12 }}>{badge.dualObjectId}</span>
                   {badge.memberSince && (
                     <>
@@ -964,7 +993,7 @@ export default function MePage() {
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
                     <a href={`/badge/${badge.dualObjectId}`} className="ds-btn" style={btnPrimary}>View Passport →</a>
                     <a href={`https://explorer.dual.network/objects/${badge.dualObjectId}`} target="_blank" rel="noreferrer" className="ds-btn" style={btnOutline}>
-                      View on DUAL →
+                      View on DUAL Explorer →
                     </a>
                   </div>
                 </>
