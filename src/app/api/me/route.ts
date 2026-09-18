@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       isOG:                    badge.isOG,
       isGenesis:               badge.isGenesis,
       createdAt:               badge.createdAt,
+      updatedAt:               badge.updatedAt,
     } : null,
     accounts,
   });

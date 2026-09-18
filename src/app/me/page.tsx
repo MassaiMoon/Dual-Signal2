@@ -37,6 +37,7 @@ interface BadgeData {
   isOG:                     boolean;
   isGenesis:                boolean;
   createdAt:       string;
+  updatedAt:       string;
 }
 
 interface ActivityItem {
@@ -133,6 +134,14 @@ const SOURCE_COLOR: Record<string, string> = {
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function timeAgo(iso: string) {
+  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60)   return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
 }
 
 // ── Tier progression bar ──────────────────────────────────────────────────────
@@ -639,42 +648,74 @@ export default function MePage() {
       <div style={{ background: 'radial-gradient(ellipse 1100px 700px at 50% -80px, rgba(14,180,208,0.07) 0%, transparent 65%)', padding: '128px 64px 72px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }} className="ds-hero">
 
-          {/* Score left */}
+          {/* Score left — or getting-started when no badge */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-              <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(94,211,234,0.3)' }} />
-              <span style={eyebrow}>Your Signal</span>
-              <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(94,211,234,0.3)' }} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 }}>
-              <span style={{ fontSize: 88, fontWeight: 900, letterSpacing: '-0.05em', color: '#F0F8FC', lineHeight: 1, fontVariantNumeric: 'tabular-nums' as const }}>
-                {score.toLocaleString()}
-              </span>
-              <span style={{ fontSize: 18, color: C.textDim, fontWeight: 700, letterSpacing: '0.04em', paddingBottom: 10 }}>/ 1000</span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: tierColor }}>{tier}</span>
-              {nextTier
-                ? <span style={{ fontSize: 12, color: C.textMuted }}>· {ptsToNext} pts to {nextTier.name}</span>
-                : <span style={{ fontSize: 12, color: C.green }}>· MAX TIER</span>
-              }
-            </div>
-
-            <div style={{ marginBottom: 36 }}>
-              <TierBar tier={tier} />
-            </div>
-
             {badge ? (
-              <a href={`/badge/${badge.dualObjectId}`} className="ds-btn" style={btnPrimary}>
-                View Passport →
-              </a>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                  <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(94,211,234,0.3)' }} />
+                  <span style={eyebrow}>Your Signal</span>
+                  <span style={{ display: 'block', width: 24, height: 1, background: 'rgba(94,211,234,0.3)' }} />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 16 }}>
+                  <span className="ds-score" style={{ fontSize: 88, fontWeight: 900, letterSpacing: '-0.05em', color: '#F0F8FC', lineHeight: 1, fontVariantNumeric: 'tabular-nums' as const }}>
+                    {score.toLocaleString()}
+                  </span>
+                  <span style={{ fontSize: 18, color: C.textDim, fontWeight: 700, letterSpacing: '0.04em', paddingBottom: 10 }}>/ 1000</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: tierColor }}>{tier}</span>
+                  {nextTier
+                    ? <span style={{ fontSize: 12, color: C.textMuted }}>· {ptsToNext} pts to {nextTier.name}</span>
+                    : <span style={{ fontSize: 12, color: C.green }}>· MAX TIER</span>
+                  }
+                </div>
+                <p style={{ fontSize: 10, color: C.textDim, letterSpacing: '0.12em', textTransform: 'uppercase' as const, marginBottom: 28 }}>
+                  Score synced · {timeAgo(badge.updatedAt)}
+                </p>
+
+                <div style={{ marginBottom: 36 }}>
+                  <TierBar tier={tier} />
+                </div>
+
+                <a href={`/badge/${badge.dualObjectId}`} className="ds-btn" style={btnPrimary}>
+                  View Passport →
+                </a>
+              </>
             ) : (
-              <a href="/join" className="ds-btn" style={btnPrimary}>
-                Mint Passport →
-              </a>
+              /* ── No passport yet — getting started ── */
+              <>
+                <span style={eyebrow}>Get Started</span>
+                <h1 style={{ fontSize: 32, fontWeight: 900, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 10 }}>
+                  Build your<br /><span style={{ color: C.cyan }}>SIGNAL score</span>
+                </h1>
+                <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, marginBottom: 32, maxWidth: 380 }}>
+                  Mint your Passport to start tracking SIGNAL. Connect your accounts and earn up to 1,000 points across four channels.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10, marginBottom: 36 }}>
+                  {[
+                    { done: true,  label: 'Create account' },
+                    { done: false, label: 'Mint your Passport', cta: '/join' },
+                    { done: false, label: 'Connect X, Telegram, Discord & Forum' },
+                    { done: false, label: 'Earn SIGNAL through community activity' },
+                  ].map(step => (
+                    <div key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: step.done ? 'rgba(74,200,154,0.12)' : 'rgba(94,211,234,0.06)', border: `1px solid ${step.done ? 'rgba(74,200,154,0.35)' : C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: step.done ? C.green : C.textDim }}>
+                        {step.done ? '✓' : ''}
+                      </div>
+                      <span style={{ fontSize: 13, color: step.done ? C.green : '#A8C8D8', fontWeight: step.done ? 600 : 400 }}>{step.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <a href="/join" className="ds-btn" style={btnPrimary}>
+                  Mint Passport →
+                </a>
+              </>
             )}
           </div>
 
