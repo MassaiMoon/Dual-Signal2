@@ -74,88 +74,74 @@ export default async function BadgePage({ params }: Props) {
   const score       = badge.signalScore ?? 0;
   const memberSince = badge.memberSince ?? '';
 
-  const embedCode = `<iframe src="${faceUrl}" width="400" height="600" frameborder="0" allowtransparency="true" style="border-radius:16px;"></iframe>`;
+  // Badge face is 3:2 landscape — iframe matches that ratio
+  const BADGE_W = 660;
+  const BADGE_H = 440;
+  const embedCode = `<iframe src="${faceUrl}" width="${BADGE_W}" height="${BADGE_H}" frameborder="0" allowtransparency="true" style="border-radius:12px;"></iframe>`;
 
   return (
     <main style={{
-      minHeight:       '100vh',
-      background:      '#00111E',
-      display:         'flex',
-      flexDirection:   'column',
-      alignItems:      'center',
-      padding:         '96px 24px 80px',
-      fontFamily:      "'Inter','SF Pro Display',system-ui,sans-serif",
-      color:           '#D4E8F0',
+      minHeight:     '100vh',
+      background:    '#00111E',
+      display:       'flex',
+      flexDirection: 'column',
+      alignItems:    'center',
+      padding:       '80px 24px 40px',
+      fontFamily:    "'Inter','SF Pro Display',system-ui,sans-serif",
+      color:         '#D4E8F0',
     }}>
       <style>{`
-        @media (max-width: 480px) {
-          .badge-stats { flex-wrap: wrap !important; justify-content: center !important; gap: 16px !important; }
-          .badge-actions { flex-direction: column !important; align-items: stretch !important; }
+        .badge-iframe-wrap { width: min(${BADGE_W}px, 92vw); aspect-ratio: 3/2; }
+        .badge-iframe-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+        .badge-actions { display: flex; gap: 10px; }
+        @media (max-width: 520px) {
+          .badge-stats  { flex-wrap: wrap !important; gap: 14px !important; }
+          .badge-actions { flex-direction: column; }
           .badge-actions a { text-align: center; }
-          .badge-footer { padding: 16px 20px !important; flex-direction: column !important; gap: 4px !important; }
         }
       `}</style>
 
       {/* ── Nav ── */}
       <nav style={{
-        position:           'fixed',
-        top:                0,
-        left:               0,
-        right:              0,
-        height:             64,
-        background:         'rgba(0,17,30,0.88)',
-        backdropFilter:     'blur(16px)',
+        position:             'fixed',
+        top: 0, left: 0, right: 0,
+        height:               60,
+        background:           'rgba(0,17,30,0.9)',
+        backdropFilter:       'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderBottom:       '1px solid rgba(94,211,234,0.09)',
-        display:            'flex',
-        alignItems:         'center',
-        justifyContent:     'space-between',
-        padding:            '0 32px',
-        zIndex:             100,
+        borderBottom:         '1px solid rgba(94,211,234,0.09)',
+        display:              'flex',
+        alignItems:           'center',
+        justifyContent:       'space-between',
+        padding:              '0 28px',
+        zIndex:               100,
       }}>
-        <a href="/" style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase', textDecoration: 'none' }}>
+        <a href="/" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase', textDecoration: 'none' }}>
           DUAL <span style={{ color: '#5ED3EA' }}>//</span> SIGNAL
         </a>
         <a href="/login" style={{
-          display:        'inline-flex',
-          alignItems:     'center',
-          gap:            6,
-          background:     '#0EB4D0',
-          color:          '#fff',
-          fontSize:       11,
-          fontWeight:     700,
-          letterSpacing:  '0.1em',
-          textTransform:  'uppercase',
-          padding:        '9px 18px',
-          borderRadius:   8,
-          textDecoration: 'none',
+          background: '#0EB4D0', color: '#fff',
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+          padding: '8px 16px', borderRadius: 7, textDecoration: 'none',
         }}>
           Get Your Passport →
         </a>
       </nav>
 
       {/* Eyebrow */}
-      <div style={{ marginBottom: 6, fontSize: 11, letterSpacing: '0.28em', color: '#5ED3EA', textTransform: 'uppercase', fontWeight: 700 }}>
-        DUAL // SIGNAL
-      </div>
-      <div style={{ fontSize: 12, color: '#4A7A8A', marginBottom: 36, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-        Community Identity Passport
+      <div style={{ marginBottom: 4, fontSize: 10, letterSpacing: '0.28em', color: '#5ED3EA', textTransform: 'uppercase', fontWeight: 700 }}>
+        DUAL // SIGNAL · Community Identity Passport
       </div>
 
-      {/* Badge card iframe */}
-      <div style={{
-        width:        400,
-        height:       600,
-        borderRadius: 16,
+      {/* Badge card iframe — responsive, 3:2 */}
+      <div className="badge-iframe-wrap" style={{
+        borderRadius: 14,
         overflow:     'hidden',
-        boxShadow:    '0 0 60px rgba(94,211,234,0.15), 0 4px 32px rgba(0,0,0,0.6)',
-        marginBottom: 36,
+        boxShadow:    '0 0 80px rgba(94,211,234,0.18), 0 8px 40px rgba(0,0,0,0.7)',
+        margin:       '20px 0 24px',
       }}>
         <iframe
           src={faceUrl}
-          width={400}
-          height={600}
-          style={{ border: 'none', display: 'block' }}
           title={`DUAL // SIGNAL Badge — ${displayId}`}
         />
       </div>
@@ -163,10 +149,8 @@ export default async function BadgePage({ params }: Props) {
       {/* Stats row */}
       <div className="badge-stats" style={{
         display:        'flex',
-        gap:            32,
-        marginBottom:   36,
-        fontSize:       14,
-        color:          '#7BA8B8',
+        gap:            28,
+        marginBottom:   20,
         justifyContent: 'center',
       }}>
         <Stat label="TIER"     value={tier} accent />
@@ -176,62 +160,34 @@ export default async function BadgePage({ params }: Props) {
       </div>
 
       {/* Share + embed */}
-      <div style={{
-        width:        '100%',
-        maxWidth:     440,
-        display:      'flex',
-        flexDirection:'column',
-        gap:          16,
-      }}>
-        <div className="badge-actions" style={{ display: 'flex', gap: 10 }}>
+      <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="badge-actions">
           <ShareButton url={pageUrl} label={`${displayId} — ${tier} on DUAL // SIGNAL`} />
           <a href="/login" style={{
-            display:        'inline-flex',
-            alignItems:     'center',
-            justifyContent: 'center',
-            gap:            6,
-            background:     'rgba(94,211,234,0.08)',
-            border:         '1px solid rgba(94,211,234,0.2)',
-            color:          '#5ED3EA',
-            fontSize:       12,
-            fontWeight:     700,
-            letterSpacing:  '0.08em',
-            textTransform:  'uppercase',
-            padding:        '10px 16px',
-            borderRadius:   8,
-            textDecoration: 'none',
-            flex:           1,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            background: 'rgba(94,211,234,0.08)', border: '1px solid rgba(94,211,234,0.2)',
+            color: '#5ED3EA', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+            textTransform: 'uppercase', padding: '10px 16px', borderRadius: 8,
+            textDecoration: 'none', flex: 1,
           }}>
             Build Your Score →
           </a>
         </div>
 
-        <details style={{ marginTop: 8,
-          background:   'rgba(94,211,234,0.04)',
-          border:       '1px solid rgba(94,211,234,0.12)',
-          borderRadius: 10,
-          padding:      '12px 16px',
+        <details style={{
+          background: 'rgba(94,211,234,0.04)', border: '1px solid rgba(94,211,234,0.12)',
+          borderRadius: 10, padding: '10px 14px',
         }}>
           <summary style={{
-            cursor:     'pointer',
-            fontSize:   13,
-            letterSpacing: 2,
-            color:      '#5ED3EA',
-            textTransform: 'uppercase',
-            userSelect: 'none',
+            cursor: 'pointer', fontSize: 12, letterSpacing: 2,
+            color: '#5ED3EA', textTransform: 'uppercase', userSelect: 'none',
           }}>
-            Embed Code
+            ▸ Embed Code
           </summary>
           <pre style={{
-            marginTop:  12,
-            fontSize:   11,
-            lineHeight: 1.6,
-            color:      '#7BA8B8',
-            whiteSpace: 'pre-wrap',
-            wordBreak:  'break-all',
-            background: 'rgba(0,17,30,0.6)',
-            padding:    '12px',
-            borderRadius: 6,
+            marginTop: 10, fontSize: 11, lineHeight: 1.6, color: '#7BA8B8',
+            whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+            background: 'rgba(0,17,30,0.6)', padding: '10px 12px', borderRadius: 6,
           }}>
             {embedCode}
           </pre>
@@ -239,11 +195,9 @@ export default async function BadgePage({ params }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="badge-footer" style={{ marginTop: 56, padding: '0 24px', fontSize: 11, color: '#3A5A6A', textAlign: 'center', letterSpacing: '0.08em' }}>
-        Powered by{' '}
-        <span style={{ color: '#4A7A8A' }}>DUAL Network</span>
-        {' · '}
-        On-chain identity layer for community contributors
+      <div style={{ marginTop: 32, fontSize: 11, color: '#3A5A6A', textAlign: 'center', letterSpacing: '0.08em' }}>
+        Powered by <span style={{ color: '#4A7A8A' }}>DUAL Network</span>
+        {' · '}On-chain identity layer for community contributors
       </div>
     </main>
   );
