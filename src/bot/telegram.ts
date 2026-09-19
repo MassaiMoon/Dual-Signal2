@@ -56,10 +56,20 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
     return;
   }
 
-  await db.externalAccount.update({
-    where: { id: account.id },
-    data:  { externalUserId: telegramUserId },
-  });
+  try {
+    await db.externalAccount.update({
+      where: { id: account.id },
+      data:  { externalUserId: telegramUserId },
+    });
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      await send(msg.chat.id,
+        '⚠️ Your Telegram account is already linked to a different SIGNAL handle. Contact an admin if you need to change it.'
+      );
+      return;
+    }
+    throw err;
+  }
 
   console.log(`[tg-bot] verified userId=${telegramUserId} as handle=${handle}`);
   await send(msg.chat.id, '✅ Verified! Your messages in the DUAL group will now earn you active-day credit on DUAL // SIGNAL.');
@@ -117,7 +127,7 @@ async function poll() {
       }
 
       for (const update of json.result) {
-        await processUpdate(update);
+        try { await processUpdate(update); } catch (err) { console.error('[tg-bot] processUpdate error', err); }
         offset = update.update_id + 1;
       }
     } catch (err) {
