@@ -17,7 +17,8 @@
     "dual:setup": "node scripts/setup.mjs",
     "dual:mint": "node scripts/mint-badge.mjs",
     "dual:register-webhook": "node scripts/register-webhook.mjs",
-    "discord-bot": "tsx discord-bot/index.ts"
+    "discord-bot": "tsx discord-bot/index.ts",
+    "bot:telegram": "tsx src/bot/telegram.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
