@@ -181,15 +181,16 @@ function TierBar({ tier }: { tier: string }) {
 // ── HandleEditor ──────────────────────────────────────────────────────────────
 
 function HandleEditor({
-  provider, currentHandle, label, placeholder, onSaved,
+  provider, currentHandle, label, placeholder, onSaved, onCancel,
 }: {
   provider:      string;
   currentHandle: string;
   label:         string;
   placeholder:   string;
   onSaved:       (handle: string | null) => void;
+  onCancel?:     () => void;
 }) {
-  const [editing,    setEditing]    = useState(false);
+  const [editing,    setEditing]    = useState(true);
   const [draft,      setDraft]      = useState(currentHandle);
   const [saving,     setSaving]     = useState(false);
   const [err,        setErr]        = useState('');
@@ -245,14 +246,14 @@ function HandleEditor({
                 placeholder={placeholder}
                 onKeyDown={e => {
                   if (e.key === 'Enter')  save();
-                  if (e.key === 'Escape') { setEditing(false); setDraft(currentHandle); setErr(''); }
+                  if (e.key === 'Escape') { setDraft(currentHandle); setErr(''); if (onCancel) onCancel(); else setEditing(false); }
                 }}
                 style={{ flex: 1, background: C.bg, border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 12px', fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none' }}
               />
               <button onClick={save} disabled={saving} style={{ background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.3)', borderRadius: 6, padding: '8px 14px', color: C.cyan, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
                 {saving ? 'Saving…' : 'Save'}
               </button>
-              <button onClick={() => { setEditing(false); setDraft(currentHandle); setErr(''); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
+              <button onClick={() => { setDraft(currentHandle); setErr(''); if (onCancel) onCancel(); else setEditing(false); }} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>×</button>
             </div>
             {err && <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{err}</p>}
             {currentHandle && (
@@ -308,7 +309,7 @@ function AccountRow({
         {icon}
       </div>
       {editing ? (
-        <HandleEditor provider={provider} currentHandle={currentHandle} label={label} placeholder={placeholder} onSaved={handleSaved} />
+        <HandleEditor provider={provider} currentHandle={currentHandle} label={label} placeholder={placeholder} onSaved={handleSaved} onCancel={() => setEditing(false)} />
       ) : (
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
