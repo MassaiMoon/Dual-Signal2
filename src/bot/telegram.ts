@@ -15,15 +15,70 @@ interface TgUpdate {
     from?: { id: number; username?: string; };
     chat: { id: number; type: string; };
     date: number;
+    text?: string;
   };
+}
+
+async function send(chatId: number, text: string) {
+  await fetch(`${API}/sendMessage`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ chat_id: chatId, text }),
+  });
+}
+
+async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
+  const telegramUserId = String(msg.from!.id);
+  const parts = (msg.text ?? '').trim().split(/\s+/);
+
+  if (parts.length < 2) {
+    await send(msg.chat.id,
+      'Usage: /verify <your_telegram_handle>\n\nExample: /verify erik_nelson_7764\n\nUse the exact handle shown in your DUAL // SIGNAL profile.'
+    );
+    return;
+  }
+
+  const handle = parts[1].replace(/^@/, '');
+
+  const account = await db.externalAccount.findFirst({
+    where: { source: 'TELEGRAM', handle: { equals: handle, mode: 'insensitive' } },
+  });
+
+  if (!account) {
+    await send(msg.chat.id,
+      `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nCheck your exact handle in the DUAL // SIGNAL dashboard and try again.`
+    );
+    return;
+  }
+
+  if (account.externalUserId === telegramUserId) {
+    await send(msg.chat.id, '✅ Already verified! Your Telegram activity is being tracked on DUAL // SIGNAL.');
+    return;
+  }
+
+  await db.externalAccount.update({
+    where: { id: account.id },
+    data:  { externalUserId: telegramUserId },
+  });
+
+  console.log(`[tg-bot] verified userId=${telegramUserId} as handle=${handle}`);
+  await send(msg.chat.id, '✅ Verified! Your messages in the DUAL group will now earn you active-day credit on DUAL // SIGNAL.');
 }
 
 async function processUpdate(update: TgUpdate) {
   const msg = update.message;
-  if (!msg?.from || msg.chat.type === 'private') return;
+  if (!msg?.from) return;
 
+  const isPrivate = msg.chat.type === 'private';
+  const text      = msg.text ?? '';
+
+  if (isPrivate) {
+    if (text.startsWith('/verify')) await handleVerify(msg);
+    return;
+  }
+
+  // Group message — track active day
   const telegramUserId = String(msg.from.id);
-
   const day = new Date(msg.date * 1000);
   day.setUTCHours(0, 0, 0, 0);
 
