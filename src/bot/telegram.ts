@@ -80,11 +80,32 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
     }
   }
 
+  // Final fallback: badge has telegramHandle but no ExternalAccount yet — create it
   if (!account) {
-    console.log(`[tg-bot] /verify not found: handle="${handle}", telegramId="${telegramUserId}"`);
-    await send(msg.chat.id,
-      `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nYour Telegram ID is: ${telegramUserId}\n\nShare this with an admin or check your exact handle in the DUAL // SIGNAL dashboard.`
-    );
+    const badge = await db.badge.findFirst({
+      where: { telegramHandle: { equals: handle, mode: 'insensitive' } },
+      select: { userId: true },
+    });
+    if (!badge) {
+      console.log(`[tg-bot] /verify not found: handle="${handle}", telegramId="${telegramUserId}"`);
+      await send(msg.chat.id,
+        `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nCheck your exact handle in the DUAL // SIGNAL dashboard and try again.`
+      );
+      return;
+    }
+    try {
+      await db.externalAccount.create({
+        data: { userId: badge.userId, source: 'TELEGRAM', handle, externalUserId: telegramUserId },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        await send(msg.chat.id, '⚠️ Your Telegram account is already linked to a different SIGNAL handle. Contact an admin if you need to change it.');
+        return;
+      }
+      throw err;
+    }
+    console.log(`[tg-bot] created+verified ExternalAccount for handle=${handle} telegramId=${telegramUserId}`);
+    await send(msg.chat.id, '✅ Verified! Your messages in the DUAL group will now earn you active-day credit on DUAL // SIGNAL.');
     return;
   }
 
