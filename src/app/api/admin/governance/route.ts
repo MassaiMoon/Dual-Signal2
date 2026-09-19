@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       badgeId:                b.id,
       username:               b.user.username ?? '—',
       forumUsername:          forumAcct?.handle ?? null,
-      forumUserId:            forumAcct ? parseInt(forumAcct.externalUserId, 10) || null : null,
+      forumUserId:            forumAcct?.externalUserId ? parseInt(forumAcct.externalUserId, 10) || null : null,
       forumSyncedAt:          forumAcct?.forumSyncedAt ?? null,
       governanceActivityPoints: b.governanceActivityPoints,
       governanceLevel:        b.governanceLevel,

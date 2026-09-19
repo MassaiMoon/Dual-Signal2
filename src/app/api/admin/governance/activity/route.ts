@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
   const forumAcct = await db.externalAccount.findFirst({
     where: { userId: badge.userId, source: Provider.DUAL_FORUM },
   });
-  const forumUserId   = forumAcct ? (parseInt(forumAcct.externalUserId, 10) || 0) : 0;
+  const forumUserId   = forumAcct ? (parseInt(forumAcct.externalUserId ?? '0', 10) || 0) : 0;
   const forumUsername = forumAcct?.handle ?? 'manual';
 
   // ── Determine points awarded ──────────────────────────────────────────────────

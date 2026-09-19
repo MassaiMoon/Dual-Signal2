@@ -80,7 +80,7 @@ async function buildUserIdMap(testForumUsername?: string): Promise<Map<number, {
   for (const acct of accounts) {
     const badgeId = acct.user.badge?.id;
     if (!badgeId) continue;
-    const forumUserId = parseInt(acct.externalUserId, 10);
+    const forumUserId = parseInt(acct.externalUserId ?? '0', 10);
     if (isNaN(forumUserId) || forumUserId <= 0) continue;
     map.set(forumUserId, { badgeId, userId: acct.userId, forumUsername: acct.handle });
   }
@@ -98,7 +98,7 @@ export async function resolveForumAccount(badgeId: string, forumUsername: string
   });
 
   if (existing) {
-    const id = parseInt(existing.externalUserId, 10);
+    const id = parseInt(existing.externalUserId ?? '0', 10);
     // Only trust it if it's a valid positive integer — otherwise re-resolve below
     if (!isNaN(id) && id > 0) return { forumUserId: id };
   }

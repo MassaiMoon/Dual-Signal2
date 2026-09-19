@@ -362,6 +362,7 @@ async function matchIdentities(identities: TelegramIdentityAggregate[], isHtml =
   const byHandleLower    = new Map<string, typeof allTgAccounts[0][]>();
 
   for (const acct of allTgAccounts) {
+    if (!acct.externalUserId) continue;
     const eid = acct.externalUserId.toLowerCase();
     if (!byExternalUserId.has(eid)) byExternalUserId.set(eid, []);
     byExternalUserId.get(eid)!.push(acct);

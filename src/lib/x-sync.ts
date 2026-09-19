@@ -122,8 +122,8 @@ async function computeCumulativeViews(badgeId: string): Promise<number> {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** True only when the stored value is a real X numeric user ID, not a handle. */
-function isResolvedXId(externalUserId: string): boolean {
-  return /^\d+$/.test(externalUserId);
+function isResolvedXId(externalUserId: string | null): boolean {
+  return externalUserId != null && /^\d+$/.test(externalUserId);
 }
 
 // ── ExternalAccount helpers ───────────────────────────────────────────────────
@@ -165,7 +165,7 @@ interface DiscoveryResult {
 
 async function discoverNewPosts(opts: {
   badge:    { id: string; userId: string; xHandle: string };
-  acct:     { id: string; externalUserId: string; handle: string; lastXPostId: string | null; xResolvedAt: Date | null };
+  acct:     { id: string; externalUserId: string | null; handle: string; lastXPostId: string | null; xResolvedAt: Date | null };
   bearer:   string;
 }): Promise<DiscoveryResult> {
   const { badge, acct, bearer } = opts;
