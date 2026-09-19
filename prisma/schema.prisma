@@ -243,7 +243,7 @@ model ExternalAccount {
   user   User   @relation(fields: [userId], references: [id])
 
   source         Provider  @map("source")
-  externalUserId String    @map("external_user_id")
+  externalUserId String?   @map("external_user_id")
   handle         String
   verifiedAt     DateTime? @map("verified_at")
 
