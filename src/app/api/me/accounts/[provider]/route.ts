@@ -145,15 +145,13 @@ export async function PATCH(
           ? { handle, requiresReview: false }
           : { handle, externalUserId: normalized, requiresReview: false },
       });
+    } else if (isTelegram) {
+      await tx.externalAccount.create({
+        data: { userId: user.id, source: provider, handle },
+      });
     } else {
       await tx.externalAccount.create({
-        data: {
-          userId: user.id,
-          source: provider,
-          handle,
-          // For Telegram, leave externalUserId null — bot fills it via /verify
-          ...(!isTelegram && { externalUserId: normalized }),
-        },
+        data: { userId: user.id, source: provider, handle, externalUserId: normalized },
       });
     }
 
