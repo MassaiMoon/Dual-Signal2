@@ -133,6 +133,47 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
   await send(msg.chat.id, '✅ Verified! Your messages in the DUAL group will now earn you active-day credit on DUAL // SIGNAL.');
 }
 
+async function handleConnect(msg: NonNullable<TgUpdate['message']>) {
+  const telegramUserId = String(msg.from!.id);
+  const parts = (msg.text ?? '').trim().split(/\s+/);
+
+  if (parts.length < 2) {
+    await send(msg.chat.id, 'Usage: /connect <code>\n\nGet your code from the DUAL // SIGNAL dashboard → Telegram → Connect.');
+    return;
+  }
+
+  const code = parts[1].toUpperCase();
+  const record = await db.telegramVerifyCode.findUnique({ where: { code } });
+
+  if (!record || record.expiresAt < new Date()) {
+    if (record) await db.telegramVerifyCode.delete({ where: { code } });
+    await send(msg.chat.id, '❌ Code not found or expired. Go back to the DUAL // SIGNAL dashboard and generate a new code.');
+    return;
+  }
+
+  const handle = msg.from?.username ?? `user${telegramUserId}`;
+
+  // Remove the code so it can't be reused
+  await db.telegramVerifyCode.delete({ where: { code } });
+
+  try {
+    await db.externalAccount.upsert({
+      where:  { source_externalUserId: { source: 'TELEGRAM', externalUserId: telegramUserId } },
+      create: { userId: record.userId, source: 'TELEGRAM', handle, externalUserId: telegramUserId },
+      update: { handle },
+    });
+  } catch (err: any) {
+    if (err?.code === 'P2002') {
+      await send(msg.chat.id, '⚠️ Your Telegram account is already linked to a different SIGNAL profile. Contact an admin if you need to change it.');
+      return;
+    }
+    throw err;
+  }
+
+  console.log(`[tg-bot] /connect: linked userId=${record.userId} telegramId=${telegramUserId} handle=${handle}`);
+  await send(msg.chat.id, '✅ Connected! Your Telegram account is now linked to DUAL // SIGNAL. Your messages in the DUAL group will earn you active-day credit.');
+}
+
 async function processUpdate(update: TgUpdate) {
   const msg = update.message;
   if (!msg?.from) return;
@@ -141,7 +182,8 @@ async function processUpdate(update: TgUpdate) {
   const text      = msg.text ?? '';
 
   if (isPrivate) {
-    if (text.startsWith('/verify')) await handleVerify(msg);
+    if (text.startsWith('/verify'))  await handleVerify(msg);
+    if (text.startsWith('/connect')) await handleConnect(msg);
     return;
   }
 
