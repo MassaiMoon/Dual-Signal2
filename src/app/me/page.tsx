@@ -963,39 +963,30 @@ export default function MePage() {
                 const tgAccount  = data.accounts.find(a => a.source === 'TELEGRAM');
                 const tgHandle   = badge?.telegramHandle ?? tgAccount?.handle ?? '';
                 const isVerified = tgAccount?.externalUserId && /^\d+$/.test(tgAccount.externalUserId);
-                if (isVerified) return null;
-                const hasHandle  = !!tgHandle;
+                if (!tgHandle || isVerified) return null;
                 return (
                   <div style={{ margin: '-6px 0 8px 52px', padding: '10px 14px', background: 'rgba(94,211,234,0.04)', border: '1px solid rgba(94,211,234,0.12)', borderRadius: 8, fontSize: 12, color: C.textMuted, lineHeight: 1.6 }}>
-                    {hasHandle ? (
+                    <span style={{ color: C.cyan, fontWeight: 700 }}>Step 2 — </span>
+                    {tgCode ? (
                       <>
-                        <span style={{ color: C.cyan, fontWeight: 700 }}>Step 2 — </span>
-                        {tgCode ? (
-                          <>
-                            DM <span style={{ color: C.text, fontFamily: 'monospace' }}>@dual_signal_tracker_bot</span> on Telegram with:{' '}
-                            <span style={{ display: 'inline-block', marginTop: 4, fontFamily: 'monospace', color: C.text, background: 'rgba(94,211,234,0.07)', borderRadius: 4, padding: '2px 8px' }}>/connect {tgCode}</span>
-                            <span style={{ display: 'block', marginTop: 6, fontSize: 11, color: C.textDim }}>Code expires in 30 min.</span>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              disabled={tgCodeLoading}
-                              onClick={async () => {
-                                setTgCodeLoading(true);
-                                try {
-                                  const res = await fetch('/api/me/telegram-verify-code', { method: 'POST' });
-                                  if (res.ok) { const j = await res.json(); setTgCode(j.code); }
-                                } finally { setTgCodeLoading(false); }
-                              }}
-                              style={{ background: 'rgba(94,211,234,0.10)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 6, padding: '4px 12px', color: C.cyan, fontSize: 11, fontWeight: 700, cursor: tgCodeLoading ? 'default' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em' }}
-                            >
-                              {tgCodeLoading ? 'Generating…' : 'Get Verification Code'}
-                            </button>
-                          </>
-                        )}
+                        DM <span style={{ color: C.text, fontFamily: 'monospace' }}>@dual_signal_tracker_bot</span> on Telegram with:{' '}
+                        <span style={{ display: 'inline-block', marginTop: 4, fontFamily: 'monospace', color: C.text, background: 'rgba(94,211,234,0.07)', borderRadius: 4, padding: '2px 8px' }}>/connect {tgCode}</span>
+                        <span style={{ display: 'block', marginTop: 6, fontSize: 11, color: C.textDim }}>Code expires in 30 min.</span>
                       </>
                     ) : (
-                      <span style={{ color: C.textDim, fontStyle: 'italic' }}>Enter your Telegram handle above to connect your account.</span>
+                      <button
+                        disabled={tgCodeLoading}
+                        onClick={async () => {
+                          setTgCodeLoading(true);
+                          try {
+                            const res = await fetch('/api/me/telegram-verify-code', { method: 'POST' });
+                            if (res.ok) { const j = await res.json(); setTgCode(j.code); }
+                          } finally { setTgCodeLoading(false); }
+                        }}
+                        style={{ background: 'rgba(94,211,234,0.10)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 6, padding: '4px 12px', color: C.cyan, fontSize: 11, fontWeight: 700, cursor: tgCodeLoading ? 'default' : 'pointer', fontFamily: 'inherit', letterSpacing: '0.08em' }}
+                      >
+                        {tgCodeLoading ? 'Generating…' : 'Get Verification Code'}
+                      </button>
                     )}
                   </div>
                 );
