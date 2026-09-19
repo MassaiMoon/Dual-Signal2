@@ -56,7 +56,7 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
     }
   }
 
-  // Fallback 2: this Telegram user is already linked to an account
+  // Fallback 2: this Telegram user is already linked by numeric ID
   if (!account) {
     const alreadyLinked = await db.externalAccount.findFirst({
       where: { source: 'TELEGRAM', externalUserId: telegramUserId },
@@ -65,8 +65,25 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
       await send(msg.chat.id, '✅ Your Telegram account is already linked to DUAL // SIGNAL and your activity is being tracked.');
       return;
     }
+  }
+
+  // Fallback 3: externalUserId stored as 'user{numericId}' format (some admin rows)
+  if (!account) {
+    const prefixedId = `user${telegramUserId}`;
+    account = await db.externalAccount.findFirst({
+      where: { source: 'TELEGRAM', externalUserId: prefixedId },
+    });
+    if (account) {
+      await db.externalAccount.update({ where: { id: account.id }, data: { externalUserId: telegramUserId } });
+      await send(msg.chat.id, '✅ Verified! Your Telegram activity is being tracked on DUAL // SIGNAL.');
+      return;
+    }
+  }
+
+  if (!account) {
+    console.log(`[tg-bot] /verify not found: handle="${handle}", telegramId="${telegramUserId}"`);
     await send(msg.chat.id,
-      `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nCheck your exact handle in the DUAL // SIGNAL dashboard and try again.`
+      `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nYour Telegram ID is: ${telegramUserId}\n\nShare this with an admin or check your exact handle in the DUAL // SIGNAL dashboard.`
     );
     return;
   }
