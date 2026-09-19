@@ -40,11 +40,31 @@ async function handleVerify(msg: NonNullable<TgUpdate['message']>) {
 
   const handle = parts[1].replace(/^@/, '');
 
-  const account = await db.externalAccount.findFirst({
+  // Primary: look up by handle (self-serve created accounts)
+  let account = await db.externalAccount.findFirst({
     where: { source: 'TELEGRAM', handle: { equals: handle, mode: 'insensitive' } },
   });
 
+  // Fallback 1: handle might be stored as bare numeric ID (admin-created rows)
+  // e.g. user typed "user69738097" but DB has handle = "69738097"
   if (!account) {
+    const numericOnly = handle.replace(/^user/, '');
+    if (/^\d+$/.test(numericOnly) && numericOnly !== handle) {
+      account = await db.externalAccount.findFirst({
+        where: { source: 'TELEGRAM', handle: { equals: numericOnly, mode: 'insensitive' } },
+      });
+    }
+  }
+
+  // Fallback 2: this Telegram user is already linked to an account
+  if (!account) {
+    const alreadyLinked = await db.externalAccount.findFirst({
+      where: { source: 'TELEGRAM', externalUserId: telegramUserId },
+    });
+    if (alreadyLinked) {
+      await send(msg.chat.id, '✅ Your Telegram account is already linked to DUAL // SIGNAL and your activity is being tracked.');
+      return;
+    }
     await send(msg.chat.id,
       `❌ No SIGNAL account found with Telegram handle "${handle}".\n\nCheck your exact handle in the DUAL // SIGNAL dashboard and try again.`
     );
