@@ -115,13 +115,15 @@ export async function PATCH(
     }
   }
 
-  // Uniqueness: check if another user already uses this handle
+  // Uniqueness: check if another user already uses this handle.
+  // For Telegram the stable ID is the numeric bot-assigned userId (not the handle),
+  // so we check handle uniqueness by the handle field. For X we check externalUserId
+  // because the handle doubles as the temp external ID until X API resolves it.
+  const isTelegram = provider === Provider.TELEGRAM;
   const conflict = await db.externalAccount.findFirst({
-    where: {
-      source:         provider,
-      externalUserId: normalized,
-      userId:         { not: user.id },
-    },
+    where: isTelegram
+      ? { source: provider, handle: { equals: handle, mode: 'insensitive' }, userId: { not: user.id } }
+      : { source: provider, externalUserId: normalized, userId: { not: user.id } },
   });
   if (conflict) {
     return NextResponse.json(
@@ -138,15 +140,19 @@ export async function PATCH(
     if (existing) {
       await tx.externalAccount.update({
         where: { id: existing.id },
-        data: { handle, externalUserId: normalized, requiresReview: false },
+        // For Telegram, never overwrite externalUserId — the bot fills it via /verify
+        data: isTelegram
+          ? { handle, requiresReview: false }
+          : { handle, externalUserId: normalized, requiresReview: false },
       });
     } else {
       await tx.externalAccount.create({
         data: {
           userId: user.id,
           source: provider,
-          externalUserId: normalized,
           handle,
+          // For Telegram, leave externalUserId null — bot fills it via /verify
+          ...(!isTelegram && { externalUserId: normalized }),
         },
       });
     }

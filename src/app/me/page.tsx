@@ -957,6 +957,19 @@ export default function MePage() {
                   setData(prev => prev && badge ? { ...prev, badge: { ...prev.badge!, telegramHandle: val ?? '' } } : prev);
                 }}
               />
+              {(() => {
+                const tgAccount  = data.accounts.find(a => a.source === 'TELEGRAM');
+                const tgHandle   = badge?.telegramHandle ?? tgAccount?.handle ?? '';
+                const isVerified = tgAccount?.externalUserId && /^\d+$/.test(tgAccount.externalUserId);
+                if (!tgHandle || isVerified) return null;
+                return (
+                  <div style={{ margin: '-6px 0 8px 52px', padding: '10px 14px', background: 'rgba(94,211,234,0.04)', border: '1px solid rgba(94,211,234,0.12)', borderRadius: 8, fontSize: 12, color: C.textMuted, lineHeight: 1.6 }}>
+                    <span style={{ color: C.cyan, fontWeight: 700 }}>Step 2 — </span>
+                    DM <span style={{ color: C.text, fontFamily: 'monospace' }}>@dual_signal_tracker_bot</span> on Telegram with:{' '}
+                    <span style={{ display: 'inline-block', marginTop: 4, fontFamily: 'monospace', color: C.text, background: 'rgba(94,211,234,0.07)', borderRadius: 4, padding: '2px 8px' }}>/verify {tgHandle}</span>
+                  </div>
+                );
+              })()}
               <AccountRow
                 provider="discord" icon="DC" iconColor="#7B83EB" label="Discord" placeholder="username"
                 handle={badge?.discordHandle ?? getHandle('DISCORD')}
