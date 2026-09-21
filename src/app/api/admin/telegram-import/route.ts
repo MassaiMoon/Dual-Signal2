@@ -529,7 +529,7 @@ async function computePreview(matched: MatchedIdentity[]): Promise<PreviewResult
         resolveXSignalLevel(badge.xSignalPublicViews, badge.xQualifyingPosts),
         newTgLvl,
         resolveDiscordLevel(badge.discordActiveDays),
-        resolveGovernanceLevel(badge.governanceVotes),
+        resolveGovernanceLevel(badge.governanceActivityPoints),
       );
 
       if (newTgLvl  !== badge.telegramLevel) levelChanges++;

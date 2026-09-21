@@ -2,7 +2,6 @@ export type SimulateEventBody = {
   badgeId:   string;
   track:     'xSignal' | 'telegram' | 'discord' | 'governance';
   contentId: string;
-  secret:    string;
   progress?: number;
 };
 

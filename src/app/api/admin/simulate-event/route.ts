@@ -31,11 +31,8 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-  const { badgeId, track, contentId, secret, progress } = body;
+  const { badgeId, track, contentId, progress } = body;
 
-  if (secret !== process.env.ADMIN_TOKEN) {
-    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
-  }
   if (!badgeId || !track || !contentId) {
     return NextResponse.json({ error: 'badgeId, track, and contentId are required' }, { status: 400 });
   }
@@ -63,11 +60,11 @@ export async function POST(req: NextRequest) {
   });
 
   // Compute new progress for the affected track
-  const newViews     = track === 'xSignal'   ? (progress ?? badge.xSignalPublicViews + 1) : badge.xSignalPublicViews;
-  const newPosts     = track === 'xSignal'   ? badge.xQualifyingPosts + 1                 : badge.xQualifyingPosts;
-  const newTg        = track === 'telegram'  ? (progress ?? badge.telegramActiveDays + 1) : badge.telegramActiveDays;
-  const newDc        = track === 'discord'   ? (progress ?? badge.discordActiveDays + 1)  : badge.discordActiveDays;
-  const newGov       = track === 'governance'? (progress ?? badge.governanceVotes + 1)    : badge.governanceVotes;
+  const newViews     = track === 'xSignal'   ? (progress ?? badge.xSignalPublicViews + 1)       : badge.xSignalPublicViews;
+  const newPosts     = track === 'xSignal'   ? badge.xQualifyingPosts + 1                       : badge.xQualifyingPosts;
+  const newTg        = track === 'telegram'  ? (progress ?? badge.telegramActiveDays + 1)       : badge.telegramActiveDays;
+  const newDc        = track === 'discord'   ? (progress ?? badge.discordActiveDays + 1)        : badge.discordActiveDays;
+  const newGov       = track === 'governance'? (progress ?? badge.governanceActivityPoints + 1) : badge.governanceActivityPoints;
 
   const newXLvl   = resolveXSignalLevel(newViews, newPosts);
   const newTgLvl  = resolveTelegramLevel(newTg);
@@ -87,11 +84,11 @@ export async function POST(req: NextRequest) {
     await tx.badge.update({
       where: { id: badge.id },
       data: {
-        xSignalPublicViews: newViews,
-        xQualifyingPosts:   newPosts,
-        telegramActiveDays: newTg,
-        discordActiveDays:  newDc,
-        governanceVotes:    newGov,
+        xSignalPublicViews:       newViews,
+        xQualifyingPosts:         newPosts,
+        telegramActiveDays:       newTg,
+        discordActiveDays:        newDc,
+        governanceActivityPoints: newGov,
         xSignalLevel:       newXLvl,
         telegramLevel:      newTgLvl,
         discordLevel:       newDcLvl,

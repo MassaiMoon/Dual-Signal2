@@ -98,10 +98,14 @@ export async function POST(req: NextRequest) {
 
   const newTgDays = (badge.telegramActiveDays ?? 0) + 1;
 
+  // Normalise to UTC midnight for TelegramActiveDay dedup
+  const day = new Date(msgDate);
+  day.setUTCHours(0, 0, 0, 0);
+
   const newXLvl   = resolveXSignalLevel(badge.xSignalPublicViews, badge.xQualifyingPosts);
   const newTgLvl  = resolveTelegramLevel(newTgDays);
   const newDcLvl  = resolveDiscordLevel(badge.discordActiveDays);
-  const newGovLvl = resolveGovernanceLevel(badge.governanceVotes);
+  const newGovLvl = resolveGovernanceLevel(badge.governanceActivityPoints);
   const newScore  = computeSignalScore(newXLvl, newTgLvl, newDcLvl, newGovLvl);
   const newTier   = calculateTier(newScore);
 
@@ -110,6 +114,13 @@ export async function POST(req: NextRequest) {
     newScore !== badge.signalScore;
 
   await db.$transaction(async (tx) => {
+    // Write TelegramActiveDay row so recalculation stays consistent with the bot
+    await tx.telegramActiveDay.upsert({
+      where:  { badgeId_day: { badgeId: badge.id, day } },
+      create: { badgeId: badge.id, day, telegramProviderUserId: String(telegramUserId), firstMessageId: String(msg.message_id) },
+      update: {},
+    });
+
     await tx.badge.update({
       where: { id: badge.id },
       data: {
