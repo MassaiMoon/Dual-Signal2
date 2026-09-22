@@ -25,7 +25,6 @@ import {
   buildRequestedState,
 } from './rules-engine';
 import { calculateTier } from './config';
-import { GOVERNANCE_QUALIFYING_CATEGORY_IDS } from './config';
 
 // ── Category metadata (slug required for Discourse URL) ───────────────────────
 

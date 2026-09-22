@@ -3,7 +3,7 @@
  *
  * Returns the authenticated member's activity history — a merged, date-sorted
  * list of qualifying X posts, Telegram active days, Discord active days,
- * governance forum activity, and governance votes.
+ * and governance forum activity.
  *
  * Used to power the "How you earned points" history on /me.
  */
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 export interface ActivityItem {
   id:      string;
-  source:  'X' | 'TELEGRAM' | 'DISCORD' | 'GOV_ACTIVITY' | 'GOV_VOTE';
+  source:  'X' | 'TELEGRAM' | 'DISCORD' | 'GOV_ACTIVITY';
   date:    string;
   label:   string;
   detail?: string;
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   const badgeId = badge.id;
 
-  const [xPosts, tgDays, dcDays, govActivities, govVotes] = await Promise.all([
+  const [xPosts, tgDays, dcDays, govActivities] = await Promise.all([
     db.xPost.findMany({
       where:   { badgeId, qualifies: true },
       orderBy: { postedAt: 'desc' },
@@ -55,12 +55,6 @@ export async function GET(req: NextRequest) {
       orderBy: { occurredAt: 'desc' },
       take:    50,
       select:  { id: true, occurredAt: true, activityType: true, pointsAwarded: true, topicUrl: true },
-    }),
-    db.governanceParticipation.findMany({
-      where:   { badgeId },
-      orderBy: { participatedAt: 'desc' },
-      take:    50,
-      select:  { id: true, proposalId: true, participatedAt: true },
     }),
   ]);
 
@@ -110,16 +104,6 @@ export async function GET(req: NextRequest) {
       date:   a.occurredAt.toISOString(),
       label:  typeLabel,
       detail: `+${a.pointsAwarded} pts`,
-    });
-  }
-
-  for (const v of govVotes) {
-    items.push({
-      id:     `vote-${v.id}`,
-      source: 'GOV_VOTE',
-      date:   v.participatedAt.toISOString(),
-      label:  'Governance vote',
-      detail: `Proposal ${v.proposalId.slice(0, 8)}…`,
     });
   }
 
