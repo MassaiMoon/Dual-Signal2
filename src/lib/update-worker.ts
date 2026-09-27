@@ -60,14 +60,18 @@ export async function runPendingUpdates(): Promise<void> {
       ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      const nextStatus = update.attempts + 1 >= MAX_ATTEMPTS ? UpdateStatus.FAILED : UpdateStatus.PENDING;
+      // "object not owned by wallet" is permanent — object was transferred, never retry
+      const permanent = msg.includes('object not owned by wallet');
+      const nextStatus = permanent || update.attempts + 1 >= MAX_ATTEMPTS
+        ? UpdateStatus.FAILED
+        : UpdateStatus.PENDING;
 
       await db.badgeUpdate.update({
         where: { id: update.id },
         data: { status: nextStatus, errorMessage: msg },
       });
 
-      console.error(`[update-worker] Failed (attempt ${update.attempts + 1}): ${msg}`);
+      console.error(`[update-worker] Failed (attempt ${update.attempts + 1})${permanent ? ' [permanent - transferred]' : ''}: ${msg}`);
     }
   }
 }
