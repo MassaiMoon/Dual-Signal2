@@ -196,3 +196,20 @@ export const org = {
   get: () => dualRequest<{ id: string; fqdn: string }>(`/organizations/${ORG_ID}`),
   balance: () => dualRequest<{ amount: string }>(`/organizations/${ORG_ID}/balance`),
 };
+
+// ─── Members (end-user invitations) ──────────────────────────────────────────
+
+export type DualMemberInvite = { id: string };
+
+export const members = {
+  // Invite a user to join the org as an end-user member.
+  // DUAL sends them an email to accept and register their wallet at the org's
+  // wallet URL: https://wallet.dual.network/{orgId}/login
+  // Throws if the request fails, but callers should treat this as non-fatal.
+  invite: (email: string) =>
+    dualRequest<DualMemberInvite>(`/organizations/${ORG_ID}/members`, {
+      method: 'POST',
+      body:   { email, role_name: 'member' },
+      auth:   'jwt',
+    }),
+};

@@ -409,7 +409,7 @@ export default function JoinPage() {
   const [forum,      setForum]      = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
-  const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string } | null>(null);
+  const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string; dualWalletUrl: string | null } | null>(null);
   const [inputFocus, setInputFocus] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -544,7 +544,7 @@ export default function JoinPage() {
         return;
       }
 
-      setResult({ username: data.username, badgeUrl: data.badgeUrl, memberSince: data.memberSince });
+      setResult({ username: data.username, badgeUrl: data.badgeUrl, memberSince: data.memberSince, dualWalletUrl: data.dualWalletUrl ?? null });
       setStep('done');
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -919,6 +919,31 @@ export default function JoinPage() {
             >
               Go to My Signal →
             </a>
+
+            {result.dualWalletUrl && (
+              <div style={{
+                marginTop:    20,
+                padding:      '14px 16px',
+                background:   'rgba(94,211,234,0.04)',
+                border:       '1px solid rgba(94,211,234,0.10)',
+                borderRadius:  10,
+              }}>
+                <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.18em', color: '#2A4A5A', textTransform: 'uppercase' as const, fontWeight: 700 }}>
+                  Your DUAL Wallet
+                </p>
+                <p style={{ margin: '0 0 10px', fontSize: 12, color: '#3A5A6A', lineHeight: 1.6 }}>
+                  An invitation has been sent to your email. Accept it to claim your wallet and view your Passport on DUAL.
+                </p>
+                <a
+                  href={result.dualWalletUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 11, color: '#5ED3EA', textDecoration: 'none', letterSpacing: '0.06em', opacity: 0.8 }}
+                >
+                  wallet.dual.network ↗
+                </a>
+              </div>
+            )}
           </div>
         )}
 

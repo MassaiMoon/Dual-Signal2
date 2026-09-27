@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ebus } from '@/lib/dual-client';
+import { ebus, members } from '@/lib/dual-client';
 import { getSessionFromRequest } from '@/lib/auth';
 import { Provider } from '@prisma/client';
 
@@ -209,6 +209,23 @@ export async function POST(req: NextRequest) {
 
   console.log(`[join] Created passport for ${username} — objectId=${dualObjectId}`);
 
+  // Invite user to the DUAL org as an end-user member (non-blocking).
+  // They'll receive an email with a link to register their DUAL wallet and
+  // view their badge at wallet.dual.network/{orgId}/login.
+  const userEmail = memberAuth.email;
+  let dualWalletUrl: string | null = null;
+  if (userEmail) {
+    try {
+      await members.invite(userEmail);
+      const orgId = process.env.DUAL_ORG_ID ?? '';
+      dualWalletUrl = `https://wallet.dual.network/${orgId}/login`;
+      console.log(`[join] DUAL org invite sent to ${userEmail}`);
+    } catch (err) {
+      // Non-fatal — badge is created, wallet invite is best-effort
+      console.warn(`[join] DUAL invite failed for ${userEmail}:`, err instanceof Error ? err.message : String(err));
+    }
+  }
+
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
 
   return NextResponse.json({
@@ -216,6 +233,7 @@ export async function POST(req: NextRequest) {
     username,
     dualObjectId: badge.dualObjectId,
     badgeUrl:     `${appUrl}/badge/${badge.dualObjectId}`,
+    dualWalletUrl,
     memberSince,
     connected: {
       x:          !!xHandle,
