@@ -57,9 +57,9 @@ html,body{width:100%;height:100%;background:#001A27;overflow:hidden}
   <!-- Tier name -->
   <div class="a" style="left:11%;top:73%;width:41%;text-align:center;z-index:5;color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(8px,3.2vw,22px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;line-height:1">{{ if .custom.identity_tier }}{{ .custom.identity_tier }}{{ else }}INITIATE{{ end }}</div>
 
-  <!-- Username -->
+  <!-- Username: strip "DUAL // SIGNAL — " prefix (19 UTF-8 bytes) to show just the handle -->
   <div class="a" style="left:59.5%;top:24.5%;width:29%;height:6%;z-index:5;display:flex;align-items:center;padding-top:1.2%;padding-right:12%;overflow:hidden">
-    <span style="color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(8px,1.8vw,16px);font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ .metadata.name }}</span>
+    <span style="color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(8px,1.8vw,16px);font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ if gt (len .metadata.name) 19 }}{{ slice .metadata.name 19 }}{{ else }}{{ .metadata.name }}{{ end }}</span>
   </div>
 
   <!-- Signal score -->
