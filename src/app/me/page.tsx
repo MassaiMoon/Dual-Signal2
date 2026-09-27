@@ -419,51 +419,54 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
 // ── Wallet Invite Button ──────────────────────────────────────────────────────
 
 function WalletInviteButton() {
-  const [state, setState] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [walletUrl, setWalletUrl] = useState<string | null>(null);
+  const [alreadyMember, setAlreadyMember] = useState(false);
 
   async function handleSend() {
     setState('loading');
     try {
       const res = await fetch('/api/public/wallet-invite', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed');
-      setWalletUrl(data.walletUrl);
-      setState('sent');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Failed');
+      setWalletUrl(json.walletUrl);
+      setAlreadyMember(!!json.alreadyMember);
+      setState('ready');
     } catch {
       setState('error');
     }
   }
 
+  if (state === 'ready' && walletUrl) {
+    return (
+      <div style={{ marginTop: 20, padding: '18px 20px', background: 'rgba(94,211,234,0.06)', border: '1px solid rgba(94,211,234,0.20)', borderRadius: 12 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#5ED3EA', display: 'block', marginBottom: 8 }}>DUAL Wallet</span>
+        <p style={{ margin: '0 0 14px', fontSize: 13, color: '#8BB8CC', lineHeight: 1.65 }}>
+          {alreadyMember
+            ? 'Your wallet is already set up. Open it below to view your Passport on DUAL.'
+            : 'Invite sent to your email. Set your password there, then open your wallet below.'}
+        </p>
+        <a href={walletUrl} target="_blank" rel="noopener noreferrer"
+          style={{ display: 'inline-block', padding: '10px 20px', background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.30)', borderRadius: 8, fontSize: 13, color: '#5ED3EA', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.04em' }}>
+          Open DUAL Wallet ↗
+        </a>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ marginTop: 16, padding: '14px 16px', background: 'rgba(94,211,234,0.03)', border: '1px solid rgba(94,211,234,0.08)', borderRadius: 10 }}>
-      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#2A4A5A', display: 'block', marginBottom: 6 }}>DUAL Wallet</span>
-      {state === 'sent' ? (
-        <>
-          <p style={{ margin: '0 0 8px', fontSize: 12, color: '#3A5A6A', lineHeight: 1.6 }}>
-            Invite sent — check your email to set up your wallet, then open it below.
-          </p>
-          {walletUrl && (
-            <a href={walletUrl} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: '#5ED3EA', textDecoration: 'none', letterSpacing: '0.06em', opacity: 0.8 }}>
-              Open wallet.dual.network ↗
-            </a>
-          )}
-        </>
-      ) : (
-        <>
-          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#3A5A6A', lineHeight: 1.6 }}>
-            Claim your DUAL wallet to view your Passport on-chain.
-          </p>
-          <button
-            onClick={handleSend}
-            disabled={state === 'loading'}
-            style={{ background: 'none', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 6, padding: '6px 14px', fontSize: 11, color: '#5ED3EA', cursor: state === 'loading' ? 'default' : 'pointer', letterSpacing: '0.06em', opacity: state === 'loading' ? 0.5 : 1 }}
-          >
-            {state === 'loading' ? 'Sending…' : state === 'error' ? 'Retry — Send Invite' : 'Send Wallet Invite →'}
-          </button>
-        </>
-      )}
+    <div style={{ marginTop: 20, padding: '18px 20px', background: 'rgba(94,211,234,0.04)', border: '1px solid rgba(94,211,234,0.12)', borderRadius: 12 }}>
+      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#2A4A5A', display: 'block', marginBottom: 8 }}>DUAL Wallet</span>
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#5A7A8A', lineHeight: 1.65 }}>
+        View your Passport on-chain in your personal DUAL Wallet.
+      </p>
+      <button
+        onClick={handleSend}
+        disabled={state === 'loading'}
+        style={{ display: 'inline-block', padding: '10px 20px', background: state === 'loading' ? 'rgba(94,211,234,0.06)' : 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 8, fontSize: 13, color: '#5ED3EA', cursor: state === 'loading' ? 'default' : 'pointer', fontWeight: 600, letterSpacing: '0.04em', fontFamily: 'inherit', opacity: state === 'loading' ? 0.6 : 1 }}
+      >
+        {state === 'loading' ? 'Sending…' : state === 'error' ? 'Failed — Try Again →' : 'Get Wallet Access →'}
+      </button>
     </div>
   );
 }
@@ -1080,13 +1083,13 @@ export default function MePage() {
                       <span style={{ ...metaVal, fontFamily: 'inherit', marginBottom: 24 }}>{badge.memberSince}</span>
                     </>
                   )}
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
+                  <WalletInviteButton />
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginTop: 14 }}>
                     <a href={`/badge/${badge.dualObjectId}`} className="ds-btn" style={btnPrimary}>View Passport →</a>
                     <a href={`https://explorer.dual.network/objects/${badge.dualObjectId}`} target="_blank" rel="noreferrer" className="ds-btn" style={btnOutline}>
                       View on DUAL Explorer →
                     </a>
                   </div>
-                  <WalletInviteButton />
                 </>
               ) : (
                 <div style={{ textAlign: 'center' as const, padding: '16px 0' }}>

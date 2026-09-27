@@ -22,12 +22,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No email address on your account.' }, { status: 400 });
   }
 
+  let alreadyMember = false;
   try {
     await members.invite(email);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // "already a member" is fine — the invite was previously accepted or is still pending
-    if (!msg.toLowerCase().includes('already')) {
+    if (msg.toLowerCase().includes('already')) {
+      alreadyMember = true;
+    } else {
       console.warn(`[wallet-invite] DUAL invite failed for ${email}:`, msg);
       return NextResponse.json({ error: 'Could not send invite. Try again shortly.' }, { status: 502 });
     }
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
   const orgId = process.env.DUAL_ORG_ID ?? '';
   return NextResponse.json({
     ok: true,
+    alreadyMember,
     walletUrl: `https://wallet.dual.network/${orgId}/login`,
   });
 }
