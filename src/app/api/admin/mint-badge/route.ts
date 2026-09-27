@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ebus } from '@/lib/dual-client';
+import { ebus, objects } from '@/lib/dual-client';
 import { calculateTier } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
@@ -120,6 +120,17 @@ export async function POST(req: NextRequest) {
 
   console.log(`[mint-badge] Minted DUAL object ${dualObjectId} for ${displayName}`);
 
+  // ── Set image metadata on DUAL Object ────────────────────────────────────────
+  const appUrl   = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
+  const imageUrl = `${appUrl}/api/og/${dualObjectId}`;
+  try {
+    await objects.update(dualObjectId, {}, { image: imageUrl });
+    console.log(`[mint-badge] Set metadata.image on DUAL object ${dualObjectId}`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[mint-badge] metadata.image update failed for ${dualObjectId}: ${msg} — continuing`);
+  }
+
   // ── Create DB records ─────────────────────────────────────────────────────────
   const { user, badge } = await db.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -147,7 +158,6 @@ export async function POST(req: NextRequest) {
     return { user, badge };
   });
 
-  const appUrl       = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
   const badgeFaceUrl = `${appUrl}/faces/badge?id=${dualObjectId}`;
 
   console.log(`[mint-badge] Created badge ${badge.id} for user ${user.id}`);
