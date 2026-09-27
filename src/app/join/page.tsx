@@ -932,7 +932,7 @@ export default function JoinPage() {
                   Your DUAL Wallet
                 </p>
                 <p style={{ margin: '0 0 10px', fontSize: 12, color: '#3A5A6A', lineHeight: 1.6 }}>
-                  An invitation has been sent to your email. Accept it to claim your wallet and view your Passport on DUAL.
+                  Check your email for an invitation from DUAL. Set your password there, then return to view your Passport in the wallet.
                 </p>
                 <a
                   href={result.dualWalletUrl}
@@ -940,7 +940,7 @@ export default function JoinPage() {
                   rel="noopener noreferrer"
                   style={{ fontSize: 11, color: '#5ED3EA', textDecoration: 'none', letterSpacing: '0.06em', opacity: 0.8 }}
                 >
-                  wallet.dual.network ↗
+                  Open wallet.dual.network ↗
                 </a>
               </div>
             )}
