@@ -1,17 +1,13 @@
 /**
  * Badge update worker.
  *
- * Processes PENDING rows in badge_updates by calling PATCH /objects/:id on DUAL.
- * In production, call this on a schedule (cron) or trigger it after each event.
- * For MVP: call runPendingUpdates() at the end of the webhook handler once
- * M5 (real DUAL integration) is wired in.
- *
+ * Processes PENDING rows in badge_updates by posting to the DUAL Event Bus.
  * Never runs concurrent DUAL writes — processes one row at a time to respect
  * per-account nonce ordering.
  */
 
 import { db } from './db';
-import { objects } from './dual-client';
+import { ebus } from './dual-client';
 import { UpdateStatus } from '@prisma/client';
 
 const MAX_ATTEMPTS = 5;
@@ -45,16 +41,21 @@ export async function runPendingUpdates(): Promise<void> {
         continue;
       }
 
-      const updated = await objects.update(update.badge.dualObjectId, customState);
+      const result = await ebus.execute({
+        update: {
+          id:   update.badge.dualObjectId,
+          data: { custom: customState },
+        },
+      });
 
       await db.$transaction([
         db.badgeUpdate.update({
           where: { id: update.id },
-          data: { status: UpdateStatus.COMPLETED, dualActionId: updated.integrity_hash },
+          data: { status: UpdateStatus.COMPLETED, dualActionId: result.action_id },
         }),
         db.badge.update({
           where: { id: update.badge.id },
-          data: { lastIntegrityHash: updated.integrity_hash },
+          data: { lastIntegrityHash: result.action_id },
         }),
       ]);
     } catch (err: unknown) {

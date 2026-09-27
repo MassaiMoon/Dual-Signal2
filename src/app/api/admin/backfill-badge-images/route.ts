@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { objects } from '@/lib/dual-client';
+import { ebus } from '@/lib/dual-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,12 @@ export async function POST(req: NextRequest) {
   for (const badge of badges) {
     const imageUrl = `${appUrl}/api/og/${badge.dualObjectId}`;
     try {
-      await objects.update(badge.dualObjectId, {}, { image: imageUrl });
+      await ebus.execute({
+        update: {
+          id:   badge.dualObjectId,
+          data: { metadata: { image: imageUrl } },
+        },
+      });
       results.push({ badgeId: badge.id, dualObjectId: badge.dualObjectId, status: 'updated' });
       console.log(`[backfill-badge-images] Set metadata.image on ${badge.dualObjectId}`);
     } catch (err) {
