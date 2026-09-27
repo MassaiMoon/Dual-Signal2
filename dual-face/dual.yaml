@@ -1,0 +1,15 @@
+api: https://api.dual.network
+
+face:
+  name: DUAL // SIGNAL Badge Face
+  renderer: go-template
+  views:
+    - variant: card
+      media_type: text/html
+      content_file: ./face.html
+    - variant: detail
+      media_type: text/html
+      content_file: ./face.html
+
+template:
+  id: 6a992c456df5194a3695ab9b
