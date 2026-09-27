@@ -79,13 +79,14 @@ export function buildRequestedState(
   dcLvl:  number,
   govLvl: number,
 ): Record<string, string> {
+  // achievement_level encodes all 4 track levels as a 4-digit string: "{x}{tg}{gov}{dc}"
+  // e.g. "1100" = X:1, Telegram:1, Governance:0, Discord:0
+  // The DUAL template schema only accepts fields already defined there; this reuses
+  // the existing achievement_level field to avoid schema changes.
   return {
-    signal_score:     String(score),
-    identity_tier:    tier,
-    x_signal_level:   String(xLvl),
-    telegram_level:   String(tgLvl),
-    discord_level:    String(dcLvl),
-    governance_level: String(govLvl),
+    signal_score:      String(score),
+    identity_tier:     tier,
+    achievement_level: `${xLvl}${tgLvl}${govLvl}${dcLvl}`,
   };
 }
 

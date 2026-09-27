@@ -18,9 +18,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Reset FAILED/PROCESSING rows and also PENDING rows that are near the attempt ceiling
+  // (attempts >= 3) so they don't get permanently killed on the next flush.
   const result = await db.badgeUpdate.updateMany({
-    where: { status: { in: [UpdateStatus.FAILED, UpdateStatus.PROCESSING] } },
-    data:  { status: UpdateStatus.PENDING, attempts: 0, errorMessage: null },
+    where: {
+      OR: [
+        { status: { in: [UpdateStatus.FAILED, UpdateStatus.PROCESSING] } },
+        { status: UpdateStatus.PENDING, attempts: { gte: 3 } },
+      ],
+    },
+    data: { status: UpdateStatus.PENDING, attempts: 0, errorMessage: null },
   });
 
   return NextResponse.json({ reset: result.count });

@@ -9,84 +9,147 @@
 html,body{width:100%;height:100%;background:#001A27;overflow:hidden}
 #w{position:relative;width:100%;aspect-ratio:3/2;overflow:hidden}
 .a{position:absolute}
+.tier{left:10%;top:9%;width:42%;height:74%;object-fit:contain;z-index:2}
+.pin{object-fit:contain;z-index:4;opacity:.8}
+.ach{height:88%;aspect-ratio:1;object-fit:contain;flex-shrink:0}
 </style>
 </head>
 <body>
 <div id="w">
+
+  <!-- Background -->
   <img class="a" src="https://dualsignal.org/assets/dual-signal/card/card-background.png"
     style="inset:0;width:100%;height:100%;object-fit:fill;z-index:0" alt="">
-  <img class="a" id="tier-img" src="https://dualsignal.org/assets/dual-signal/tiers/tier-1-initiate.png"
-    style="left:10%;top:9%;width:42%;height:74%;object-fit:contain;z-index:2" alt="">
-  <img class="a" id="gen-pin" src="https://dualsignal.org/assets/dual-signal/special/genesis.png"
-    style="left:11%;top:64%;width:9.5%;height:16%;object-fit:contain;z-index:4;opacity:.8;display:none" alt="">
-  <img class="a" id="og-pin" src="https://dualsignal.org/assets/dual-signal/special/og.png"
-    style="left:42.25%;top:64%;width:9.5%;height:16%;object-fit:contain;z-index:4;opacity:.8;display:none" alt="">
-  <div class="a" id="tier-name"
-    style="left:11%;top:73%;width:41%;text-align:center;z-index:5;color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(10px,3.2%,22px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;line-height:1"></div>
-  <div class="a"
-    style="left:59.5%;top:24.5%;width:29%;height:6%;z-index:5;display:flex;align-items:center;padding-top:1.2%;padding-right:12%">
-    <span id="username" style="color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(12px,2.6%,22px);font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%"></span>
+
+  <!-- Tier artwork -->
+  {{ if eq .custom.identity_tier "LEGEND" }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-6-legend.png"
+    style="filter:brightness(1.20) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ else if eq .custom.identity_tier "GENESIS" }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-5-genesis.png"
+    style="filter:brightness(1.10) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ else if eq .custom.identity_tier "STAKEHOLDER" }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-4-stakeholder.png"
+    style="filter:brightness(1.00) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ else if eq .custom.identity_tier "BUILDER" }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-3-builder.png"
+    style="filter:brightness(0.90) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ else if eq .custom.identity_tier "EXPLORER" }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-2-explorer.png"
+    style="filter:brightness(0.80) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ else }}
+  <img class="a tier" src="https://dualsignal.org/assets/dual-signal/tiers/tier-1-initiate.png"
+    style="filter:brightness(0.70) drop-shadow(0 0 2.5% #5ED3EA55)" alt="">
+  {{ end }}
+
+  <!-- Genesis prestige pin -->
+  {{ if eq .custom.is_genesis "true" }}
+  <img class="a pin" src="https://dualsignal.org/assets/dual-signal/special/genesis.png"
+    style="left:11%;top:64%;width:9.5%;height:16%" alt="">
+  {{ end }}
+
+  <!-- OG prestige pin -->
+  {{ if eq .custom.is_stakeholder "true" }}
+  <img class="a pin" src="https://dualsignal.org/assets/dual-signal/special/og.png"
+    style="left:42.25%;top:64%;width:9.5%;height:16%" alt="">
+  {{ end }}
+
+  <!-- Tier name -->
+  <div class="a" style="left:11%;top:73%;width:41%;text-align:center;z-index:5;color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(8px,3.2vw,22px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;line-height:1">{{ if .custom.identity_tier }}{{ .custom.identity_tier }}{{ else }}INITIATE{{ end }}</div>
+
+  <!-- Username -->
+  <div class="a" style="left:59.5%;top:24.5%;width:29%;height:6%;z-index:5;display:flex;align-items:center;padding-top:1.2%;padding-right:12%;overflow:hidden">
+    <span style="color:#5ED3EA;font-family:'Rajdhani',monospace;font-size:clamp(8px,1.8vw,16px);font-weight:600;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ .metadata.name }}</span>
   </div>
-  <div class="a"
-    style="left:57.5%;top:35.5%;width:24%;height:8%;z-index:5;display:flex;align-items:center;line-height:1">
-    <span id="score" style="color:#5ED3EA;font-family:'Orbitron','Rajdhani',monospace;font-size:clamp(14px,4.5%,36px);font-weight:700"></span>
+
+  <!-- Signal score -->
+  <div class="a" style="left:57.5%;top:35.5%;width:24%;height:8%;z-index:5;display:flex;align-items:center;line-height:1">
+    <span style="color:#5ED3EA;font-family:'Orbitron','Rajdhani',monospace;font-size:clamp(10px,3vw,36px);font-weight:700">{{ if and .custom.signal_score (ne .custom.signal_score "0") }}{{ .custom.signal_score }}{{ else if .custom.signal_count }}{{ .custom.signal_count }}{{ else }}0{{ end }}</span>
   </div>
-  <div class="a" id="ach-x"   style="left:71%;right:8%;top:56%;  height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)"></div>
-  <div class="a" id="ach-tg"  style="left:71%;right:8%;top:62.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)"></div>
-  <div class="a" id="ach-gov" style="left:71%;right:8%;top:69.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)"></div>
-  <div class="a" id="ach-dc"  style="left:71%;right:8%;top:75.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)"></div>
+
+  {{/*
+    achievement_level is a 4-digit packed string: "{x}{tg}{gov}{dc}"
+    e.g. "1101" = X:1, Telegram:1, Governance:0, Discord:1
+    Positions: 0=X Signal, 1=Telegram, 2=Governance, 3=Discord
+    Go template slice on a string returns a substring for comparison with string gt/eq.
+  */}}
+
+  <!-- X Signal achievements (row cy=56%) -->
+  {{ if and (gt (len .custom.achievement_level) 0) (gt (slice .custom.achievement_level 0 1) "0") }}
+  <div class="a" style="left:71%;right:8%;top:56%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)">
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/x/x-1-first-signal.png" alt="">
+    {{ if gt (slice .custom.achievement_level 0 1) "1" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/x/x-2-spark.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 0 1) "2" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/x/x-3-pulse.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 0 1) "3" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/x/x-4-wave.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 0 1) "4" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/x/x-5-impact.png" alt="">
+    {{ end }}
+  </div>
+  {{ end }}
+
+  <!-- Telegram achievements (row cy=62.5%) -->
+  {{ if and (gt (len .custom.achievement_level) 1) (gt (slice .custom.achievement_level 1 2) "0") }}
+  <div class="a" style="left:71%;right:8%;top:62.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)">
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/telegram/telegram-1-first-contact.png" alt="">
+    {{ if gt (slice .custom.achievement_level 1 2) "1" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/telegram/telegram-2-regular.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 1 2) "2" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/telegram/telegram-3-connected.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 1 2) "3" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/telegram/telegram-4-core-member.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 1 2) "4" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/telegram/telegram-5-pillar.png" alt="">
+    {{ end }}
+  </div>
+  {{ end }}
+
+  <!-- Governance achievements (row cy=69.5%) -->
+  {{ if and (gt (len .custom.achievement_level) 2) (gt (slice .custom.achievement_level 2 3) "0") }}
+  <div class="a" style="left:71%;right:8%;top:69.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)">
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/governance/governance-1-first-vote.png" alt="">
+    {{ if gt (slice .custom.achievement_level 2 3) "1" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/governance/governance-2-voter.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 2 3) "2" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/governance/governance-3-participant.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 2 3) "3" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/governance/governance-4-governor.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 2 3) "4" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/governance/governance-5-steward.png" alt="">
+    {{ end }}
+  </div>
+  {{ end }}
+
+  <!-- Discord achievements (row cy=75.5%) -->
+  {{ if and (gt (len .custom.achievement_level) 3) (gt (slice .custom.achievement_level 3 4) "0") }}
+  <div class="a" style="left:71%;right:8%;top:75.5%;height:7.5%;z-index:3;display:flex;align-items:center;transform:translateY(-50%)">
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/discord/discord-1-first-contact.png" alt="">
+    {{ if gt (slice .custom.achievement_level 3 4) "1" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/discord/discord-2-regular.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 3 4) "2" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/discord/discord-3-connected.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 3 4) "3" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/discord/discord-4-core-member.png" alt="">
+    {{ end }}
+    {{ if gt (slice .custom.achievement_level 3 4) "4" }}
+    <img class="ach" src="https://dualsignal.org/assets/dual-signal/achievements/discord/discord-5-pillar.png" alt="">
+    {{ end }}
+  </div>
+  {{ end }}
+
 </div>
-<script>
-var ID='{{ .id }}';
-var B='https://dualsignal.org';
-var TIERS={
-  INITIATE:   B+'/assets/dual-signal/tiers/tier-1-initiate.png',
-  EXPLORER:   B+'/assets/dual-signal/tiers/tier-2-explorer.png',
-  BUILDER:    B+'/assets/dual-signal/tiers/tier-3-builder.png',
-  STAKEHOLDER:B+'/assets/dual-signal/tiers/tier-4-stakeholder.png',
-  GENESIS:    B+'/assets/dual-signal/tiers/tier-5-genesis.png',
-  LEGEND:     B+'/assets/dual-signal/tiers/tier-6-legend.png'
-};
-var BRIGHT={INITIATE:.70,EXPLORER:.80,BUILDER:.90,STAKEHOLDER:1.00,GENESIS:1.10,LEGEND:1.20};
-var ACH={
-  x:   ['x-1-first-signal','x-2-spark','x-3-pulse','x-4-wave','x-5-impact'].map(function(n){return B+'/assets/dual-signal/achievements/x/'+n+'.png'}),
-  tg:  ['telegram-1-first-contact','telegram-2-regular','telegram-3-connected','telegram-4-core-member','telegram-5-pillar'].map(function(n){return B+'/assets/dual-signal/achievements/telegram/'+n+'.png'}),
-  gov: ['governance-1-first-vote','governance-2-voter','governance-3-participant','governance-4-governor','governance-5-steward'].map(function(n){return B+'/assets/dual-signal/achievements/governance/'+n+'.png'}),
-  dc:  ['discord-1-first-contact','discord-2-regular','discord-3-connected','discord-4-core-member','discord-5-pillar'].map(function(n){return B+'/assets/dual-signal/achievements/discord/'+n+'.png'})
-};
-
-function setAch(el,srcs,level,connected){
-  el.innerHTML='';
-  if(!connected)return;
-  var count=Math.max(1,level||0);
-  for(var i=0;i<count;i++){
-    var img=document.createElement('img');
-    img.src=srcs[i];
-    img.style.cssText='height:88%;aspect-ratio:1;object-fit:contain;flex-shrink:0';
-    el.appendChild(img);
-  }
-}
-
-fetch(B+'/api/faces/'+ID)
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var tier=d.tier||'INITIATE';
-    var br=BRIGHT[tier]||.70;
-    var tierEl=document.getElementById('tier-img');
-    tierEl.src=TIERS[tier]||TIERS.INITIATE;
-    tierEl.style.filter='brightness('+br+') drop-shadow(0 0 2.5% #5ED3EA55)';
-    document.getElementById('tier-name').textContent=tier;
-    var ident=d.username||(d.walletAddress?d.walletAddress.slice(0,6)+'···'+d.walletAddress.slice(-4):'—');
-    document.getElementById('username').textContent=ident;
-    document.getElementById('score').textContent=(d.signalScore||0).toLocaleString();
-    if(d.isGenesis)document.getElementById('gen-pin').style.display='';
-    if(d.isOG)document.getElementById('og-pin').style.display='';
-    setAch(document.getElementById('ach-x'),  ACH.x,  d.xSignalLevel,    d.xConnected);
-    setAch(document.getElementById('ach-tg'), ACH.tg, d.telegramLevel,   d.telegramConnected);
-    setAch(document.getElementById('ach-gov'),ACH.gov,d.governanceLevel, d.governanceConnected);
-    setAch(document.getElementById('ach-dc'), ACH.dc, d.discordLevel,    d.discordConnected);
-  })
-  .catch(function(){});
-</script>
 </body>
 </html>
