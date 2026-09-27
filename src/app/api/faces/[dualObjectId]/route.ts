@@ -4,6 +4,15 @@ import { Provider } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
+const CORS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ dualObjectId: string }> }
@@ -15,7 +24,7 @@ export async function GET(
     include: {
       user: {
         select: {
-          username:        true,
+          username:         true,
           externalAccounts: { select: { source: true } },
         },
       },
@@ -23,7 +32,7 @@ export async function GET(
   });
 
   if (!badge) {
-    return NextResponse.json({ error: 'Badge not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Badge not found' }, { status: 404, headers: CORS });
   }
 
   const connectedProviders = new Set(badge.user?.externalAccounts.map(a => a.source) ?? []);
@@ -48,16 +57,14 @@ export async function GET(
     walletAddress:   badge.walletAddress,
     username:        badge.user?.username ?? '',
     memberSince:     badge.memberSince,
-    // Connected flags — true when account is linked (not necessarily verified)
     xConnected,
     telegramConnected,
     discordConnected,
     governanceConnected,
-    // Progress counters
     xSignalPublicViews: badge.xSignalPublicViews,
     xQualifyingPosts:   badge.xQualifyingPosts,
     telegramActiveDays: badge.telegramActiveDays,
     discordActiveDays:  badge.discordActiveDays,
     governanceVotes:    badge.governanceVotes,
-  });
+  }, { headers: CORS });
 }
