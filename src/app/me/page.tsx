@@ -1043,12 +1043,6 @@ export default function MePage() {
               )}
             </div>
 
-            {/* Wallet coming soon */}
-            <div style={{ marginTop: 16, background: 'rgba(7,21,37,0.4)', border: `1px solid rgba(94,211,234,0.08)`, borderRadius: 12, padding: '20px 24px' }}>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: C.textDim, display: 'block', marginBottom: 5 }}>Coming Soon</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.textMuted, display: 'block', marginBottom: 5 }}>DUAL Wallet Integration</span>
-              <span style={{ fontSize: 11, color: C.textDim, lineHeight: 1.65, display: 'block' }}>Your SIGNAL Passport and reputation will continue building in the meantime.</span>
-            </div>
           </div>
 
         </div>
