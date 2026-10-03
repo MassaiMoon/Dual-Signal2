@@ -409,7 +409,7 @@ export default function JoinPage() {
   const [forum,      setForum]      = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
-  const [result,     setResult]     = useState<{ username: string; badgeUrl: string; memberSince: string; dualWalletUrl: string | null } | null>(null);
+  const [result,     setResult]     = useState<{ username: string; email: string | null; badgeUrl: string; memberSince: string; dualWalletUrl: string | null; dualWalletTempPassword: string | null } | null>(null);
   const [inputFocus, setInputFocus] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -544,7 +544,7 @@ export default function JoinPage() {
         return;
       }
 
-      setResult({ username: data.username, badgeUrl: data.badgeUrl, memberSince: data.memberSince, dualWalletUrl: data.dualWalletUrl ?? null });
+      setResult({ username: data.username, email: data.email ?? null, badgeUrl: data.badgeUrl, memberSince: data.memberSince, dualWalletUrl: data.dualWalletUrl ?? null, dualWalletTempPassword: data.dualWalletTempPassword ?? null });
       setStep('done');
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -923,24 +923,45 @@ export default function JoinPage() {
             {result.dualWalletUrl && (
               <div style={{
                 marginTop:    20,
-                padding:      '14px 16px',
-                background:   'rgba(94,211,234,0.04)',
-                border:       '1px solid rgba(94,211,234,0.10)',
-                borderRadius:  10,
+                padding:      '18px 20px',
+                background:   'rgba(94,211,234,0.05)',
+                border:       '1px solid rgba(94,211,234,0.15)',
+                borderRadius:  12,
               }}>
-                <p style={{ margin: '0 0 8px', fontSize: 10, letterSpacing: '0.18em', color: '#2A4A5A', textTransform: 'uppercase' as const, fontWeight: 700 }}>
+                <p style={{ margin: '0 0 12px', fontSize: 10, letterSpacing: '0.18em', color: '#5ED3EA', textTransform: 'uppercase' as const, fontWeight: 700 }}>
                   Your DUAL Wallet
                 </p>
-                <p style={{ margin: '0 0 10px', fontSize: 12, color: '#3A5A6A', lineHeight: 1.6 }}>
-                  Check your email for an invitation from DUAL. Set your password there, then return to view your Passport in the wallet.
-                </p>
+                {result.dualWalletTempPassword ? (
+                  <>
+                    <p style={{ margin: '0 0 10px', fontSize: 12, color: '#8BB8CC', lineHeight: 1.65 }}>
+                      Your DUAL wallet account has been created. Verify your email, then log in with these credentials:
+                    </p>
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontFamily: 'monospace' }}>
+                      {result.email && (
+                        <>
+                          <div style={{ fontSize: 11, color: '#5A7A8A', marginBottom: 4 }}>Email</div>
+                          <div style={{ fontSize: 13, color: '#C8D8E8', marginBottom: 8 }}>{result.email}</div>
+                        </>
+                      )}
+                      <div style={{ fontSize: 11, color: '#5A7A8A', marginBottom: 4 }}>Temporary password</div>
+                      <div style={{ fontSize: 13, color: '#5ED3EA', letterSpacing: '0.04em' }}>{result.dualWalletTempPassword}</div>
+                    </div>
+                    <p style={{ margin: '0 0 10px', fontSize: 11, color: '#4A6A7A', lineHeight: 1.6 }}>
+                      Save this password — it is shown once. You can change it after logging in.
+                    </p>
+                  </>
+                ) : (
+                  <p style={{ margin: '0 0 10px', fontSize: 12, color: '#5A7A8A', lineHeight: 1.65 }}>
+                    Log in to view your Passport on DUAL.
+                  </p>
+                )}
                 <a
                   href={result.dualWalletUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: 11, color: '#5ED3EA', textDecoration: 'none', letterSpacing: '0.06em', opacity: 0.8 }}
+                  style={{ display: 'inline-block', padding: '8px 16px', background: 'rgba(94,211,234,0.10)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 7, fontSize: 12, color: '#5ED3EA', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.04em' }}
                 >
-                  Open wallet.dual.network ↗
+                  Open DUAL Wallet ↗
                 </a>
               </div>
             )}

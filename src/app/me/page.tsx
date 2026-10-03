@@ -419,54 +419,18 @@ function ForumRow({ handle, onUpdated }: { handle: string; onUpdated: (h: string
 // ── Wallet Invite Button ──────────────────────────────────────────────────────
 
 function WalletInviteButton() {
-  const [state, setState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
-  const [walletUrl, setWalletUrl] = useState<string | null>(null);
-  const [alreadyMember, setAlreadyMember] = useState(false);
-
-  async function handleSend() {
-    setState('loading');
-    try {
-      const res = await fetch('/api/public/wallet-invite', { method: 'POST' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? 'Failed');
-      setWalletUrl(json.walletUrl);
-      setAlreadyMember(!!json.alreadyMember);
-      setState('ready');
-    } catch {
-      setState('error');
-    }
-  }
-
-  if (state === 'ready' && walletUrl) {
-    return (
-      <div style={{ marginTop: 20, padding: '18px 20px', background: 'rgba(94,211,234,0.06)', border: '1px solid rgba(94,211,234,0.20)', borderRadius: 12 }}>
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#5ED3EA', display: 'block', marginBottom: 8 }}>DUAL Wallet</span>
-        <p style={{ margin: '0 0 14px', fontSize: 13, color: '#8BB8CC', lineHeight: 1.65 }}>
-          {alreadyMember
-            ? 'Your wallet is already set up. Open it below to view your Passport on DUAL.'
-            : 'Invite sent to your email. Set your password there, then open your wallet below.'}
-        </p>
-        <a href={walletUrl} target="_blank" rel="noopener noreferrer"
-          style={{ display: 'inline-block', padding: '10px 20px', background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.30)', borderRadius: 8, fontSize: 13, color: '#5ED3EA', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.04em' }}>
-          Open DUAL Wallet ↗
-        </a>
-      </div>
-    );
-  }
-
+  const orgId = process.env.NEXT_PUBLIC_DUAL_ORG_ID ?? '6a9831bdc8ff2688f8c9d3e2';
+  const walletUrl = `https://wallet.dual.network/${orgId}/login`;
   return (
     <div style={{ marginTop: 20, padding: '18px 20px', background: 'rgba(94,211,234,0.04)', border: '1px solid rgba(94,211,234,0.12)', borderRadius: 12 }}>
       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase' as const, color: '#2A4A5A', display: 'block', marginBottom: 8 }}>DUAL Wallet</span>
       <p style={{ margin: '0 0 14px', fontSize: 13, color: '#5A7A8A', lineHeight: 1.65 }}>
-        View your Passport on-chain in your personal DUAL Wallet.
+        View your Passport on DUAL using the email and password you received when you joined.
       </p>
-      <button
-        onClick={handleSend}
-        disabled={state === 'loading'}
-        style={{ display: 'inline-block', padding: '10px 20px', background: state === 'loading' ? 'rgba(94,211,234,0.06)' : 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 8, fontSize: 13, color: '#5ED3EA', cursor: state === 'loading' ? 'default' : 'pointer', fontWeight: 600, letterSpacing: '0.04em', fontFamily: 'inherit', opacity: state === 'loading' ? 0.6 : 1 }}
-      >
-        {state === 'loading' ? 'Sending…' : state === 'error' ? 'Failed — Try Again →' : 'Get Wallet Access →'}
-      </button>
+      <a href={walletUrl} target="_blank" rel="noopener noreferrer"
+        style={{ display: 'inline-block', padding: '10px 20px', background: 'rgba(94,211,234,0.12)', border: '1px solid rgba(94,211,234,0.25)', borderRadius: 8, fontSize: 13, color: '#5ED3EA', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.04em' }}>
+        Open DUAL Wallet ↗
+      </a>
     </div>
   );
 }

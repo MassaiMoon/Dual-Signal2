@@ -11,8 +11,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
-import { ebus, members } from '@/lib/dual-client';
+import { ebus, wallets } from '@/lib/dual-client';
 import { getSessionFromRequest } from '@/lib/auth';
 import { Provider } from '@prisma/client';
 
@@ -209,31 +210,37 @@ export async function POST(req: NextRequest) {
 
   console.log(`[join] Created passport for ${username} — objectId=${dualObjectId}`);
 
-  // Invite user to the DUAL org as an end-user member (non-blocking).
-  // They'll receive an email with a link to register their DUAL wallet and
-  // view their badge at wallet.dual.network/{orgId}/login.
+  // Register a DUAL wallet for the user (non-blocking, best-effort).
+  // POST /wallets/register is a public endpoint — no auth required.
+  // DUAL sends a verification email; the user verifies, then logs in at the org wallet URL.
   const userEmail = memberAuth.email;
-  let dualWalletUrl: string | null = null;
+  const orgId = process.env.DUAL_ORG_ID ?? '';
+  const dualWalletUrl = orgId ? `https://wallet.dual.network/${orgId}/login` : null;
+  let dualWalletTempPassword: string | null = null;
+
   if (userEmail) {
     try {
-      await members.invite(userEmail);
-      const orgId = process.env.DUAL_ORG_ID ?? '';
-      dualWalletUrl = `https://wallet.dual.network/${orgId}/login`;
-      console.log(`[join] DUAL org invite sent to ${userEmail}`);
+      const tempPassword = `Sig-${randomBytes(8).toString('hex')}`;
+      await wallets.register(userEmail, tempPassword, username);
+      dualWalletTempPassword = tempPassword;
+      console.log(`[join] DUAL wallet registered for ${userEmail}`);
     } catch (err) {
-      // Non-fatal — badge is created, wallet invite is best-effort
-      console.warn(`[join] DUAL invite failed for ${userEmail}:`, err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      // "already exists" or similar — wallet already exists, skip quietly
+      console.warn(`[join] DUAL wallet registration skipped for ${userEmail}:`, msg);
     }
   }
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '');
 
   return NextResponse.json({
-    status:       'created',
+    status:                'created',
     username,
-    dualObjectId: badge.dualObjectId,
-    badgeUrl:     `${appUrl}/badge/${badge.dualObjectId}`,
+    email:                 userEmail ?? null,
+    dualObjectId:          badge.dualObjectId,
+    badgeUrl:              `${appUrl}/badge/${badge.dualObjectId}`,
     dualWalletUrl,
+    dualWalletTempPassword,
     memberSince,
     connected: {
       x:          !!xHandle,

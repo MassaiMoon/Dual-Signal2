@@ -15,7 +15,7 @@ const ORG_ID = process.env.DUAL_ORG_ID ?? '';
 type RequestOptions = {
   method?: string;
   body?: unknown;
-  auth?: 'apiKey' | 'jwt';
+  auth?: 'apiKey' | 'jwt' | 'none';
 };
 
 let jwtToken: string | null = null;
@@ -65,6 +65,8 @@ async function dualRequest<T>(path: string, opts: RequestOptions = {}): Promise<
   if (auth === 'jwt') {
     const token = await getJwt();
     headers['Authorization'] = `Bearer ${token}`;
+  } else if (auth === 'none') {
+    // public endpoint — no auth header
   } else {
     headers['X-Api-Key'] = API_KEY;
   }
@@ -195,6 +197,25 @@ export const webhooks = {
 export const org = {
   get: () => dualRequest<{ id: string; fqdn: string }>(`/organizations/${ORG_ID}`),
   balance: () => dualRequest<{ amount: string }>(`/organizations/${ORG_ID}/balance`),
+};
+
+// ─── Wallets (end-user registration) ─────────────────────────────────────────
+
+export type DualWalletRegistration = {
+  userId: string;
+  email: string;
+  verificationRequired: boolean;
+};
+
+export const wallets = {
+  // Register a new end-user wallet. Auth: none (public endpoint).
+  // DUAL sends a verification email; the user must verify before logging in.
+  register: (email: string, password: string, name: string) =>
+    dualRequest<DualWalletRegistration>('/wallets/register', {
+      method: 'POST',
+      body:   { email, password, name },
+      auth:   'none',
+    }),
 };
 
 // ─── Members (end-user invitations) ──────────────────────────────────────────
