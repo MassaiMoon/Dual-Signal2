@@ -37,7 +37,11 @@ export function normalizeEmail(email: string): string {
 export type AuthedSession = Awaited<ReturnType<typeof getSessionFromRequest>> & {};
 
 export async function getSessionFromRequest(req: NextRequest) {
-  const raw = req.cookies.get(SESSION_COOKIE)?.value;
+  return getSessionByToken(req.cookies.get(SESSION_COOKIE)?.value);
+}
+
+/** Session lookup from a raw cookie value — for Server Components that read cookies() directly. */
+export async function getSessionByToken(raw: string | undefined) {
   if (!raw) return null;
 
   const tokenHash = hashToken(raw);

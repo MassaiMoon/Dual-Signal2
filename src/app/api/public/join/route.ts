@@ -134,6 +134,8 @@ export async function POST(req: NextRequest) {
         username,
         wallet_address:   '',
         member_since:     memberSince,
+        discord_handle:   discordHandle,
+        telegram_handle:  telegramHandle,
       },
       { name: `DUAL // SIGNAL — ${username}` },
     );

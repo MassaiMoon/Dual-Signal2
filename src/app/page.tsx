@@ -3,6 +3,10 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
+import { db } from '@/lib/db';
+import { C, TIERS, tierColor } from '@/lib/theme';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'DUAL // SIGNAL — Community Identity Passport',
@@ -13,326 +17,342 @@ export const metadata: Metadata = {
   },
 };
 
-const C = {
-  bg:      '#040E1A',
-  bgCard:  '#071525',
-  border:  'rgba(94,211,234,0.09)',
-  cyan:    '#5ED3EA',
-  cyanDim: '#0EB4D0',
-  text:    '#C8D8E8',
-  textDim: '#6A8A9A',
-};
+// ── Live data ─────────────────────────────────────────────────────────────────
+
+interface TopMember { username: string; score: number; tier: string; dualObjectId: string }
+interface HomeStats { passports: number; totalSignal: number; connections: number; top: TopMember[] }
+
+async function loadStats(): Promise<HomeStats | null> {
+  try {
+    const [passports, signal, connections, top] = await Promise.all([
+      db.badge.count(),
+      db.badge.aggregate({ _sum: { signalScore: true } }),
+      db.externalAccount.count(),
+      db.badge.findMany({
+        orderBy: { signalScore: 'desc' },
+        take:    3,
+        include: { user: { select: { username: true } } },
+      }),
+    ]);
+    return {
+      passports,
+      totalSignal: signal._sum.signalScore ?? 0,
+      connections,
+      top: top.map(b => ({
+        username:     b.user?.username ?? 'member',
+        score:        b.signalScore,
+        tier:         b.cachedTier,
+        dualObjectId: b.dualObjectId,
+      })),
+    };
+  } catch (err) {
+    console.error('[home] stats unavailable:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+// ── Content ───────────────────────────────────────────────────────────────────
+
+const STEPS = [
+  {
+    n: '01', title: 'Join with email',
+    body: 'Enter your email and click the secure link we send you. No password, no seed phrase — your DUAL wallet account is created for you.',
+    icon: <><rect x="2" y="4" width="16" height="12" rx="2"/><polyline points="2,6 10,12 18,6"/></>,
+  },
+  {
+    n: '02', title: 'Connect your accounts',
+    body: 'Link your X, Telegram, Discord and governance forum handles. Your community activity is tracked automatically and turns into SIGNAL.',
+    icon: <><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><line x1="7" y1="9" x2="13" y2="6"/><line x1="7" y1="11" x2="13" y2="14"/></>,
+  },
+  {
+    n: '03', title: 'Claim it in your DUAL wallet',
+    body: 'Your Passport is minted on the DUAL Network. Sign in to your DUAL wallet to see it — it levels up as your SIGNAL grows.',
+    icon: <><rect x="3" y="5" width="14" height="11" rx="2"/><path d="M3 8h14"/><circle cx="13.5" cy="12" r="1"/></>,
+  },
+];
+
+const CHANNELS = [
+  { icon: '𝕏',   label: 'X Signal',   color: '#D0E8F4', desc: 'Post qualifying content mentioning DUAL or SIGNAL. Earn levels as your posts accumulate views — from first post to 1M+.' },
+  { icon: 'TG',  label: 'Telegram',   color: '#5ED3EA', desc: 'Stay active in the DUAL Telegram group. Progress from 1 active day to 180 days of regular participation.' },
+  { icon: 'DC',  label: 'Discord',    color: '#7B83EB', desc: 'Engage in the DUAL Discord server. Active participation days earn SIGNAL alongside your Telegram presence.' },
+  { icon: 'GOV', label: 'Governance', color: '#F7C873', desc: 'Participate in the DUAL governance forum — post topics, comment on proposals, vote. Activity points accumulate toward Steward.' },
+];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function Home() {
   const jar = await cookies();
   if (jar.has('ds_session')) redirect('/me');
 
+  const stats    = await loadStats();
+  const featured = stats?.top.find(t => t.score > 0) ?? null;
+  // Real Passport of the current #1 member; a sample Passport until someone has SIGNAL.
+  const faceSrc  = featured ? `/faces/badge?id=${encodeURIComponent(featured.dualObjectId)}` : '/faces/badge?mock=mixed';
+
   return (
     <>
       <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: ${C.bg}; overflow-x: hidden; }
-
-        @keyframes ds-up {
-          from { opacity: 0; transform: translateY(22px); }
-          to   { opacity: 1; transform: translateY(0); }
+        .home-hero {
+          min-height: 100vh;
+          padding: 120px 0 80px;
+          display: flex; align-items: center;
+          position: relative; overflow: hidden;
+          background: radial-gradient(ellipse 900px 600px at 70% 45%, rgba(14,180,208,0.09) 0%, transparent 70%), var(--ds-bg);
         }
-        .ds-h1   { animation: ds-up 0.75s ease both; }
-        .ds-sub  { animation: ds-up 0.75s 0.15s ease both; }
-        .ds-ctas { animation: ds-up 0.75s 0.3s  ease both; }
-        .ds-stats{ animation: ds-up 0.75s 0.45s ease both; }
+        .home-hero-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+        .home-ctas { display: flex; gap: 12px; margin: 36px 0 44px; flex-wrap: wrap; }
 
-        .ds-nav-link { transition: color 0.15s; }
-        .ds-nav-link:hover { color: #A8C8D8 !important; }
-        .ds-btn-ghost:hover { border-color: rgba(94,211,234,0.22) !important; color: #7AAABB !important; }
-        .ds-btn-primary:hover { opacity: 0.88; }
-        .ds-step-card:hover { border-color: rgba(94,211,234,0.16) !important; }
-        .ds-ch-card:hover { border-color: rgba(94,211,234,0.16) !important; }
-        .ds-tier:hover { border-color: rgba(94,211,234,0.16) !important; background: rgba(94,211,234,0.05) !important; }
+        .home-passport { position: relative; perspective: 1400px; }
+        .home-passport-glow {
+          position: absolute; inset: 8% 6%;
+          background: radial-gradient(ellipse at center, rgba(94,211,234,0.28), transparent 70%);
+          filter: blur(40px); z-index: 0;
+        }
+        @keyframes home-float {
+          0%, 100% { transform: rotateY(-9deg) rotateX(4deg) translateY(0); }
+          50%      { transform: rotateY(-5deg) rotateX(2deg) translateY(-10px); }
+        }
+        .home-passport-card {
+          position: relative; z-index: 1;
+          aspect-ratio: 3 / 2; width: 100%;
+          border-radius: 18px; overflow: hidden;
+          border: 1px solid var(--ds-border-strong);
+          box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(94,211,234,0.06);
+          background: #001A27;
+          animation: home-float 7s ease-in-out infinite;
+        }
+        .home-passport-card iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }
+        .home-passport-caption {
+          position: relative; z-index: 1;
+          display: flex; justify-content: center; align-items: center; gap: 8px;
+          margin-top: 22px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ds-text-dim);
+        }
+        .home-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-success); box-shadow: 0 0 0 3px rgba(74,200,154,0.18); }
 
+        .home-stats { display: flex; gap: 36px; flex-wrap: wrap; }
+        .home-stat-value { display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--ds-text-strong); font-variant-numeric: tabular-nums; }
+        .home-stat-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ds-text-faint); margin-top: 6px; }
+
+        .home-top { margin-top: 28px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; max-width: 440px; }
+        .home-top-row { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 6px 2px; font-size: 13px; text-decoration: none; color: var(--ds-text); border-radius: 6px; }
+        .home-top-row:hover { background: var(--ds-cyan-wash); }
+
+        .home-sec { padding: 96px 0; }
+        .home-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .home-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .home-tiers { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+        .home-icon { width: 44px; height: 44px; background: var(--ds-cyan-wash); border: 1px solid var(--ds-border-strong); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+
+        @media (max-width: 960px) {
+          .home-hero { padding: 100px 0 64px; min-height: 0; }
+          .home-hero-grid { grid-template-columns: 1fr; gap: 48px; }
+          .home-passport { max-width: 560px; margin: 0 auto; width: 100%; }
+        }
         @media (max-width: 768px) {
-          .ds-nav        { padding: 0 20px !important; }
-          .ds-nav-extra  { display: none !important; }
-          .ds-hero       { padding: 88px 20px 60px !important; }
-          .ds-h1         { font-size: 48px !important; }
-          .ds-sub        { font-size: 15px !important; }
-          .ds-ctas       { flex-direction: column !important; width: 100% !important; }
-          .ds-ctas a     { width: 100% !important; justify-content: center !important; }
-          .ds-stats      { gap: 24px !important; }
-          .ds-section    { padding: 0 20px !important; }
-          .ds-step-grid  { grid-template-columns: 1fr !important; }
-          .ds-ch-grid    { grid-template-columns: 1fr !important; }
-          .ds-tiers      { flex-wrap: wrap !important; }
-          .ds-tiers > *  { flex: 0 0 calc(33.33% - 4px) !important; min-width: 0 !important; }
-          .ds-cta-box    { padding: 48px 24px !important; }
-          .ds-footer     { padding: 20px !important; flex-direction: column !important; gap: 6px !important; }
-          .ds-sec        { padding: 64px 0 !important; }
+          .home-sec { padding: 64px 0; }
+          .home-grid-3, .home-grid-2 { grid-template-columns: 1fr; }
+          .home-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .home-ctas .ds-btn { flex: 1 1 100%; }
+          .home-stats { gap: 24px; }
+          .home-cta-box { padding: 48px 20px !important; }
         }
         @media (max-width: 480px) {
-          .ds-nav        { padding: 0 16px !important; }
-          .ds-hero       { padding: 80px 16px 48px !important; }
-          .ds-h1         { font-size: 38px !important; }
-          .ds-stats      { gap: 16px !important; flex-wrap: wrap !important; justify-content: center !important; }
-          .ds-section    { padding: 0 16px !important; }
-          .ds-tiers > *  { flex: 0 0 calc(50% - 3px) !important; }
-          .ds-cta-box    { padding: 40px 16px !important; }
-          .ds-footer     { padding: 16px !important; }
+          .home-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: "'Inter','SF Pro Display',system-ui,sans-serif" }}>
+      {/* ── Nav ── */}
+      <nav className="ds-nav">
+        <Link href="/" className="ds-logo">DUAL <span>//</span> SIGNAL</Link>
+        <div className="ds-nav-links">
+          <span className="ds-pill ds-nav-hide-sm">Alpha</span>
+          <Link href="/leaderboard" className="ds-nav-link ds-nav-hide-sm">Leaderboard</Link>
+          <Link href="/login" className="ds-btn ds-btn-primary ds-btn-sm">Get Passport →</Link>
+        </div>
+      </nav>
 
-        {/* ── Nav ── */}
-        <nav className="ds-nav" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-          background: 'rgba(4,14,26,0.88)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: `1px solid ${C.border}`,
-          height: 64,
-          padding: '0 48px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <Link href="/" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.22em', color: '#E8F4FC', textTransform: 'uppercase', textDecoration: 'none' }}>
-            DUAL <span style={{ color: C.cyan }}>//</span> SIGNAL
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-            <span className="ds-nav-extra" style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(94,211,234,0.4)', border: '1px solid rgba(94,211,234,0.14)', borderRadius: 4, padding: '3px 8px' }}>ALPHA</span>
-            <Link href="/leaderboard" className="ds-nav-link ds-nav-extra" style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#3A5A6A', textDecoration: 'none' }}>Leaderboard</Link>
-            <Link href="/login" className="ds-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', background: C.cyanDim, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '9px 18px', borderRadius: 8, textDecoration: 'none', transition: 'opacity 0.15s' }}>
-              Get Passport →
-            </Link>
-          </div>
-        </nav>
+      {/* ── Hero ── */}
+      <section className="home-hero">
+        <div className="ds-container" style={{ width: '100%' }}>
+          <div className="home-hero-grid">
+            <div className="ds-anim-up">
+              <p className="ds-eyebrow">Community Identity Passport</p>
+              <h1 className="ds-h1" style={{ fontSize: 'clamp(36px, 3.8vw, 56px)' }}>Your DUAL activity,<br /><em>on one Passport.</em></h1>
+              <p className="ds-lead" style={{ marginTop: 22, maxWidth: 480 }}>
+                Earn SIGNAL from what you already do on X, Telegram, Discord and the governance forum.
+                Your Passport lives on the DUAL Network and levels up with you.
+              </p>
 
-        {/* ── Hero ── */}
-        <section className="ds-hero" style={{
-          minHeight: '100vh',
-          padding: '100px 48px 80px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          textAlign: 'center',
-          position: 'relative', overflow: 'hidden',
-          background: `radial-gradient(ellipse 900px 600px at 50% 40%, rgba(14,180,208,0.06) 0%, transparent 70%), ${C.bg}`,
-        }}>
-          {/* Butterfly */}
-          <Image
-            src="/assets/dual-signal/ui/Signal-butterfly.png"
-            alt="" aria-hidden width={560} height={560} priority
-            style={{ position: 'absolute', right: -80, bottom: -60, opacity: 0.06, filter: 'saturate(0.1) brightness(0.65)', pointerEvents: 'none', userSelect: 'none' }}
-          />
+              <div className="home-ctas">
+                <Link href="/login" className="ds-btn ds-btn-primary">Get Your Passport →</Link>
+                <Link href="/leaderboard" className="ds-btn ds-btn-ghost">View Leaderboard</Link>
+              </div>
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* Eyebrow */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.cyan, marginBottom: 28 }}>
-              <span style={{ display: 'block', width: 28, height: 1, background: 'rgba(94,211,234,0.35)' }} />
-              Community Identity Passport
-              <span style={{ display: 'block', width: 28, height: 1, background: 'rgba(94,211,234,0.35)' }} />
-            </div>
-
-            <h1 className="ds-h1" style={{ fontSize: 74, fontWeight: 900, lineHeight: 1.04, letterSpacing: '-0.03em', color: '#F0F8FC', maxWidth: 700, marginBottom: 22, width: '100%' }}>
-              Build Your<br />
-              <span style={{ color: C.cyan }}>On-Chain Identity</span>
-            </h1>
-
-            <p className="ds-sub" style={{ fontSize: 17, color: '#6A8A9A', lineHeight: 1.75, maxWidth: 460, marginBottom: 44 }}>
-              The reputation layer for the DUAL Network community. Earn SIGNAL through real activity. Mint your verified Passport on-chain.
-            </p>
-
-            <div className="ds-ctas" style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 64 }}>
-              <Link href="/login" className="ds-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: C.cyanDim, color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 30px', borderRadius: 10, textDecoration: 'none', transition: 'opacity 0.15s' }}>
-                Get Your Passport →
-              </Link>
-              <Link href="/leaderboard" className="ds-btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#4A6A7A', fontSize: 13, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '15px 24px', borderRadius: 10, border: '1px solid rgba(94,211,234,0.1)', textDecoration: 'none', transition: 'all 0.15s' }}>
-                View Leaderboard
-              </Link>
-            </div>
-
-            {/* Stats */}
-            <div className="ds-stats" style={{ display: 'flex', gap: 48, alignItems: 'center' }}>
-              {[
-                { value: '1,000', label: 'Max Signal' },
-                { value: '6',     label: 'Tiers' },
-                { value: '4',     label: 'Channels' },
-                { value: '6301',  label: 'Chain' },
-              ].map((s, i, arr) => (
-                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 48 }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'block', fontSize: 24, fontWeight: 800, color: '#D0E8F4', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{s.value}</span>
-                    <span style={{ display: 'block', fontSize: 9, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A7A8A', marginTop: 5 }}>{s.label}</span>
-                  </div>
-                  {i < arr.length - 1 && <div style={{ width: 1, height: 32, background: 'rgba(94,211,234,0.08)' }} />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
-
-        {/* ── How It Works ── */}
-        <section className="ds-sec" style={{ padding: '96px 0' }}>
-          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>How It Works</div>
-              <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>Three steps to your Passport</h2>
-              <p style={{ fontSize: 15, color: '#6A8A9A', marginTop: 12, lineHeight: 1.7 }}>Your identity is built from real community activity — not self-reported claims.</p>
-            </div>
-
-            <div className="ds-step-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
-              {[
-                {
-                  n: '01', title: 'Join with Email',
-                  body: 'Enter your email and receive a secure magic link. No password. No wallet required to start.',
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5ED3EA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="16" height="12" rx="2"/><polyline points="2,6 10,12 18,6"/>
-                    </svg>
-                  ),
-                },
-                {
-                  n: '02', title: 'Connect Your Accounts',
-                  body: 'Link your X, Telegram, Discord, and governance forum handles. Your activity is tracked automatically.',
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5ED3EA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/>
-                      <line x1="7" y1="9" x2="13" y2="6"/><line x1="7" y1="11" x2="13" y2="14"/>
-                    </svg>
-                  ),
-                },
-                {
-                  n: '03', title: 'Earn SIGNAL',
-                  body: 'Your passport score updates as you participate. Reach Level 5 in all four channels to hit 1,000 SIGNAL.',
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5ED3EA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="10,16 10,4"/><polyline points="5,9 10,4 15,9"/>
-                      <line x1="4" y1="16" x2="16" y2="16" strokeOpacity="0.35"/>
-                    </svg>
-                  ),
-                },
-              ].map(s => (
-                <div key={s.n} className="ds-step-card" style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, padding: '32px 28px', transition: 'border-color 0.15s' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(94,211,234,0.25)', marginBottom: 20 }}>{s.n} —</div>
-                  <div style={{ width: 44, height: 44, background: 'rgba(94,211,234,0.06)', border: `1px solid rgba(94,211,234,0.12)`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>{s.icon}</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: '#E8F4FC', letterSpacing: '-0.01em', marginBottom: 10 }}>{s.title}</h3>
-                  <p style={{ fontSize: 13, color: '#4A6A7A', lineHeight: 1.75 }}>{s.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
-
-        {/* ── Four Channels ── */}
-        <section className="ds-sec" style={{ padding: '96px 0' }}>
-          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>Four Channels</div>
-              <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>Every dimension of community</h2>
-              <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>SIGNAL is earned across four channels, each with five levels and up to 250 points.</p>
-            </div>
-
-            <div className="ds-ch-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
-              {[
-                { icon: '𝕏',   label: 'X Signal',   color: '#D0E8F4', desc: 'Post qualifying content mentioning DUAL or SIGNAL. Earn levels as your posts accumulate views — from first post to 1M+.' },
-                { icon: 'TG',  label: 'Telegram',   color: '#5ED3EA', desc: 'Stay active in the DUAL Telegram group. Progress from 1 active day to 180 days of regular participation.' },
-                { icon: 'DC',  label: 'Discord',    color: '#7B83EB', desc: 'Engage in the DUAL Discord server. Active participation days earn SIGNAL alongside your Telegram presence.' },
-                { icon: 'GOV', label: 'Governance', color: '#F7C873', desc: 'Participate in the DUAL governance forum — post topics, comment on proposals, vote. Activity points accumulate toward Steward.' },
-              ].map(ch => (
-                <div key={ch.label} className="ds-ch-card" style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 16, padding: '28px 28px 24px', transition: 'border-color 0.15s' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(94,211,234,0.06)', border: `1px solid rgba(94,211,234,0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', color: ch.color, flexShrink: 0 }}>{ch.icon}</div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#E8F4FC', letterSpacing: '-0.01em' }}>{ch.label}</div>
-                      <div style={{ fontSize: 11, color: '#2A4A5A', marginTop: 2 }}>Up to 250 pts · 5 levels</div>
+              {stats && (
+                <div className="home-stats">
+                  {[
+                    { value: fmt(stats.passports),   label: 'Passports minted' },
+                    { value: fmt(stats.totalSignal), label: 'SIGNAL earned' },
+                    { value: fmt(stats.connections), label: 'Accounts linked' },
+                  ].map(s => (
+                    <div key={s.label}>
+                      <span className="home-stat-value">{s.value}</span>
+                      <span className="home-stat-label">{s.label}</span>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
-                    {[1,2,3,4,5].map(l => <div key={l} style={{ flex: 1, height: 4, borderRadius: 2, background: ch.color, opacity: 0.55 }} />)}
-                  </div>
-                  <p style={{ fontSize: 12, color: '#4A6A7A', lineHeight: 1.7 }}>{ch.desc}</p>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
+              )}
 
-        <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
-
-        {/* ── Tiers ── */}
-        <section className="ds-sec" style={{ padding: '96px 0' }}>
-          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>Six Tiers</div>
-              <h2 style={{ fontSize: 40, fontWeight: 800, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.12 }}>From Initiate to Legend</h2>
-              <p style={{ fontSize: 15, color: '#4A6A7A', marginTop: 12, lineHeight: 1.7 }}>Your SIGNAL score places you in a tier. Each one marks a new level of community standing.</p>
-            </div>
-
-            <div className="ds-tiers" style={{ display: 'flex', gap: 6 }}>
-              {[
-                { name: 'INITIATE',    range: '0–149',    color: '#4A7A8A', bg: 'transparent' },
-                { name: 'EXPLORER',    range: '150–349',  color: '#5ED3EA', bg: 'transparent' },
-                { name: 'BUILDER',     range: '350–549',  color: '#7FE4F4', bg: 'transparent' },
-                { name: 'STAKEHOLDER', range: '550–749',  color: '#A8EDF9', bg: 'transparent' },
-                { name: 'GENESIS',     range: '750–899',  color: '#F7C873', bg: 'rgba(247,200,115,0.03)' },
-                { name: 'LEGEND',      range: '900–1000', color: '#FFD700', bg: 'rgba(255,215,0,0.03)' },
-              ].map(t => (
-                <div key={t.name} className="ds-tier" style={{ flex: 1, background: t.bg, border: `1px solid rgba(94,211,234,0.08)`, borderRadius: 10, padding: '22px 12px 20px', textAlign: 'center', transition: 'all 0.15s' }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.color, margin: '0 auto 10px' }} />
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: t.color, marginBottom: 6 }}>{t.name}</div>
-                  <div style={{ fontSize: 10, color: '#5A7A8A', fontVariantNumeric: 'tabular-nums' }}>{t.range}</div>
+              {stats && stats.top.some(t => t.score > 0) && (
+                <div className="ds-inset home-top">
+                  <span className="ds-label" style={{ marginBottom: 4 }}>Top of the leaderboard</span>
+                  {stats.top.filter(t => t.score > 0).map((m, i) => (
+                    <Link key={m.dualObjectId} href={`/badge/${m.dualObjectId}`} className="home-top-row">
+                      <span style={{ color: C.textFaint, fontVariantNumeric: 'tabular-nums' }}>#{i + 1}</span>
+                      <span style={{ color: C.textStrong, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {m.username}
+                        <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', color: tierColor(m.tier) }}>{m.tier}</span>
+                      </span>
+                      <span style={{ color: C.cyan, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(m.score)}</span>
+                    </Link>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        </section>
 
-        <hr style={{ border: 'none', borderTop: `1px solid ${C.border}` }} />
-
-        {/* ── CTA ── */}
-        <section className="ds-sec" style={{ padding: '96px 0 80px' }}>
-          <div className="ds-section" style={{ maxWidth: 1080, margin: '0 auto', padding: '0 48px' }}>
-            <div className="ds-cta-box" style={{
-              background: `radial-gradient(ellipse 700px 300px at 50% 100%, rgba(14,180,208,0.05) 0%, transparent 70%), ${C.bgCard}`,
-              border: `1px solid ${C.border}`,
-              borderRadius: 24, padding: '72px 64px',
-              textAlign: 'center', position: 'relative', overflow: 'hidden',
-            }}>
-              {/* Butterfly */}
-              <Image
-                src="/assets/dual-signal/ui/Signal-butterfly.png"
-                alt="" aria-hidden width={340} height={340}
-                style={{ position: 'absolute', right: -50, bottom: -50, opacity: 0.05, filter: 'saturate(0.1) brightness(0.6)', pointerEvents: 'none' }}
-              />
-
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: C.cyan, marginBottom: 20 }}>Join DUAL // SIGNAL</div>
-                <h2 style={{ fontSize: 46, fontWeight: 900, color: '#E8F4FC', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 14 }}>
-                  Ready to build your<br />community identity?
-                </h2>
-                <p style={{ fontSize: 15, color: '#6A8A9A', marginBottom: 36 }}>Enter your email. We&apos;ll send a secure link to get started.</p>
-
-                <Link href="/login" className="ds-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: C.cyanDim, color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '17px 36px', borderRadius: 12, textDecoration: 'none', transition: 'opacity 0.15s' }}>
-                  Get Your Passport →
-                </Link>
-
-                <p style={{ fontSize: 11, color: '#4A6A7A', marginTop: 16 }}>New here? Your Passport will be created automatically.</p>
+            <div className="home-passport ds-anim-up" style={{ animationDelay: '0.15s' }}>
+              <div className="home-passport-glow" />
+              <div className="home-passport-card">
+                <iframe src={faceSrc} title={featured ? `${featured.username}'s Passport` : 'Sample Passport'} loading="eager" tabIndex={-1} />
+              </div>
+              <div className="home-passport-caption">
+                {featured ? (
+                  <><span className="home-live-dot" /> Live Passport · {featured.username} · #1</>
+                ) : (
+                  <>Sample Passport</>
+                )}
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── Footer ── */}
-        <footer className="ds-footer" style={{ borderTop: `1px solid rgba(94,211,234,0.06)`, padding: '28px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#3A5A6A' }}>
-            DUAL <span style={{ color: '#3A6A7A' }}>//</span> SIGNAL
-          </div>
-          <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3A5A6A' }}>
-            DUAL Network · Chain 6301
-          </div>
-        </footer>
+      <hr className="ds-divider" />
 
-      </div>
+      {/* ── How It Works ── */}
+      <section className="home-sec">
+        <div className="ds-container">
+          <div className="ds-section-head">
+            <p className="ds-eyebrow">How It Works</p>
+            <h2 className="ds-h2">Three steps to your Passport</h2>
+            <p className="ds-body">Your identity is built from real community activity — not self-reported claims.</p>
+          </div>
+
+          <div className="home-grid-3">
+            {STEPS.map(s => (
+              <div key={s.n} className="ds-card ds-card-hover" style={{ padding: '32px 28px' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: C.textFaint, marginBottom: 20 }}>{s.n} —</div>
+                <div className="home-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.cyan }}>{s.icon}</svg>
+                </div>
+                <h3 className="ds-h3">{s.title}</h3>
+                <p className="ds-body" style={{ fontSize: 13 }}>{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <hr className="ds-divider" />
+
+      {/* ── Four Channels ── */}
+      <section className="home-sec">
+        <div className="ds-container">
+          <div className="ds-section-head">
+            <p className="ds-eyebrow">Four Channels</p>
+            <h2 className="ds-h2">Every dimension of community</h2>
+            <p className="ds-body">SIGNAL is earned across four channels, each with five levels and up to 250 points.</p>
+          </div>
+
+          <div className="home-grid-2">
+            {CHANNELS.map(ch => (
+              <div key={ch.label} className="ds-card ds-card-hover" style={{ padding: '28px 28px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: C.cyanWash, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: ch.color, flexShrink: 0 }}>{ch.icon}</div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.textStrong }}>{ch.label}</div>
+                    <div className="ds-small" style={{ marginTop: 2 }}>Up to 250 pts · 5 levels</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+                  {[1, 2, 3, 4, 5].map(l => <div key={l} style={{ flex: 1, height: 4, borderRadius: 2, background: ch.color, opacity: 0.2 + l * 0.12 }} />)}
+                </div>
+                <p className="ds-body" style={{ fontSize: 13 }}>{ch.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <hr className="ds-divider" />
+
+      {/* ── Tiers ── */}
+      <section className="home-sec">
+        <div className="ds-container">
+          <div className="ds-section-head">
+            <p className="ds-eyebrow">Six Tiers</p>
+            <h2 className="ds-h2">From Initiate to Legend</h2>
+            <p className="ds-body">Your SIGNAL score places you in a tier. Each one marks a new level of community standing.</p>
+          </div>
+
+          <div className="home-tiers">
+            {TIERS.map(t => (
+              <div key={t.name} className="ds-card ds-card-hover" style={{ borderRadius: 10, padding: '22px 12px 20px', textAlign: 'center' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: t.color, margin: '0 auto 10px' }} />
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: t.color, marginBottom: 6 }}>{t.name}</div>
+                <div className="ds-small" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.range}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <hr className="ds-divider" />
+
+      {/* ── CTA ── */}
+      <section className="home-sec" style={{ paddingBottom: 80 }}>
+        <div className="ds-container">
+          <div className="ds-card home-cta-box" style={{
+            background: `radial-gradient(ellipse 700px 300px at 50% 100%, rgba(14,180,208,0.07) 0%, transparent 70%), ${C.bgCard}`,
+            borderRadius: 24, padding: '72px 64px', textAlign: 'center', position: 'relative', overflow: 'hidden',
+          }}>
+            <Image
+              src="/assets/dual-signal/ui/Signal-butterfly.png"
+              alt="" aria-hidden width={340} height={340}
+              style={{ position: 'absolute', right: -50, bottom: -50, opacity: 0.06, filter: 'saturate(0.1) brightness(0.6)', pointerEvents: 'none' }}
+            />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <p className="ds-eyebrow">Join DUAL // SIGNAL</p>
+              <h2 className="ds-h2" style={{ marginBottom: 14 }}>Ready to build your<br />community identity?</h2>
+              <p className="ds-body" style={{ fontSize: 15, marginBottom: 36 }}>
+                {stats && stats.passports > 0
+                  ? `Join ${fmt(stats.passports)} members already earning SIGNAL.`
+                  : 'Enter your email. We’ll send a secure link to get started.'}
+              </p>
+              <Link href="/login" className="ds-btn ds-btn-primary" style={{ padding: '17px 36px', fontSize: 13 }}>Get Your Passport →</Link>
+              <p className="ds-small" style={{ marginTop: 16 }}>Your Passport and DUAL wallet account are created automatically.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="ds-footer">
+        <span className="ds-logo" style={{ fontSize: 12, color: C.textFaint }}>DUAL <span>//</span> SIGNAL</span>
+        <span><Link href="/leaderboard">Leaderboard</Link> · DUAL Network</span>
+      </footer>
     </>
   );
 }
