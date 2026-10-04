@@ -110,8 +110,6 @@ export default function PassportEvolution() {
       onBlur={() => setPaused(false)}
       aria-label="How a DUAL // SIGNAL Passport evolves through the tiers"
     >
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet" />
       <style>{`
         .pe { margin: 0; width: 100%; }
         .pe-stage { position: relative; aspect-ratio: 3 / 2; width: 100%; border-radius: 14px; overflow: hidden;

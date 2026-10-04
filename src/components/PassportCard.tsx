@@ -173,7 +173,7 @@ export function BadgeCard({ data, debug }: { data: BadgeData; debug?: boolean })
       {/* z=5 — Tier name */}
       <Slot cfg={L.tierName} debug={debug} debugColor="#f0f" style={{ zIndex: 5, textAlign: 'center' }}>
         <div style={{
-          color: C.tealLt, fontFamily: 'Rajdhani, Orbitron, monospace',
+          color: C.tealLt, fontFamily: 'var(--font-rajdhani), Rajdhani, Orbitron, monospace',
           fontSize: 'clamp(10px, 3.2%, 22px)', fontWeight: 700,
           letterSpacing: '0.2em', textShadow: `0 0 1.5% #5ED3EA88`,
           textTransform: 'uppercase', lineHeight: 1,
@@ -188,7 +188,7 @@ export function BadgeCard({ data, debug }: { data: BadgeData; debug?: boolean })
         paddingTop: '1.2%', paddingRight: '12%',
       }}>
         <span style={{
-          color: C.tealLt, fontFamily: 'Rajdhani, monospace',
+          color: C.tealLt, fontFamily: 'var(--font-rajdhani), Rajdhani, monospace',
           fontSize: 'clamp(12px, 2.6%, 22px)', fontWeight: 600,
           letterSpacing: '0.04em', whiteSpace: 'nowrap',
         }}>
@@ -201,7 +201,7 @@ export function BadgeCard({ data, debug }: { data: BadgeData; debug?: boolean })
         zIndex: 5, display: 'flex', alignItems: 'center', lineHeight: 1,
       }}>
         <span style={{
-          color: C.tealLt, fontFamily: 'Rajdhani, Orbitron, monospace',
+          color: C.tealLt, fontFamily: 'var(--font-rajdhani), Rajdhani, Orbitron, monospace',
           fontSize: 'clamp(14px, 4.5%, 36px)', fontWeight: 700,
         }}>
           {data.signalScore.toLocaleString()}
