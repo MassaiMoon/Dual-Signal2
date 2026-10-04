@@ -89,7 +89,7 @@ export default async function Home() {
   const stats    = await loadStats();
   const featured = stats?.top.find(t => t.score > 0) ?? null;
   // Real Passport of the current #1 member; a sample Passport until someone has SIGNAL.
-  const faceSrc  = featured ? `/faces/badge?id=${encodeURIComponent(featured.dualObjectId)}` : '/faces/badge?mock=mixed';
+  const faceSrc  = featured ? `/faces/badge?embed=1&id=${encodeURIComponent(featured.dualObjectId)}` : '/faces/badge?embed=1&mock=mixed';
 
   return (
     <>
@@ -117,10 +117,7 @@ export default async function Home() {
         .home-passport-card {
           position: relative; z-index: 1;
           aspect-ratio: 3 / 2; width: 100%;
-          border-radius: 18px; overflow: hidden;
-          border: 1px solid var(--ds-border-strong);
-          box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(94,211,234,0.06);
-          background: #001A27;
+          filter: drop-shadow(0 30px 40px rgba(0,0,0,0.55));
           animation: home-float 7s ease-in-out infinite;
         }
         .home-passport-card iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }

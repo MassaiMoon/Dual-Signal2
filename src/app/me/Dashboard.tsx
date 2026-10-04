@@ -298,6 +298,7 @@ export default function Dashboard({
     telegramConnected:   !!tgHandle,
     discordConnected:    !!dcHandle,
     governanceConnected: !!forumHandle,
+    objectId:            badge.dualObjectId,
   };
 
   async function share() {
@@ -601,8 +602,7 @@ const ME_CSS = `
   .me-h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ds-text-strong); }
 
   .me-overview { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
-  .me-passport { border-radius: var(--ds-radius-lg); overflow: hidden; border: 1px solid var(--ds-border-strong); background: #001A27;
-    box-shadow: 0 30px 70px -40px rgba(94,211,234,0.55); align-self: center; }
+  .me-passport { filter: drop-shadow(0 24px 40px rgba(94,211,234,0.18)); align-self: center; }
 
   .me-score { padding: 28px; display: flex; flex-direction: column; }
   .me-score-top { display: flex; justify-content: space-between; align-items: center; }

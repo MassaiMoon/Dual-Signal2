@@ -215,7 +215,7 @@ export default function JoinFlow({ initialStep }: { initialStep: 'email' | 'user
         .join-community { display: flex; flex-direction: column; gap: 10px; }
         .join-community-card { padding: 14px 16px 12px; }
         .join-chip { font-size: 11px; font-weight: 700; color: var(--ds-cyan); background: var(--ds-cyan-wash); border-radius: 4px; padding: 2px 7px; min-width: 28px; text-align: center; }
-        .join-passport { aspect-ratio: 3 / 2; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--ds-border-strong); background: #001A27; margin-bottom: 24px; box-shadow: 0 24px 60px -30px rgba(94,211,234,0.45); }
+        .join-passport { aspect-ratio: 3 / 2; width: 100%; margin-bottom: 24px; filter: drop-shadow(0 20px 30px rgba(94,211,234,0.16)); }
         .join-passport iframe { width: 100%; height: 100%; border: 0; display: block; }
         .join-checklist { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
         .join-check { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 14px 16px; }
@@ -445,7 +445,7 @@ function DoneStep({ result }: { result: JoinResult }) {
       </p>
 
       <div className="join-passport">
-        <iframe src={`/faces/badge?id=${encodeURIComponent(result.dualObjectId)}`} title="Your Passport" />
+        <iframe src={`/faces/badge?embed=1&id=${encodeURIComponent(result.dualObjectId)}`} title="Your Passport" />
       </div>
 
       {result.dualWalletUrl && (

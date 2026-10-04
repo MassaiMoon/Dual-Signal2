@@ -25,7 +25,7 @@ import { BadgeCard, type BadgeData } from '@/components/PassportCard';
 function LoadingState() {
   return (
     <div style={pageStyle}>
-      <span style={{ color: '#5ED3EA', fontFamily: 'Rajdhani, monospace', fontSize: 14, letterSpacing: 3 }}>
+      <span style={{ color: '#5ED3EA', fontSize: 14, letterSpacing: 3 }}>
         LOADING...
       </span>
     </div>
@@ -95,6 +95,8 @@ function BadgeFaceInner() {
   const dualObjectId = params.get('id');
   const mockKey      = params.get('mock');
   const debug        = params.get('debugLayout') === '1';
+  // embed=1: transparent page so the chamfered card sits cleanly in an iframe
+  const embed        = params.get('embed') === '1';
 
   const mockData = mockKey ? (MOCK_PROFILES[mockKey] ?? null) : null;
 
@@ -106,7 +108,7 @@ function BadgeFaceInner() {
     if (mockData || !dualObjectId) { setLoading(false); return; }
     fetch(`/api/faces/${dualObjectId}`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((d: BadgeData) => { setData(d); setLoading(false); })
+      .then((d: BadgeData) => { setData({ ...d, objectId: dualObjectId }); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
   }, [dualObjectId, mockData]);
 
@@ -114,7 +116,7 @@ function BadgeFaceInner() {
   if (error || !data) {
     return (
       <div style={pageStyle}>
-        <span style={{ color: '#159DB8', fontFamily: 'Rajdhani, monospace', fontSize: 12, letterSpacing: 2 }}>
+        <span style={{ color: '#159DB8', fontSize: 12, letterSpacing: 2 }}>
           BADGE NOT FOUND
         </span>
       </div>
@@ -123,14 +125,9 @@ function BadgeFaceInner() {
 
   return (
     <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap"
-        rel="stylesheet"
-      />
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
-        html, body { margin: 0; padding: 0; background: #001A27; }
+        html, body { margin: 0; padding: 0; background: ${embed ? 'transparent' : '#040E1A'}; }
       `}</style>
       <div style={{ width: '100%', maxWidth: 700, margin: '0 auto' }}>
         <BadgeCard data={data} debug={debug} />
@@ -152,5 +149,5 @@ export default function BadgeFacePage() {
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh', display: 'flex',
   alignItems: 'center', justifyContent: 'center',
-  background: '#001A27',
+  background: '#040E1A',
 };

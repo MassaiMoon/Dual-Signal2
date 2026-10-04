@@ -112,9 +112,7 @@ export default function PassportEvolution() {
     >
       <style>{`
         .pe { margin: 0; width: 100%; }
-        .pe-stage { position: relative; aspect-ratio: 3 / 2; width: 100%; border-radius: 14px; overflow: hidden;
-          border: 1px solid var(--ds-border-strong); background: #001A27;
-          box-shadow: 0 30px 70px -34px rgba(94,211,234,0.5); }
+        .pe-stage { position: relative; aspect-ratio: 3 / 2; width: 100%; filter: drop-shadow(0 24px 36px rgba(94,211,234,0.16)); }
         .pe-layer { position: absolute; inset: 0; opacity: 0; transform: scale(1.025); filter: blur(6px) brightness(1.6);
           transition: opacity 0.9s ease, transform 0.9s ease, filter 0.9s ease; }
         .pe-layer.is-on { opacity: 1; transform: scale(1); filter: none; }
