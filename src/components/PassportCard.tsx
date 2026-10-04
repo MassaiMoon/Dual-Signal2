@@ -87,7 +87,7 @@ const RING_TICKS = Array.from({ length: 60 }, (_, i) => {
 });
 
 // Edge ticks on the left/right frame rails
-const RAIL_TICKS = Array.from({ length: 11 }, (_, i) => 60 + i * 8);
+const RAIL_TICKS = [60, 65, 70, 75, 80, 120, 125, 130, 135, 140];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -164,9 +164,9 @@ const CSS = `
   .pp-seal-text { position: absolute; right: 0; bottom: 0; width: 7.4cqw; height: 7.4cqw; display: flex; align-items: center; justify-content: center;
     font-size: 1.05cqw; font-weight: 800; letter-spacing: 0.18em; text-indent: 0.18em; color: rgba(255,255,255,0.55); }
 
-  .pp-mrz { position: absolute; left: 6.2cqw; right: 6.2cqw; bottom: 3.6cqw; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  .pp-mrz { position: absolute; left: 6.6cqw; right: 6.6cqw; bottom: 4.3cqw; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
     font-size: 1.32cqw; line-height: 1.55; letter-spacing: 0.28em; color: rgba(220,234,242,0.34); white-space: nowrap; overflow: hidden; }
-  .pp-foot { position: absolute; left: 6.2cqw; right: 6.2cqw; bottom: 8.6cqw; display: flex; justify-content: space-between; align-items: center;
+  .pp-foot { position: absolute; left: 6.6cqw; right: 6.6cqw; bottom: 9.3cqw; display: flex; justify-content: space-between; align-items: center;
     font-size: 0.9cqw; font-weight: 600; letter-spacing: 0.26em; color: rgba(220,234,242,0.42); }
   .pp-foot i { display: inline-block; width: 0.7cqw; height: 0.7cqw; border-radius: 50%; margin-right: 0.8cqw; vertical-align: middle;
     background: #4AC89A; box-shadow: 0 0 0 0.35cqw rgba(74,200,154,0.18); }
@@ -174,9 +174,42 @@ const CSS = `
 
 // ─── Pieces ───────────────────────────────────────────────────────────────────
 
+function CornerOrnament() {
+  // Drawn for the top-left corner; mirrored into the other three.
+  const accent = { stroke: 'var(--pp-accent)' };
+  return (
+    <g fill="none">
+      {/* Layered brackets following the chamfer */}
+      <path d="M8,26 V14.5 L14.5,8 H26" strokeWidth="0.7" style={{ ...accent, strokeOpacity: 0.8 }} />
+      <path d="M11,34 V16.2 L16.2,11 H34" strokeWidth="0.3" stroke="rgba(255,255,255,0.16)" />
+      {/* Circuit traces */}
+      <path d="M26,8 H36 L39,5.2 H52" strokeWidth="0.35" style={{ ...accent, strokeOpacity: 0.5 }} />
+      <path d="M8,26 V36 L5.2,39 V50" strokeWidth="0.35" style={{ ...accent, strokeOpacity: 0.5 }} />
+      <circle cx="52" cy="5.2" r="0.8" style={{ fill: 'var(--pp-accent)', fillOpacity: 0.7 }} />
+      <circle cx="5.2" cy="50" r="0.8" style={{ fill: 'var(--pp-accent)', fillOpacity: 0.7 }} />
+      {/* Rivet */}
+      <circle cx="16.5" cy="16.5" r="0.9" fill="rgba(255,255,255,0.12)" style={{ ...accent, strokeOpacity: 0.6 }} strokeWidth="0.3" />
+    </g>
+  );
+}
+
+function SideClasp() {
+  // Left-rail clasp centred at y=100; mirrored for the right rail.
+  return (
+    <g>
+      <path d="M0.75,84 L6.5,89 V111 L0.75,116" fill="rgba(0,0,0,0.3)" strokeWidth="0.55" style={{ stroke: 'var(--pp-accent)', strokeOpacity: 0.75 }} />
+      <path d="M3.6,92 V108" strokeWidth="0.3" stroke="rgba(255,255,255,0.18)" />
+      <polygon points="3.6,96 5.2,100 3.6,104 2,100" style={{ fill: 'var(--pp-accent)' }} />
+    </g>
+  );
+}
+
+const MICROPRINT = 'DUAL·SIGNAL·COMMUNITY·IDENTITY·PASSPORT·'.repeat(3);
+
 function FrameArt() {
   // 300×200 units; chamfer = 10
   const outer = 'M10.5,0.75 H289.5 L299.25,10.5 V189.5 L289.5,199.25 H10.5 L0.75,189.5 V10.5 Z';
+  const mid   = 'M11.8,2.6 H288.2 L297.4,11.8 V188.2 L288.2,197.4 H11.8 L2.6,188.2 V11.8 Z';
   const inner = 'M13,4.5 H287 L295.5,13 V187 L287,195.5 H13 L4.5,187 V13 Z';
   const accent = { stroke: 'var(--pp-accent)' };
   return (
@@ -186,32 +219,61 @@ function FrameArt() {
         {GUILLOCHE.map((d, i) => <path key={i} d={d} />)}
       </g>
 
-      {/* Double frame */}
-      <path d={outer} fill="none" strokeWidth="0.8" style={{ ...accent, strokeOpacity: 0.55 }} />
+      {/* Triple frame */}
+      <path d={outer} fill="none" strokeWidth="0.8" style={{ ...accent, strokeOpacity: 0.6 }} />
+      <path d={mid} fill="none" strokeWidth="0.3" strokeDasharray="0.6 1.2" style={{ ...accent, strokeOpacity: 0.35 }} />
       <path d={inner} fill="none" strokeWidth="0.35" stroke="rgba(255,255,255,0.10)" />
 
-      {/* Header tab (top centre) and footer tab (bottom centre) */}
-      <path d="M118,0.75 L124,6.5 H176 L182,0.75" fill="rgba(0,0,0,0.25)" strokeWidth="0.6" style={accent} />
-      <path d="M128,199.25 L132,195 H168 L172,199.25" fill="none" strokeWidth="0.5" style={{ ...accent, strokeOpacity: 0.6 }} />
-      <circle cx="150" cy="3.6" r="0.9" style={{ fill: 'var(--pp-accent)' }} />
+      {/* Microprint band inside the top border */}
+      <g fontSize="1.5" fontWeight="600" letterSpacing="0.35" fill="rgba(220,234,242,0.16)">
+        <text x="56" y="8.2" textLength="54" lengthAdjust="spacingAndGlyphs">{MICROPRINT.slice(0, 44)}</text>
+        <text x="190" y="8.2" textLength="54" lengthAdjust="spacingAndGlyphs">{MICROPRINT.slice(44, 88)}</text>
+      </g>
+
+      {/* Segmented accents along the top edge */}
+      <g strokeWidth="0.9" strokeDasharray="4 2.2" style={{ ...accent, strokeOpacity: 0.45 }}>
+        <line x1="60" y1="2.4" x2="108" y2="2.4" />
+        <line x1="192" y1="2.4" x2="240" y2="2.4" />
+      </g>
+
+      {/* Header tab */}
+      <path d="M110,0.75 L118,9 H182 L190,0.75" fill="rgba(0,0,0,0.3)" strokeWidth="0.65" style={accent} />
+      <path d="M120,7 H180" strokeWidth="0.3" stroke="rgba(255,255,255,0.14)" />
+      <circle cx="143" cy="4" r="0.7" fill="rgba(255,255,255,0.35)" />
+      <circle cx="150" cy="4" r="1"   style={{ fill: 'var(--pp-accent)' }} />
+      <circle cx="157" cy="4" r="0.7" fill="rgba(255,255,255,0.35)" />
+
+      {/* Footer tab */}
+      <path d="M122,199.25 L127,194 H173 L178,199.25" fill="rgba(0,0,0,0.25)" strokeWidth="0.55" style={{ ...accent, strokeOpacity: 0.7 }} />
+      <polygon points="150,195.3 151.6,196.8 150,198.3 148.4,196.8" style={{ fill: 'var(--pp-accent)' }} />
 
       {/* Corner diamonds on the chamfers */}
       {[[5.6, 5.6], [294.4, 5.6], [5.6, 194.4], [294.4, 194.4]].map(([x, y], i) => (
         <rect key={i} x={x - 1.3} y={y - 1.3} width="2.6" height="2.6" transform={`rotate(45 ${x} ${y})`} style={{ fill: 'var(--pp-accent)' }} />
       ))}
 
-      {/* Rail ticks */}
+      {/* Corner ornaments */}
+      <CornerOrnament />
+      <g transform="translate(300 0) scale(-1 1)"><CornerOrnament /></g>
+      <g transform="translate(0 200) scale(1 -1)"><CornerOrnament /></g>
+      <g transform="translate(300 200) scale(-1 -1)"><CornerOrnament /></g>
+
+      {/* Rail ticks (above and below the side clasps) */}
       <g strokeWidth="0.4" style={{ stroke: 'var(--pp-accent)', strokeOpacity: 0.45 }}>
         {RAIL_TICKS.map(y => (
           <g key={y}>
-            <line x1="0.75" y1={y} x2={y % 16 === 12 ? 4 : 2.6} y2={y} />
-            <line x1="299.25" y1={y} x2={y % 16 === 12 ? 296 : 297.4} y2={y} />
+            <line x1="0.75" y1={y} x2={y % 20 === 0 ? 4 : 2.6} y2={y} />
+            <line x1="299.25" y1={y} x2={y % 20 === 0 ? 296 : 297.4} y2={y} />
           </g>
         ))}
       </g>
 
+      {/* Side clasps */}
+      <SideClasp />
+      <g transform="translate(300 0) scale(-1 1)"><SideClasp /></g>
+
       {/* MRZ separator */}
-      <line x1="16" y1="170" x2="284" y2="170" stroke="rgba(255,255,255,0.08)" strokeWidth="0.35" strokeDasharray="1.2 1.4" />
+      <line x1="18" y1="168" x2="282" y2="168" stroke="rgba(255,255,255,0.08)" strokeWidth="0.35" strokeDasharray="1.2 1.4" />
     </svg>
   );
 }
