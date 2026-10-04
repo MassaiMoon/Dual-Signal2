@@ -7,7 +7,7 @@
  * Step 1: Choose username
  * Step 2: Connect community identities (all optional)
  * Step 3: Creating Passport (loading)
- * Step 4: Passport created — show Passport + wallet checklist
+ * Step 4: Passport created — show the minted Passport
  *
  * The starting step is resolved server-side in ./page.tsx.
  */
@@ -24,12 +24,9 @@ type AvailabilityState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
 
 interface JoinResult {
   username:               string;
-  email:                  string | null;
   dualObjectId:           string;
   badgeUrl:               string;
   memberSince:            string;
-  dualWalletUrl:          string | null;
-  dualWalletTempPassword: string | null;
 }
 
 const COMMUNITY_FIELDS = [
@@ -165,12 +162,9 @@ export default function JoinFlow({ initialStep }: { initialStep: 'email' | 'user
 
       setResult({
         username:               data.username,
-        email:                  data.email ?? null,
         dualObjectId:           data.dualObjectId,
         badgeUrl:               data.badgeUrl,
         memberSince:            data.memberSince,
-        dualWalletUrl:          data.dualWalletUrl ?? null,
-        dualWalletTempPassword: data.dualWalletTempPassword ?? null,
       });
       setStep('done');
     } catch {
@@ -217,15 +211,6 @@ export default function JoinFlow({ initialStep }: { initialStep: 'email' | 'user
         .join-chip { font-size: 11px; font-weight: 700; color: var(--ds-cyan); background: var(--ds-cyan-wash); border-radius: 4px; padding: 2px 7px; min-width: 28px; text-align: center; }
         .join-passport { aspect-ratio: 3 / 2; width: 100%; margin-bottom: 24px; filter: drop-shadow(0 20px 30px rgba(94,211,234,0.16)); }
         .join-passport iframe { width: 100%; height: 100%; border: 0; display: block; }
-        .join-checklist { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-        .join-check { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 14px 16px; }
-        .join-check-n { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--ds-border-strong); color: var(--ds-cyan); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-        .join-check-title { font-size: 14px; font-weight: 600; color: var(--ds-text-strong); margin: 3px 0 4px; }
-        .join-cred { margin-top: 10px; padding: 10px 12px; font-family: var(--ds-mono); font-size: 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 6px 12px; align-items: center; }
-        .join-cred-k { color: var(--ds-text-faint); font-size: 11px; }
-        .join-cred-v { color: var(--ds-text); overflow-wrap: anywhere; }
-        .join-copy { font-family: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ds-cyan); background: transparent; border: 1px solid var(--ds-border-strong); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-        .join-copy:hover { border-color: var(--ds-border-focus); }
         .join-actions { display: flex; flex-direction: column; gap: 10px; }
         .join-footer { position: relative; z-index: 1; padding: 16px 24px 32px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ds-text-faint); }
         .join-footer a { color: inherit; text-decoration: none; }
@@ -286,7 +271,7 @@ export default function JoinFlow({ initialStep }: { initialStep: 'email' | 'user
                 required
               />
               <p className="ds-small" style={{ margin: '12px 0 24px' }}>
-                Your email is private and never shown publicly. We also use it to set up your DUAL wallet account.
+                Your email is private and never shown publicly.
               </p>
               <button type="submit" className="ds-btn ds-btn-primary ds-btn-block" disabled={sending}>
                 {sending ? 'Sending…' : 'Send login link →'}
@@ -434,8 +419,6 @@ export default function JoinFlow({ initialStep }: { initialStep: 'email' | 'user
 // ── Success screen ────────────────────────────────────────────────────────────
 
 function DoneStep({ result }: { result: JoinResult }) {
-  const walletCreated = !!result.dualWalletTempPassword;
-
   return (
     <div className="ds-card join-card join-card-wide ds-anim-up">
       <p className="ds-eyebrow" style={{ textAlign: 'center' }}>Passport minted</p>
@@ -448,84 +431,10 @@ function DoneStep({ result }: { result: JoinResult }) {
         <iframe src={`/faces/badge?embed=1&id=${encodeURIComponent(result.dualObjectId)}`} title="Your Passport" />
       </div>
 
-      {result.dualWalletUrl && (
-        <>
-          <span className="ds-label">Open it in your DUAL wallet</span>
-          <ol className="join-checklist">
-            {walletCreated && (
-              <li className="ds-inset join-check">
-                <span className="join-check-n">1</span>
-                <div>
-                  <p className="join-check-title">Verify your email</p>
-                  <p className="ds-small">
-                    DUAL has sent a verification email{result.email ? <> to <strong style={{ color: C.text }}>{result.email}</strong></> : null}. Confirm it before signing in.
-                  </p>
-                </div>
-              </li>
-            )}
-            <li className="ds-inset join-check">
-              <span className="join-check-n">{walletCreated ? 2 : 1}</span>
-              <div>
-                <p className="join-check-title">Sign in to the DUAL wallet</p>
-                {walletCreated ? (
-                  <>
-                    <p className="ds-small">Use this one-time password. It’s only shown here.</p>
-                    <div className="ds-inset join-cred">
-                      {result.email && (
-                        <>
-                          <span className="join-cred-k">Email</span>
-                          <span className="join-cred-v">{result.email}</span>
-                          <CopyButton value={result.email} />
-                        </>
-                      )}
-                      <span className="join-cred-k">Password</span>
-                      <span className="join-cred-v" style={{ color: C.cyan }}>{result.dualWalletTempPassword}</span>
-                      <CopyButton value={result.dualWalletTempPassword!} />
-                    </div>
-                  </>
-                ) : (
-                  <p className="ds-small">Sign in with your existing DUAL wallet account.</p>
-                )}
-                <a href={result.dualWalletUrl} target="_blank" rel="noopener noreferrer" className="ds-btn ds-btn-ghost ds-btn-sm" style={{ marginTop: 12 }}>
-                  Open DUAL wallet ↗
-                </a>
-              </div>
-            </li>
-            {walletCreated && (
-              <li className="ds-inset join-check">
-                <span className="join-check-n">3</span>
-                <div>
-                  <p className="join-check-title">Change your password</p>
-                  <p className="ds-small">Once you’re in, set a password of your own from the wallet settings.</p>
-                </div>
-              </li>
-            )}
-          </ol>
-        </>
-      )}
-
       <div className="join-actions">
         <a href="/me" className="ds-btn ds-btn-primary ds-btn-block">Go to my dashboard →</a>
         <a href={result.badgeUrl} className="ds-btn ds-btn-ghost ds-btn-block">View public Passport page</a>
       </div>
     </div>
-  );
-}
-
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      className="join-copy"
-      onClick={() => {
-        navigator.clipboard?.writeText(value).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }).catch(() => {});
-      }}
-    >
-      {copied ? 'Copied' : 'Copy'}
-    </button>
   );
 }

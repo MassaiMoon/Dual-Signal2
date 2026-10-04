@@ -278,8 +278,6 @@ export default function Dashboard({
   const tgAccount     = data.accounts.find(a => a.source === 'TELEGRAM');
   const tgNeedsVerify = !!tgHandle && !(tgAccount?.externalUserId && /^\d+$/.test(tgAccount.externalUserId));
 
-  const orgId     = process.env.NEXT_PUBLIC_DUAL_ORG_ID ?? '6a9831bdc8ff2688f8c9d3e2';
-  const walletUrl = `https://wallet.dual.network/${orgId}/login`;
   const displayName = data.username ?? data.email;
 
   const cardData: CardData | null = badge && {
@@ -555,9 +553,7 @@ export default function Dashboard({
                 </dl>
                 <div className="me-btn-row">
                   <a href={`https://explorer.dual.network/objects/${badge.dualObjectId}`} target="_blank" rel="noreferrer" className="ds-btn ds-btn-ghost ds-btn-sm">Explorer ↗</a>
-                  <a href={walletUrl} target="_blank" rel="noopener noreferrer" className="ds-btn ds-btn-ghost ds-btn-sm">DUAL wallet ↗</a>
                 </div>
-                <p className="ds-small" style={{ marginTop: 12 }}>Sign in to the DUAL wallet with the email and password from sign-up.</p>
               </div>
             )}
 

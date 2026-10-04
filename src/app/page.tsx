@@ -58,7 +58,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 const STEPS = [
   {
     n: '01', title: 'Join with email',
-    body: 'Enter your email and click the secure link we send you. No password, no seed phrase — your DUAL wallet account is created for you.',
+    body: 'Enter your email and click the secure link we send you. No password, no wallet, no seed phrase.',
     icon: <><rect x="2" y="4" width="16" height="12" rx="2"/><polyline points="2,6 10,12 18,6"/></>,
   },
   {
@@ -67,8 +67,8 @@ const STEPS = [
     icon: <><circle cx="5" cy="10" r="2"/><circle cx="15" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><line x1="7" y1="9" x2="13" y2="6"/><line x1="7" y1="11" x2="13" y2="14"/></>,
   },
   {
-    n: '03', title: 'Claim it in your DUAL wallet',
-    body: 'Your Passport is minted on the DUAL Network. Sign in to your DUAL wallet to see it — it levels up as your SIGNAL grows.',
+    n: '03', title: 'Level up your Passport',
+    body: 'Your Passport is minted on the DUAL Network. Your SIGNAL updates automatically and your Passport evolves through six tiers.',
     icon: <><rect x="3" y="5" width="14" height="11" rx="2"/><path d="M3 8h14"/><circle cx="13.5" cy="12" r="1"/></>,
   },
 ];
@@ -339,7 +339,7 @@ export default async function Home() {
                   : 'Enter your email. We’ll send a secure link to get started.'}
               </p>
               <Link href="/login" className="ds-btn ds-btn-primary" style={{ padding: '17px 36px', fontSize: 13 }}>Get Your Passport →</Link>
-              <p className="ds-small" style={{ marginTop: 16 }}>Your Passport and DUAL wallet account are created automatically.</p>
+              <p className="ds-small" style={{ marginTop: 16 }}>Your Passport is minted on the DUAL Network automatically.</p>
             </div>
           </div>
         </div>

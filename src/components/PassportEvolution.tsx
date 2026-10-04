@@ -46,7 +46,7 @@ function stageData({ levels: [x, tg, dc, gov] }: typeof STAGES[number]): BadgeDa
     isOG:                false,
     isGenesis:           false,
     walletAddress:       '',
-    username:            'you',
+    username:            'YourName',
     memberSince:         '',
   };
 }
