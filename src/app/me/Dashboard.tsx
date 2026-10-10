@@ -55,11 +55,19 @@ export interface ActivityItem {
   detail?: string;
 }
 
+export interface TierCertificateRow {
+  tier:         string;
+  status:       'AWAITING_WALLET' | 'MINTED' | 'TRANSFERRED' | 'FAILED';
+  dualObjectId: string | null;
+}
+
 export interface MeData {
-  email:    string;
-  username: string | null;
-  badge:    BadgeData | null;
-  accounts: Account[];
+  email:         string;
+  username:      string | null;
+  badge:         BadgeData | null;
+  accounts:      Account[];
+  certificates:  TierCertificateRow[];
+  dualWalletUrl: string | null;
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -557,6 +565,8 @@ export default function Dashboard({
               </div>
             )}
 
+            {badge && <CertificatesPanel tier={badge.cachedTier} email={data.email} certificates={data.certificates ?? []} walletUrl={data.dualWalletUrl} />}
+
             {/* Account */}
             <div className="ds-card me-panel">
               <div className="me-panel-head"><h2 className="me-h3">Account</h2></div>
@@ -578,9 +588,74 @@ export default function Dashboard({
   );
 }
 
+// ── Tier certificates ─────────────────────────────────────────────────────────
+
+const CERT_STATUS: Record<TierCertificateRow['status'], string> = {
+  AWAITING_WALLET: 'Waiting for wallet',
+  MINTED:          'Sending…',
+  TRANSFERRED:     'In your wallet',
+  FAILED:          'Delivery failed',
+};
+
+function CertificatesPanel({ tier, email, certificates, walletUrl }: {
+  tier: string; email: string; certificates: TierCertificateRow[]; walletUrl: string | null;
+}) {
+  const order    = Object.keys(TIER_MIN);
+  const earned   = order.slice(0, order.indexOf(tier) + 1);
+  const byTier   = new Map(certificates.map(c => [c.tier, c]));
+  const received = earned.filter(t => byTier.get(t)?.status === 'TRANSFERRED').length;
+
+  return (
+    <div className="ds-card me-panel">
+      <div className="me-panel-head">
+        <h2 className="me-h3">Tier certificates</h2>
+        <span className="ds-small">{received}/{earned.length} received</span>
+      </div>
+      <ul className="me-certs">
+        {earned.map(t => {
+          const row = byTier.get(t);
+          return (
+            <li key={t}>
+              <span className="me-cert-tier" style={{ color: tierColor(t) }}>{t}</span>
+              {row?.status === 'TRANSFERRED' && row.dualObjectId ? (
+                <a className="me-cert-st on" href={`/faces/tier?id=${row.dualObjectId}`} target="_blank" rel="noreferrer">
+                  {CERT_STATUS.TRANSFERRED} ↗
+                </a>
+              ) : (
+                <span className={`me-cert-st${row?.status === 'FAILED' ? ' bad' : ''}`}>{CERT_STATUS[row?.status ?? 'AWAITING_WALLET']}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {received < earned.length && (
+        <p className="me-cert-note">
+          Every tier you reach earns a certificate in your DUAL wallet. Create your wallet with <b>{email}</b>, the email you use here, and your certificates are sent to it automatically.
+        </p>
+      )}
+      {walletUrl && (
+        <div className="me-btn-row">
+          <a href={walletUrl} target="_blank" rel="noreferrer" className="ds-btn ds-btn-ghost ds-btn-sm">
+            {received > 0 ? 'Open DUAL wallet ↗' : 'Create DUAL wallet ↗'}
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const ME_CSS = `
+  .me-certs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .me-certs li { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; }
+  .me-cert-tier { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; }
+  .me-cert-st { font-size: 12px; color: var(--ds-text-faint); }
+  .me-cert-st.on { color: var(--ds-success); text-decoration: none; }
+  .me-cert-st.on:hover { text-decoration: underline; }
+  .me-cert-st.bad { color: var(--ds-danger); }
+  .me-cert-note { margin: 14px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ds-text-dim); overflow-wrap: anywhere; }
+  .me-cert-note b { color: var(--ds-text); font-weight: 600; }
   .me { min-height: 100vh; background: radial-gradient(ellipse 1100px 600px at 50% -120px, rgba(14,180,208,0.08) 0%, transparent 65%), var(--ds-bg); }
   .me-main { padding-top: 104px; padding-bottom: 80px; }
 

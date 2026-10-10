@@ -194,7 +194,21 @@ export const webhooks = {
 
 // ─── Organisation ─────────────────────────────────────────────────────────────
 
+export type DualOrgWallet = {
+  id: string;
+  email: string;
+  activated: boolean;
+  disabled: boolean;
+  email_verified: boolean;
+  account: { address: string };
+};
+
 export const org = {
   get: () => dualRequest<{ id: string; fqdn: string }>(`/organizations/${ORG_ID}`),
   balance: () => dualRequest<{ amount: string }>(`/organizations/${ORG_ID}/balance`),
+  // API key only — the JWT permission check on this endpoint is broken upstream.
+  listWallets: (next?: string) =>
+    dualRequest<{ wallets: DualOrgWallet[]; next?: string }>(
+      `/organizations/${ORG_ID}/wallets?limit=25${next ? `&next=${encodeURIComponent(next)}` : ''}`,
+    ),
 };

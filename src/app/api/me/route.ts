@@ -39,6 +39,15 @@ export async function GET(req: NextRequest) {
       })
     : [];
 
+  const certificates = badge
+    ? await db.tierCertificate.findMany({
+        where:   { badgeId: badge.id },
+        select:  { tier: true, status: true, dualObjectId: true },
+      })
+    : [];
+
+  const orgId = process.env.DUAL_ORG_ID;
+
   return NextResponse.json({
     email:    memberAuth.email,
     username: user?.username ?? null,
@@ -67,5 +76,7 @@ export async function GET(req: NextRequest) {
       updatedAt:               badge.updatedAt,
     } : null,
     accounts,
+    certificates,
+    dualWalletUrl: orgId ? `https://wallet.dual.network/${orgId}/login` : null,
   });
 }

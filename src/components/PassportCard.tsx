@@ -40,10 +40,10 @@ export interface BadgeData {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const TIER_ORDER = ['INITIATE', 'EXPLORER', 'BUILDER', 'STAKEHOLDER', 'GENESIS', 'LEGEND'];
+export const TIER_ORDER = ['INITIATE', 'EXPLORER', 'BUILDER', 'STAKEHOLDER', 'GENESIS', 'LEGEND'];
 
 // Accent per tier: [primary, glow rgb]
-const TIER_ACCENT: Record<string, [string, string]> = {
+export const TIER_ACCENT: Record<string, [string, string]> = {
   INITIATE:    ['#7FA6B5', '127,166,181'],
   EXPLORER:    ['#5ED3EA', '94,211,234'],
   BUILDER:     ['#7FE4F4', '127,228,244'],
@@ -91,7 +91,7 @@ const RAIL_TICKS = [60, 65, 70, 75, 80, 120, 125, 130, 135, 140];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const CSS = `
+export const CSS = `
   .pp { container-type: inline-size; position: relative; width: 100%; aspect-ratio: 3 / 2; overflow: hidden;
     color: #DCEAF2; font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
     clip-path: polygon(3.4% 0, 96.6% 0, 100% 5.1%, 100% 94.9%, 96.6% 100%, 3.4% 100%, 0 94.9%, 0 5.1%);
@@ -206,7 +206,7 @@ function SideClasp() {
 
 const MICROPRINT = 'DUAL·SIGNAL·COMMUNITY·IDENTITY·PASSPORT·'.repeat(3);
 
-function FrameArt() {
+export function FrameArt() {
   // 300×200 units; chamfer = 10
   const outer = 'M10.5,0.75 H289.5 L299.25,10.5 V189.5 L289.5,199.25 H10.5 L0.75,189.5 V10.5 Z';
   const mid   = 'M11.8,2.6 H288.2 L297.4,11.8 V188.2 L288.2,197.4 H11.8 L2.6,188.2 V11.8 Z';
@@ -278,7 +278,7 @@ function FrameArt() {
   );
 }
 
-function TierRing({ progress }: { progress: number }) {
+export function TierRing({ progress }: { progress: number }) {
   // progress: 0–1 of the overall 1,000 SIGNAL journey
   const r = 46;
   const circ = 2 * Math.PI * r;

@@ -123,8 +123,47 @@ model Badge {
   discordDays              DiscordActiveDay[]
   governanceParticipations GovernanceParticipation[]
   governanceActivities     GovernanceActivity[]
+  tierCertificates         TierCertificate[]
 
   @@map("badges")
+}
+
+// ─── Tier Certificates ────────────────────────────────────────────────────────
+// One wallet-owned DUAL object per tier a member reaches. Minted org-owned,
+// then transferred to the member's DUAL wallet (matched by email).
+
+model TierCertificate {
+  id      String @id @default(cuid())
+  badgeId String @map("badge_id")
+  badge   Badge  @relation(fields: [badgeId], references: [id])
+
+  tier               Tier
+  status             CertificateStatus @default(AWAITING_WALLET)
+  scoreAtAchievement Int               @map("score_at_achievement")
+  achievedAt         DateTime          @map("achieved_at")
+
+  // Set at mint time; serial = Nth certificate issued for this tier
+  serial        Int?    @map("serial")
+  dualObjectId  String? @map("dual_object_id")
+  walletAddress String? @map("wallet_address")
+
+  attempts     Int     @default(0)
+  errorMessage String? @map("error_message")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([badgeId, tier])
+  @@unique([tier, serial])
+  @@index([status])
+  @@map("tier_certificates")
+}
+
+enum CertificateStatus {
+  AWAITING_WALLET
+  MINTED
+  TRANSFERRED
+  FAILED
 }
 
 // ─── Evidence Tables ──────────────────────────────────────────────────────────
