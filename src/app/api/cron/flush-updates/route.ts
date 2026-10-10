@@ -12,7 +12,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runPendingUpdates } from '@/lib/update-worker';
-import { queueOwedCertificates, issueCertificates } from '@/lib/tier-certificates';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,25 +30,12 @@ export async function POST(req: NextRequest) {
 
   try {
     await runPendingUpdates();
+    return NextResponse.json({ status: 'ok' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[flush-updates] Error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  // Runs after Passport updates so all DUAL writes stay sequential.
-  // A certificate problem must not fail the Passport flush.
-  let certificates: { queued: number; transferred: number; failed: number } | { error: string };
-  try {
-    const queued = await queueOwedCertificates();
-    certificates = { queued, ...(await issueCertificates()) };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[flush-updates] Tier certificates error:', msg);
-    certificates = { error: msg };
-  }
-
-  return NextResponse.json({ status: 'ok', certificates });
 }
 
 export async function GET(req: NextRequest) {

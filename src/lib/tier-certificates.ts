@@ -84,6 +84,30 @@ export async function queueOwedCertificates(): Promise<number> {
   return count;
 }
 
+let running: Promise<void> | null = null;
+
+/**
+ * Queue + issue, at most one run at a time. Callers fire the update worker
+ * without awaiting, so overlapping runs would otherwise mint the same row twice.
+ */
+export function runCertificates(): Promise<void> {
+  if (running) return running;
+  running = (async () => {
+    try {
+      const queued = await queueOwedCertificates();
+      const { transferred, failed } = await issueCertificates();
+      if (queued || transferred || failed) {
+        console.log(`[tier-certs] queued=${queued} transferred=${transferred} failed=${failed}`);
+      }
+    } catch (err) {
+      console.error('[tier-certs] Run failed:', err instanceof Error ? err.message : err);
+    } finally {
+      running = null;
+    }
+  })();
+  return running;
+}
+
 export async function issueCertificates(): Promise<{ transferred: number; failed: number }> {
   const templateId = process.env.DUAL_TIER_CERT_TEMPLATE_ID;
   if (!templateId) return { transferred: 0, failed: 0 };

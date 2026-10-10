@@ -9,6 +9,7 @@
 import { db } from './db';
 import { ebus } from './dual-client';
 import { UpdateStatus } from '@prisma/client';
+import { runCertificates } from './tier-certificates';
 
 const MAX_ATTEMPTS = 5;
 const BACKOFF_MS = [1_000, 5_000, 15_000, 30_000, 60_000];
@@ -74,4 +75,7 @@ export async function runPendingUpdates(): Promise<void> {
       console.error(`[update-worker] Failed (attempt ${update.attempts + 1})${permanent ? ' [permanent - transferred]' : ''}: ${msg}`);
     }
   }
+
+  // After Passport writes so all DUAL writes stay sequential; never throws.
+  await runCertificates();
 }
